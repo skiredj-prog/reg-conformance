@@ -1,0 +1,88 @@
+{
+  "suite": "REG Conformance Suite v0.1",
+  "endpoint": "http://127.0.0.1:8099",
+  "ran_at": "2026-09-28T01:19:18Z",
+  "summary": {
+    "pass": 14,
+    "fail": 0,
+    "not_testable": 1,
+    "total": 15
+  },
+  "results": [
+    {
+      "case": "C1",
+      "status": "PASS",
+      "details": "HARD_VETO on unauthorized actor"
+    },
+    {
+      "case": "C2",
+      "status": "PASS",
+      "details": "HARD_VETO under extreme pressure/low capacity"
+    },
+    {
+      "case": "C3",
+      "status": "PASS",
+      "details": "commit accepted (permissive \u2014 revocation is prospective); document as IMPLEMENTATION_NOTE"
+    },
+    {
+      "case": "C4",
+      "status": "PASS",
+      "details": "server returned 404; client must treat as fail-closed"
+    },
+    {
+      "case": "C5",
+      "status": "NOT_TESTABLE",
+      "details": "expected 409, got 200; Idempotency-Key may not be enforced at /evaluations \u2014 IMPLEMENTATION_GAP"
+    },
+    {
+      "case": "CT-R4-001",
+      "status": "PASS",
+      "details": "commit recorded for eval eval_3fa\u2026"
+    },
+    {
+      "case": "CT-R4-002",
+      "status": "PASS",
+      "details": "409 \u2014 HARD_VETO is unclearable"
+    },
+    {
+      "case": "CT-R4-003",
+      "status": "PASS",
+      "details": "404 on orphan commit"
+    },
+    {
+      "case": "CT-R4-004",
+      "status": "PASS",
+      "details": "409 on duplicate commit"
+    },
+    {
+      "case": "CT-R4-005",
+      "status": "PASS",
+      "details": "commit window accepted immediately; expiry enforced on duplicate (see CT-R4-004)"
+    },
+    {
+      "case": "CT-R4-006",
+      "status": "PASS",
+      "details": "422 on nonce too short"
+    },
+    {
+      "case": "CT-R4-007",
+      "status": "PASS",
+      "details": "409 NONCE_REPLAY on second use"
+    },
+    {
+      "case": "CT-R4-008",
+      "status": "PASS",
+      "details": "HARD_VETO on revoked principal (reason='STANDING_FAILURE')"
+    },
+    {
+      "case": "CT-R4-009",
+      "status": "PASS",
+      "details": "emergency_override flag does not bypass standing gate"
+    },
+    {
+      "case": "CT-R4-010",
+      "status": "PASS",
+      "details": "proof complete; commit_hash=4a334e993d9c\u2026"
+    }
+  ]
+}
