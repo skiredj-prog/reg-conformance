@@ -767,8 +767,8 @@ def main():
     p.add_argument("--endpoint",  default="",
                    help="REG HTTP endpoint (required for http/both mode)")
     p.add_argument("--mode",      choices=["http","native","both"], default="http")
-    p.add_argument("--kernel",    default="tenir_policies.yaml",
-                   help="Path to policy YAML (native/both mode)")
+    p.add_argument("--kernel",    default="kernel/tenir_policies.yaml",
+               help="Path to policy YAML (native/both mode)")
     p.add_argument("--api-key",   default=None)
     p.add_argument("--insecure",  action="store_true")
     p.add_argument("--output",    default="results/tenirlabs-v1.json")
