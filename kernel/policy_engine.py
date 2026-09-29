@@ -1,158 +1,95 @@
-"""
-kernel / policy_engine.py
-==========================
-Minimal governance kernel — the deployable core of the admissibility formula.
+# REG Conformance Suite v0.2.2
 
-Architectural note
-------------------
-This module is the *kernel tier* of the TENIR-Gov two-tier architecture.
-It implements the admissibility formula independently of the full middleware stack.
+Implementation-agnostic conformance runner for the Runtime Execution Governance (REG) Standard.
+RFC-4 (frozen) · RFC-7 (updated).
 
-    S = K / (P × V + ε)
+15 vectors: 5 core invariants (C1–C5) + 10 commit-integrity vectors (CT-R4-001–010).
 
-Verdicts map to the full middleware decision surface as follows:
+## Requirements
 
-    Kernel verdict   Full middleware equivalent   Condition
-    ─────────────    ─────────────────────────    ───────────────────────────
-    PASS             allow                        S ≥ flag_below
-    FLAG             allow_with_alert             hard_veto_below ≤ S < flag_below
-    HARD_VETO        block (intended)             S < hard_veto_below
+pip install requests fastapi uvicorn pyyaml
 
-REG conformance (RFC-0 §4) requires four dispositions:
-    PASS / FLAG / HOLD / HARD_VETO
-This kernel emits three. HOLD is not yet implemented and is reported as
-IMPLEMENTATION_GAP: HOLD not emitted — see reg-conformance/results/.
+The reference kernel (PolicyEngine + policy YAML) ships inside kernel/.
+No external repository required.
 
-Version tracking
-----------------
-Policy version (read from tenir_policies.yaml) and code version
-(declared in the reg-conformance release tag) are tracked independently:
-    policy: kernel-r5-1.0.0  |  code: v0.2.1
+Kernel policy version (kernel-r5-1.0.0) and code version (v0.2.2) are tracked
+independently. Policy versions evolve without code changes.
 
-Default thresholds below match the canonical tenir_policies.yaml
-(hard_veto_below=0.75, flag_below=0.90). Institutional deployments
-override via domain-specific YAML policies.
+## Usage
 
-Epsilon (1e-6) is identical to the full middleware canonical value.
-"""
-from __future__ import annotations
+### HTTP adapter mode (interface_mode: "adapter" — evidence level 2)
 
-import warnings
-import yaml
-from pathlib import Path
+Start the reference shim (TENIR-Gov kernel behind /evaluations):
 
+uvicorn shim:app --host 127.0.0.1 --port 8099
 
-class KernelPolicyViolation(ValueError):
-    """Raised when the policy configuration is internally inconsistent."""
+Run suite against it:
 
+python runner.py --mode http --endpoint http://127.0.0.1:8099
 
-class PolicyEngine:
-    """
-    The Ontological Circuit-Breaker (Le Disjoncteur Ontologique).
+Or against any REG-compatible HTTP endpoint:
 
-    Evaluates whether an action is admissible given the current
-    Pressure (P), Velocity (V), and Capacity (K) of the governed system.
-    Configuration is loaded from a YAML policy file, preserving the
-    separation between the formula (code) and the calibration (YAML).
-    """
+python runner.py --mode http --endpoint https://your-server.example.com --api-key TOKEN
 
-    # Canonical R5-aligned defaults. Overridden by YAML when present.
-    DEFAULT_EPSILON = 1e-6
-    DEFAULT_HARD_VETO_BELOW = 0.75
-    DEFAULT_FLAG_BELOW = 0.90
+### Native kernel mode (interface_mode: "native" — evidence level 3)
 
-    def __init__(self, config_path: str | Path = "tenir_policies.yaml") -> None:
-        config_path = Path(config_path)
-        if not config_path.exists():
-            raise FileNotFoundError(f"Policy file not found: {config_path}")
-        with config_path.open("r", encoding="utf-8") as f:
-            cfg = yaml.safe_load(f)
+Run directly against the in-process PolicyEngine — no HTTP required.
+This is the mode for authorize(record, payload_bytes, …) style interfaces.
 
-        self.version: str = cfg.get("version", "unversioned")
-        self.institution: str = cfg.get("institution", "unknown")
-        params = cfg.get("parameters", {})
-        thresholds = cfg.get("thresholds", {})
+python runner.py --mode native --kernel kernel/tenir_policies.yaml
 
-        self.epsilon: float = float(
-            params.get("epsilon", self.DEFAULT_EPSILON)
-        )
-        self.hard_veto_below: float = float(
-            thresholds.get("hard_veto_below", self.DEFAULT_HARD_VETO_BELOW)
-        )
-        self.flag_below: float = float(
-            thresholds.get("flag_below", self.DEFAULT_FLAG_BELOW)
-        )
+### Both modes in one run
 
-        self._validate()
+python runner.py --mode both --endpoint http://127.0.0.1:8099 --kernel kernel/tenir_policies.yaml --output results/my-impl.json
 
-    def _validate(self) -> None:
-        if self.epsilon <= 0:
-            raise KernelPolicyViolation("epsilon must be > 0")
-        if self.hard_veto_below <= 0:
-            raise KernelPolicyViolation("hard_veto_below must be > 0")
-        if self.flag_below <= self.hard_veto_below:
-            raise KernelPolicyViolation(
-                "flag_below must be strictly greater than hard_veto_below"
-            )
+## Output
 
-    def evaluate(self, p: float, v: float, k: float) -> dict:
-        """
-        Compute the stability score and return an admissibility verdict.
+Console table + JSON result file.
+Every result declares interface_mode and evidence_level.
+Adapter results are never promoted to native-conformance claims.
 
-        Parameters
-        ----------
-        p : float  Pressure    (urgency, volatility, deadline compression)
-        v : float  Velocity    (rate of change, context drift, commit rate)
-        k : float  Capacity    (bottleneck-adjusted institutional throughput)
+## Reporting states
 
-        Returns
-        -------
-        dict with keys: s_score, decision, rationale, policy_version, institution
+| Symbol | State | Meaning |
+|---|---|---|
+| ✓ | PASS | Normative requirement satisfied |
+| ✗ | FAIL | Normative requirement violated |
+| ○ | NOT_APPLICABLE | Property irrelevant to this topology |
+| ~ | ADAPTER_REQUIRED | Testable only via translation layer |
+| △ | IMPLEMENTATION_GAP | Requirement understood; not yet engineered |
 
-        Note: HOLD is defined in RFC-0 §4 but not emitted by this kernel.
-        Status: IMPLEMENTATION_GAP — see reg-conformance/results/.
-        """
-        denominator = (p * v) + self.epsilon
-        s_score = k / denominator
+## Interface modes
 
-        if s_score < self.hard_veto_below:
-            decision = "HARD_VETO"
-            rationale = (
-                f"S={s_score:.6f} is below the hard-veto floor "
-                f"({self.hard_veto_below}). Action is inadmissible — "
-                "continuity of the governed system is threatened."
-            )
-        elif s_score < self.flag_below:
-            decision = "FLAG"
-            rationale = (
-                f"S={s_score:.6f} is marginal (floor={self.hard_veto_below}, "
-                f"flag={self.flag_below}). HOLDING-FIRST posture required. "
-                "Human review before proceeding."
-            )
-        else:
-            decision = "PASS"
-            rationale = (
-                f"S={s_score:.6f} is above the flag threshold "
-                f"({self.flag_below}). Action is admissible under the "
-                "current policy."
-            )
+Conformance is declared per mode. Native does not imply HTTP, and vice versa.
 
-        return {
-            "s_score": round(s_score, 6),
-            "decision": decision,
-            "rationale": rationale,
-            "policy_version": self.version,
-            "institution": self.institution,
-        }
+| Mode | interface_mode | Evidence level | Description |
+|---|---|---|---|
+| --mode http | "adapter" | 2 — Adapter-Tested | Tests against a REG HTTP endpoint. Behavioral compatibility; not native conformance. |
+| --mode native | "native" | 3 — Native-Conformant | Tests in-process kernel directly via NativeKernelAdapter. No HTTP layer. |
 
-    def evaluate_admissibility(self, p: float, v: float, k: float) -> dict:
-        """
-        Deprecated alias for evaluate(). Retained for V6 documentation
-        compatibility. Scheduled for removal in the next minor release.
-        """
-        warnings.warn(
-            "evaluate_admissibility() is deprecated; use evaluate().",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.evaluate(p, v, k)
+## Reference results (TENIR-Gov kernel v0.1 / shim v0.2.2)
+
+| Mode | PASS | NOT_APPLICABLE / ADAPTER_REQUIRED | IMPLEMENTATION_GAP | FAIL |
+|---|---|---|---|---|
+| HTTP adapter | 10 | 1 | 4 | 0 |
+| Native kernel | 10 | 1 | 4 | 0 |
+
+Known gaps: CT-R4-005 (state_hash_at_verdict), CT-R4-007 (signing key), CT-R4-008/009 (tamper-evident manifest).
+
+## Repository layout
+
+reg-conformance/
+  kernel/                     Reference PolicyEngine + policy YAML
+    policy_engine.py
+    tenir_policies.yaml
+  reg-standards-baseline/     RFC references and baseline documents
+  results/                    Committed conformance run artefacts
+  LICENSE
+  README.md
+  runner.py                   Conformance runner (adapter + native modes)
+  shim.py                     HTTP shim wrapping the kernel
+  spec.md                     Conformance specification
+
+## License
+
+Apache 2.0 — TENIR Labs / Abdelaziz Skiredj
