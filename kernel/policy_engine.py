@@ -1,6 +1,6 @@
 """
-tenir-kernel / core / policy_engine.py
-========================================
+kernel / policy_engine.py
+==========================
 Minimal governance kernel — the deployable core of the admissibility formula.
 
 Architectural note
@@ -18,13 +18,26 @@ Verdicts map to the full middleware decision surface as follows:
     FLAG             allow_with_alert             hard_veto_below ≤ S < flag_below
     HARD_VETO        block (intended)             S < hard_veto_below
 
-Default thresholds are intentionally conservative (demonstrator profile).
-Institutional deployments should define domain-specific YAML policies.
+REG conformance (RFC-0 §4) requires four dispositions:
+    PASS / FLAG / HOLD / HARD_VETO
+This kernel emits three. HOLD is not yet implemented and is reported as
+IMPLEMENTATION_GAP: HOLD not emitted — see reg-conformance/results/.
+
+Version tracking
+----------------
+Policy version (read from tenir_policies.yaml) and code version
+(declared in the reg-conformance release tag) are tracked independently:
+    policy: kernel-r5-1.0.0  |  code: v0.2.1
+
+Default thresholds below match the canonical tenir_policies.yaml
+(hard_veto_below=0.75, flag_below=0.90). Institutional deployments
+override via domain-specific YAML policies.
 
 Epsilon (1e-6) is identical to the full middleware canonical value.
 """
 from __future__ import annotations
 
+import warnings
 import yaml
 from pathlib import Path
 
@@ -43,6 +56,11 @@ class PolicyEngine:
     separation between the formula (code) and the calibration (YAML).
     """
 
+    # Canonical R5-aligned defaults. Overridden by YAML when present.
+    DEFAULT_EPSILON = 1e-6
+    DEFAULT_HARD_VETO_BELOW = 0.75
+    DEFAULT_FLAG_BELOW = 0.90
+
     def __init__(self, config_path: str | Path = "tenir_policies.yaml") -> None:
         config_path = Path(config_path)
         if not config_path.exists():
@@ -55,9 +73,15 @@ class PolicyEngine:
         params = cfg.get("parameters", {})
         thresholds = cfg.get("thresholds", {})
 
-        self.epsilon: float = float(params.get("epsilon", 1e-6))
-        self.hard_veto_below: float = float(thresholds.get("hard_veto_below", 0.5))
-        self.flag_below: float = float(thresholds.get("flag_below", 1.2))
+        self.epsilon: float = float(
+            params.get("epsilon", self.DEFAULT_EPSILON)
+        )
+        self.hard_veto_below: float = float(
+            thresholds.get("hard_veto_below", self.DEFAULT_HARD_VETO_BELOW)
+        )
+        self.flag_below: float = float(
+            thresholds.get("flag_below", self.DEFAULT_FLAG_BELOW)
+        )
 
         self._validate()
 
@@ -83,7 +107,10 @@ class PolicyEngine:
 
         Returns
         -------
-        dict with keys: s_score, decision, rationale
+        dict with keys: s_score, decision, rationale, policy_version, institution
+
+        Note: HOLD is defined in RFC-0 §4 but not emitted by this kernel.
+        Status: IMPLEMENTATION_GAP — see reg-conformance/results/.
         """
         denominator = (p * v) + self.epsilon
         s_score = k / denominator
@@ -105,8 +132,9 @@ class PolicyEngine:
         else:
             decision = "PASS"
             rationale = (
-                f"S={s_score:.6f} is above the flag threshold ({self.flag_below}). "
-                "Action is admissible under the current policy."
+                f"S={s_score:.6f} is above the flag threshold "
+                f"({self.flag_below}). Action is admissible under the "
+                "current policy."
             )
 
         return {
@@ -117,5 +145,14 @@ class PolicyEngine:
             "institution": self.institution,
         }
 
-    # Backward-compatible alias used by V6 documentation
-    evaluate_admissibility = evaluate
+    def evaluate_admissibility(self, p: float, v: float, k: float) -> dict:
+        """
+        Deprecated alias for evaluate(). Retained for V6 documentation
+        compatibility. Scheduled for removal in the next minor release.
+        """
+        warnings.warn(
+            "evaluate_admissibility() is deprecated; use evaluate().",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.evaluate(p, v, k)
