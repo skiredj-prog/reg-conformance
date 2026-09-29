@@ -1,0 +1,148 @@
+{
+  "suite": "REG Conformance Suite v0.2",
+  "rfc_refs": [
+    "RFC-4 (frozen)",
+    "RFC-7 (updated)"
+  ],
+  "interface_mode": "adapter",
+  "evidence_level": 2,
+  "evidence_label": "ADAPTER_TESTED",
+  "endpoint": "http://127.0.0.1:8099",
+  "ran_at": "2026-09-29T09:42:22Z",
+  "summary": {
+    "PASS": 10,
+    "FAIL": 0,
+    "NOT_APPLICABLE": 0,
+    "ADAPTER_REQUIRED": 1,
+    "IMPLEMENTATION_GAP": 4
+  },
+  "results": [
+    {
+      "vector_id": "C1",
+      "status": "PASS",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "HARD_VETO on standing failure",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "C2",
+      "status": "PASS",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "HARD_VETO under extreme structural pressure",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "C3",
+      "status": "PASS",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "commit accepted \u2014 revocation is prospective; IMPLEMENTATION_NOTE: re-check at commit not implemented",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "C4",
+      "status": "PASS",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "server returned 404; client must fail-closed",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "C5",
+      "status": "PASS",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "409 NONCE_REPLAY on duplicate nonce",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-001",
+      "status": "PASS",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "GRANT bound and committed (eval eval_cbd\u2026)",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-002",
+      "status": "PASS",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "PAYLOAD_BINDING_VIOLATION correctly rejected",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-003",
+      "status": "PASS",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "REPLAY_DETECTED on consumed nonce",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-004",
+      "status": "ADAPTER_REQUIRED",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Expiry window (30 s) cannot be reliably triggered via HTTP without introducing test latency. Use NativeKernelAdapter for deterministic coverage."
+    },
+    {
+      "vector_id": "CT-R4-005",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "state_hash_at_verdict not yet implemented in shim v0.2. State drift detection is currently limited to standing revocation (C3). Full Commit-State Binding requires capturing state at verdict and comparing at commit time."
+    },
+    {
+      "vector_id": "CT-R4-006",
+      "status": "PASS",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "HARD_VETO correctly blocked at commit gate",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-007",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Structural receipt present (type='Refusal Receipt', hash=a841b57cf199\u2026) but NOT cryptographically signed. Signing key absent in v0.1 \u2014 IMPLEMENTATION_GAP."
+    },
+    {
+      "vector_id": "CT-R4-008",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Tamper-evident Evidence Manifest (Merkle tree / transparency log) absent in v0.1. proof endpoint provides commit_hash but no full append-only manifest. Requires ledger implementation."
+    },
+    {
+      "vector_id": "CT-R4-009",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Independent third-party verification path absent in v0.1. Depends on CT-R4-008 (manifest) and CT-R4-007 (signed receipts)."
+    },
+    {
+      "vector_id": "CT-R4-010",
+      "status": "PASS",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "external_effect_atomic=false; post_commit_evidence_required=true \u2014 no false atomic claim",
+      "gap_note": ""
+    }
+  ],
+  "notes": {
+    "CT-R4-004": "Expiry testable natively (NativeKernelAdapter). HTTP adapter requires time delay \u2014 marked ADAPTER_REQUIRED.",
+    "CT-R4-005": "state_hash_at_verdict not implemented. Full race detection is IMPLEMENTATION_GAP in v0.1.",
+    "CT-R4-007": "Structural receipt present; cryptographic signing absent \u2014 IMPLEMENTATION_GAP in v0.1.",
+    "CT-R4-008-009": "Tamper-evident manifest and independent verifier path absent \u2014 IMPLEMENTATION_GAP in v0.1."
+  },
+  "result_file": "tenirlabs-v0.2-adapter.json"
+}
