@@ -1,38 +1,73 @@
-# REG Conformance Suite v0.1
+# REG Conformance Suite v0.2
 
 Implementation-agnostic conformance runner for the Runtime Execution Governance (REG) Standard.
-Five core invariants (C1–C5) and ten commit-integrity vectors (CT-R4-001–010).
+RFC-4 (frozen) · RFC-7 (updated).
+
+15 vectors: 5 core invariants (C1–C5) + 10 commit-integrity vectors (CT-R4-001–010).
 
 ## Requirements
 
-```
-pip install requests
+```bash
+pip install requests fastapi uvicorn pyyaml
 ```
 
 ## Usage
 
+### HTTP adapter mode (interface_mode: "adapter" — evidence level 2)
+
 ```bash
-# Point at any REG-compatible endpoint
-python runner.py --endpoint http://localhost:8099
+# Start the reference shim (TENIR-Gov kernel behind /evaluations)
+uvicorn shim:app --host 127.0.0.1 --port 8099
 
-# With auth
-python runner.py --endpoint https://your-reg-server.example.com --api-key YOUR_TOKEN
+# Run suite against it
+python runner.py --mode http --endpoint http://127.0.0.1:8099
 
-# Dev / no TLS
-python runner.py --endpoint http://localhost:8099 --insecure --output results/my-impl.json
+# Or against any REG-compatible HTTP endpoint
+python runner.py --mode http --endpoint https://your-server.example.com --api-key TOKEN
 ```
 
-## Running the reference shim (TENIR-Gov kernel)
+### Native kernel mode (interface_mode: "native" — evidence level 3)
 
 ```bash
-pip install fastapi uvicorn pyyaml
-uvicorn shim:app --host 127.0.0.1 --port 8099
-python runner.py --endpoint http://127.0.0.1:8099
+# Run directly against the in-process PolicyEngine — no HTTP required
+# This is the mode for authorize(record, payload_bytes, …) style interfaces
+python runner.py --mode native --kernel tenir_policies.yaml
+```
+
+### Both modes in one run
+
+```bash
+python runner.py --mode both \
+  --endpoint http://127.0.0.1:8099 \
+  --kernel tenir_policies.yaml \
+  --output results/my-impl.json
 ```
 
 ## Output
 
-Console table + `results/tenirlabs-v1.json` (schema: see spec.md).
+Console table + JSON result file.  
+Every result declares `interface_mode` and `evidence_level`.  
+Adapter results are never promoted to native-conformance claims.
+
+## Reporting states
+
+| Symbol | State | Meaning |
+|---|---|---|
+| ✓ | PASS | Normative requirement satisfied |
+| ✗ | FAIL | Normative requirement violated |
+| ○ | NOT_APPLICABLE | Property irrelevant to this topology |
+| ~ | ADAPTER_REQUIRED | Testable only via translation layer |
+| △ | IMPLEMENTATION_GAP | Requirement understood; not yet engineered |
+
+## Reference results (TENIR-Gov kernel v0.1 / shim v0.2)
+
+| Mode | PASS | NOT_APPLICABLE / ADAPTER_REQUIRED | IMPLEMENTATION_GAP | FAIL |
+|---|---|---|---|---|
+| HTTP adapter | 10 | 1 | 4 | 0 |
+| Native kernel | 10 | 1 | 4 | 0 |
+
+Known gaps: CT-R4-005 (`state_hash_at_verdict`), CT-R4-007 (signing key),
+CT-R4-008/009 (tamper-evident manifest).
 
 ## License
 
