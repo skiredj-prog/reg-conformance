@@ -3,7 +3,7 @@
 REG Conformance Shim — v0.2 (RFC-4 frozen / RFC-7 updated)
 ============================================================
 HTTP adapter exposing the REG /evaluations protocol surface, backed by the
-TENIR-Gov kernel (core/policy_engine.py).
+TENIR-Gov kernel (kernel/policy_engine.py).
 
 interface_mode: "adapter"   ← this is an HTTP adapter over the kernel,
                               not the kernel's native interface.
@@ -34,7 +34,7 @@ from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
 sys.path.insert(0, str(Path(__file__).parent))
-from core.policy_engine import PolicyEngine
+from kernel.policy_engine import PolicyEngine
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger("reg.shim")
