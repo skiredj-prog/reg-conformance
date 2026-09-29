@@ -466,7 +466,7 @@ class NativeKernelAdapter(BaseAdapter):
 
     def __init__(self, policy_file: str):
         sys.path.insert(0, str(Path(__file__).parent))
-        from core.policy_engine import PolicyEngine
+        from kernel.policy_engine import PolicyEngine
         self._engine = PolicyEngine(Path(policy_file))
         self._grants:   dict[str, dict] = {}
         self._consumed: set[str]        = set()   # consumed nonces
