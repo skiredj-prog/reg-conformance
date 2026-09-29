@@ -1,0 +1,37 @@
+# tenir-kernel / tenir_policies.yaml
+# ====================================
+# Governance kernel — R5-coherent baseline policy.
+#
+# Threshold semantics (maps directly to R5 tenir_governance defaults)
+# -------------------------------------------------------------------
+# hard_veto_below : S below this value → HARD_VETO  (≡ s_block_floor in R5)
+# flag_below      : S below this value → FLAG        (≡ s_alert_floor in R5)
+# S ≥ flag_below  → PASS
+#
+# Verdict correspondence with full middleware (R5.0.0 default policy):
+#   Kernel HARD_VETO  ←→  Middleware block / allow_with_intended_block
+#   Kernel FLAG       ←→  Middleware allow_with_alert
+#   Kernel PASS       ←→  Middleware allow
+#
+# Epsilon
+# -------
+# 1e-6 (canonical R5 value) — zero-division guard, semantically negligible
+# at operationally realistic P×V values (typically 0.2–0.9).
+#
+# Institutional deployments may increase ε (e.g., 0.01) as a semantic
+# damping factor to bound S when P×V → 0. This must be declared in the
+# institution's Rulebook YAML and cited in audit traces. See the
+# calibration reference document (Variable_operations-calibration).
+
+version: "kernel-r5-1.0.0"
+institution: "TENIR-KERNEL"
+description: "R5-coherent baseline governance kernel policy"
+
+parameters:
+  # Canonical epsilon — identical to PolicyConfig.epsilon in tenir_governance.policy_engine
+  epsilon: 0.000001  # 1e-6
+
+thresholds:
+  # Mirror R5 tenir_governance default policy (PolicyConfig dataclass defaults)
+  hard_veto_below: 0.75   # ≡ s_block_floor in R5 full middleware
+  flag_below:      0.90   # ≡ s_alert_floor in R5 full middleware
