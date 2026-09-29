@@ -39,7 +39,7 @@ from kernel.policy_engine import PolicyEngine
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger("reg.shim")
 
-POLICY_FILE = Path(__file__).parent / "tenir_policies.yaml"
+POLICY_FILE = Path(__file__).parent / "kernel" / "tenir_policies.yaml"
 _engine = PolicyEngine(POLICY_FILE)
 
 _evaluations: dict[str, dict] = {}
