@@ -25,6 +25,20 @@ python runner.py --mode http --endpoint http://127.0.0.1:8099
 # Or against any REG-compatible HTTP endpoint
 python runner.py --mode http --endpoint https://your-server.example.com --api-key TOKEN
 ```
+## Reference implementations
+
+This repo ships one **standalone kernel** (`kernel/policy_engine.py`) — a
+minimal, self-contained demonstration of the admissibility formula. It is
+deliberately 200 lines: no external dependencies, no infrastructure.
+
+The REG reference implementation named in RFC-0 §7 is the TENIR-Gov
+middleware (`tenir-governance`), which implements a superset of this kernel:
+Ed25519 signing, Merkle ledger, state-hash commit binding. The middleware
+will be added under `reference/` when its kernel tier is extractable.
+
+The conformance suite tests any implementation. It does not assume
+TENIR-Gov. Results for the standalone kernel are labelled `kernel-standalone`
+in `results/`.
 
 ### Native kernel mode (interface_mode: "native" — evidence level 3)
 
