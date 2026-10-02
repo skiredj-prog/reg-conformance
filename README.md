@@ -1,4 +1,4 @@
-# REG Conformance Suite v0.2.3
+# REG Conformance Suite v0.2.4
 
 Implementation-agnostic conformance runner for the Runtime Execution Governance (REG) Standard.
 RFC-4 (frozen) · RFC-7 (updated).
