@@ -53,7 +53,7 @@ A report mixing native and adapter results without explicit labeling is non-conf
 |---|---|---|---|---|
 | C1 | RFC-3 | Standing Gate | Actor with invalid credential | `HARD_VETO` — no structural computation |
 | C2 | RFC-2 | Structure Gate | P≥0.9, V≥0.9, K≤0.15 | `FLAG` or `HARD_VETO` — never `PASS` |
-| C3 | RFC-4 §2.2 | Commit-State Binding — Standing Drift | Standing revoked between verdict and commit | Commit blocked (strict) or prospective (permissive) — must be declared |
+| C3 | RFC-4 §2.2 | Commit-State Binding — Standing Drift | Standing revoked between verdict and commit | Commit blocked (strict). Permissive behavior is non-conformant to RFC-4 §2.2 MUST and is declared as IMPLEMENTATION_GAP. |
 | C4 | RFC-1 | Fail-Closed Transport Safety | Transport fault or 5xx | No execution proceeds — `NOT_APPLICABLE` for in-process kernels |
 | C5 | RFC-1/4 §2.1 | Replay Soundness — Idempotency | Duplicate nonce or request | `REJECT` / `NONCE_REPLAY` |
 
