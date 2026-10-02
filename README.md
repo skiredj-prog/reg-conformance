@@ -37,15 +37,15 @@ Ed25519 signing, Merkle ledger, state-hash commit binding. The middleware
 will be added under `reference/` when its kernel tier is extractable.
 
 The conformance suite tests any implementation. It does not assume
-TENIR-Gov. Results for the standalone kernel are labelled `kernel-standalone`
-in `results/`.
+TENIR-Gov. Reference runs for the standalone kernel ship under
+`results/validate-*-v0.2.4.json`.
 
 ### Native kernel mode (interface_mode: "native" — evidence level 3)
 
 ```bash
 # Run directly against the in-process PolicyEngine — no HTTP required
 # This is the mode for authorize(record, payload_bytes, …) style interfaces
-python runner.py --mode native --kernel tenir_policies.yaml
+python runner.py --mode native --kernel kernel/tenir_policies.yaml
 ```
 
 ### Both modes in one run
@@ -53,7 +53,7 @@ python runner.py --mode native --kernel tenir_policies.yaml
 ```bash
 python runner.py --mode both \
   --endpoint http://127.0.0.1:8099 \
-  --kernel tenir_policies.yaml \
+  --kernel kernel/tenir_policies.yaml \
   --output results/my-impl.json
 ```
 
@@ -73,15 +73,21 @@ Adapter results are never promoted to native-conformance claims.
 | ~ | ADAPTER_REQUIRED | Testable only via translation layer |
 | △ | IMPLEMENTATION_GAP | Requirement understood; not yet engineered |
 
-## Reference results (TENIR-Gov kernel v0.1 / shim v0.2.4)
+## Reference results (standalone kernel v0.1 / shim v0.2.4)
 
 | Mode | PASS | NOT_APPLICABLE / ADAPTER_REQUIRED | IMPLEMENTATION_GAP | FAIL |
 |---|---|---|---|---|
-| HTTP adapter | 10 | 1 | 4 | 0 |
-| Native kernel | 10 | 1 | 4 | 0 |
+| HTTP adapter | 9 | 1 | 5 | 0 |
+| Native kernel | 9 | 1 | 5 | 0 |
 
-Known gaps: CT-R4-005 (`state_hash_at_verdict`), CT-R4-007 (signing key),
-CT-R4-008/009 (tamper-evident manifest).
+Reference JSON: `results/validate-native-v0.2.4.json`, `results/validate-adapter-v0.2.4.json`.
+
+Known gaps:
+
+- **C3** — permissive revocation after standing change is non-conformant to RFC-4 §2.2 MUST (reported as IMPLEMENTATION_GAP, not PASS)
+- **CT-R4-005** — `state_hash_at_verdict` not implemented
+- **CT-R4-007** — structural receipt present; cryptographic signing absent
+- **CT-R4-008 / CT-R4-009** — no tamper-evident Evidence Manifest / independent verifier path
 
 ## License
 
