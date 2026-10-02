@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-REG Conformance Suite v0.2 — RFC-4 (frozen) / RFC-7 (updated)
-==============================================================
+REG Conformance Suite v0.2.4 — RFC-4 (frozen) / RFC-7 (updated)
+================================================================
 Architecture (RFC-7 §8)
 -----------------------
   AbstractTestVector  ← canonical, topology-neutral (RFC-4 §5)
@@ -28,7 +28,7 @@ Reporting states (RFC-7 §8.3)
 Usage
 -----
   python runner.py --endpoint http://127.0.0.1:8099           # HTTP adapter mode
-  python runner.py --mode native --kernel ./tenir_policies.yaml  # native kernel mode
+  python runner.py --mode native --kernel kernel/tenir_policies.yaml  # native kernel mode
   python runner.py --endpoint URL --mode native --kernel FILE  # both
 """
 
@@ -92,8 +92,7 @@ VECTORS: dict[str, TestVector] = {
     "C3": TestVector(
         "C3", "RFC-4 §2.2", "Commit-State Binding — Standing Drift",
         "Standing revocation between verdict and commit. "
-        "Strict: commit blocked. Permissive: commit accepted, revocation is prospective. "
-        "Both require explicit declaration."
+        "Strict: commit blocked (RFC-4 §2.2 MUST). Permissive: IMPLEMENTATION_GAP."
     ),
     "C4": TestVector(
         "C4", "RFC-1", "Fail-Closed Transport Safety",
@@ -297,11 +296,13 @@ class HTTPAdapter(BaseAdapter):
             return self._ar("C3", "/admin/revoke absent — IMPLEMENTATION_GAP")
         ec, er = self._post(f"/evaluations/{eid}/events", {"event_type":"commit"})
         if ec == 409:
-            return self._pass("C3", "commit blocked post-revocation (strict mode)")
-        if ec == 200:
             return self._pass("C3",
-                "commit accepted — revocation is prospective; "
-                "IMPLEMENTATION_NOTE: re-check at commit not implemented")
+                "commit blocked post-revocation (strict — RFC-4 §2.2 conformant)")
+        if ec == 200:
+            return self._gap("C3",
+                "commit accepted post-revocation — permissive revocation is "
+                "non-conformant to RFC-4 §2.2 MUST. Harness green-lights an "
+                "obligation the RFC declares mandatory. See spec.md C3 row.")
         return self._fail("C3", f"unexpected commit response: code={ec}")
 
     # C4 — Fail-closed transport (RFC-1)
@@ -606,11 +607,14 @@ class NativeKernelAdapter(BaseAdapter):
         self._revoke(pid)
         try:
             self._commit(g["evaluation_id"])
-            return self._pass("C3",
-                "commit accepted — revocation is prospective (native); "
-                "IMPLEMENTATION_NOTE: re-check at commit not implemented")
+            return self._gap("C3",
+                "commit accepted post-revocation (native) — permissive "
+                "revocation is non-conformant to RFC-4 §2.2 MUST. "
+                "See spec.md C3 row.")
         except ValueError as e:
-            return self._pass("C3", f"commit blocked post-revocation: {e} (strict)")
+            return self._pass("C3",
+                f"commit blocked post-revocation: {e} "
+                "(strict — RFC-4 §2.2 conformant)")
 
     def _v_c4(self):
         return self._na("C4",
@@ -729,8 +733,8 @@ def generate_report(adapter: BaseAdapter, results: list[ConformanceResult],
         counts[r.status.value] += 1
 
     return {
-        "suite":           "REG Conformance Suite v0.2",
-        "rfc_refs":        ["RFC-4 (frozen)", "RFC-7 (updated)"],
+        "suite":           "REG Conformance Suite v0.2.4",
+        "rfc_refs":        ["RFC-4 (v0.2, frozen)", "RFC-7 (updated)"],
         "interface_mode":  adapter.interface_mode,
         "evidence_level":  int(adapter.evidence_level),
         "evidence_label":  EvidenceLevel(adapter.evidence_level).name,
@@ -739,6 +743,8 @@ def generate_report(adapter: BaseAdapter, results: list[ConformanceResult],
         "summary":         counts,
         "results": [asdict(r) for r in results],
         "notes": {
+            "C3":       "Permissive revocation post-verdict is non-conformant to "
+                        "RFC-4 §2.2 MUST. Reported as IMPLEMENTATION_GAP, not PASS.",
             "CT-R4-004": "Expiry testable natively (NativeKernelAdapter). "
                          "HTTP adapter requires time delay — marked ADAPTER_REQUIRED.",
             "CT-R4-005": "state_hash_at_verdict not implemented. "
@@ -763,15 +769,15 @@ MARKS = {
 
 
 def main():
-    p = argparse.ArgumentParser(description="REG Conformance Suite v0.2 — TENIR Labs")
+    p = argparse.ArgumentParser(description="REG Conformance Suite v0.2.4 — TENIR Labs")
     p.add_argument("--endpoint",  default="",
                    help="REG HTTP endpoint (required for http/both mode)")
     p.add_argument("--mode",      choices=["http","native","both"], default="http")
     p.add_argument("--kernel",    default="kernel/tenir_policies.yaml",
-               help="Path to policy YAML (native/both mode)")
+                   help="Path to policy YAML (native/both mode)")
     p.add_argument("--api-key",   default=None)
     p.add_argument("--insecure",  action="store_true")
-    p.add_argument("--output",    default="results/tenirlabs-v1.json")
+    p.add_argument("--output",    default="results/tenirlabs-v0.2.json")
     args = p.parse_args()
 
     import os; os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
@@ -779,7 +785,7 @@ def main():
     all_reports = []
 
     def run_adapter(adapter, label, endpoint=""):
-        print(f"\nREG Conformance Suite v0.2 — {label}\n{'─'*64}")
+        print(f"\nREG Conformance Suite v0.2.4 — {label}\n{'─'*64}")
         results = adapter.run_all()
         for r in results:
             m = MARKS.get(r.status.value, "?")
