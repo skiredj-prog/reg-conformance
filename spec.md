@@ -1,4 +1,4 @@
-# REG Conformance Spec — v0.2
+# REG Conformance Spec — v0.2.4
 **TENIR Labs** | 2026-09-29 | RFC-4 (frozen) · RFC-7 (updated)
 
 ---
@@ -79,7 +79,7 @@ No HTTP paths. No interface shape. Adapters translate.
 
 ---
 
-## Known gaps in reference implementation (shim v0.2 / kernel v0.1)
+## Known gaps in reference implementation (shim v0.2.4 / kernel v0.1)
 
 | Vector | Gap | Gap type |
 |---|---|---|
