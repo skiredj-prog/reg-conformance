@@ -73,7 +73,7 @@ Adapter results are never promoted to native-conformance claims.
 | ~ | ADAPTER_REQUIRED | Testable only via translation layer |
 | △ | IMPLEMENTATION_GAP | Requirement understood; not yet engineered |
 
-## Reference results (TENIR-Gov kernel v0.1 / shim v0.2)
+## Reference results (TENIR-Gov kernel v0.1 / shim v0.2.4)
 
 | Mode | PASS | NOT_APPLICABLE / ADAPTER_REQUIRED | IMPLEMENTATION_GAP | FAIL |
 |---|---|---|---|---|
