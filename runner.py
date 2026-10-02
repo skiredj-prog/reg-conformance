@@ -386,7 +386,7 @@ class HTTPAdapter(BaseAdapter):
     # CT-R4-005 — Commit-State Binding / Race Detection
     def _v_ct_r4_005(self):
         return self._gap("CT-R4-005",
-            "state_hash_at_verdict not yet implemented in shim v0.2. "
+            "state_hash_at_verdict not yet implemented in shim v0.2.4"
             "State drift detection is currently limited to standing revocation (C3). "
             "Full Commit-State Binding requires capturing state at verdict and "
             "comparing at commit time.")
