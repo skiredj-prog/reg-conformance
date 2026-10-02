@@ -1,9 +1,10 @@
 ---
 rfc: 4
 title: Commit & Execution Proof
-version: v0.1
+version: v0.2
 status: Frozen
-date: 2026-09-29
+date: 2026-10-02
+supersedes: v0.1
 dependencies:
   - RFC-0 (Constitution)
   - RFC-1 (Wire Protocol)
@@ -246,25 +247,16 @@ Each vector is specified by the following fields:
 
 **Normative minimal set:**
 
-1. CT-R4-001 — Valid Commit: Valid EGE, matching evaluation_id / action_id / nonce,
-   matching commit state → PASS / EXECUTE
-2. CT-R4-002 — Replay: Same nonce / grant consumed twice → second attempt REJECT;
-   no external effect permitted
-3. CT-R4-003 — Action Binding Violation: Valid grant for action_A, commit attempts
-   action_B → HARD_VETO / REJECT
-4. CT-R4-004 — State Drift: State at commit materially differs from state used for
-   admissibility → HARD_VETO / REJECT
-5. CT-R4-005 — Valid Conditional State: FLAG with explicit conditions still
-   satisfied → permitted only according to declared conditional semantics
-6. CT-R4-006 — HOLD: HOLD at evaluation → no execution; Suspension / Decision
-   Receipt required
-7. CT-R4-007 — Evidence Tampering: Manifest altered after closure → integrity
-   verification fails
-8. CT-R4-008 — Receipt Verification: Valid non-PASS decision → corresponding
-   signed Decision Receipt independently verifies
-9. CT-R4-009 — Expired Grant: `valid_until` passed before commit → REJECT
-10. CT-R4-010 — Signature / Attestation Failure: Invalid or unverifiable commit
-    attestation → REJECT
+1. CT-R4-001 — Valid Grant Binding: valid EGE, matching evaluation_id / action_id / nonce, matching commit state → PASS / EXECUTE
+2. CT-R4-002 — Action/Payload Binding Violation: grant issued for action_A, commit attempts action_B → HARD_VETO / REJECT
+3. CT-R4-003 — Replay Rejection: reuse of a consumed nonce or grant → REJECT / REPLAY_DETECTED
+4. CT-R4-004 — Expired Grant Rejection: `valid_until` window passed before commit → REJECT / EVALUATION_EXPIRED
+5. CT-R4-005 — Commit-State Binding / Race Detection: state at commit materially differs from state captured at verdict (state_hash_at_verdict or equivalent) → REJECT / STATE_DRIFT
+6. CT-R4-006 — Non-PASS Cannot Cross Commit: HOLD or HARD_VETO disposition → commit attempt → REJECT / INVALID_DISPOSITION
+7. CT-R4-007 — Decision Receipt Generation: every disposition (including non-PASS) produces a cryptographically signed Decision Receipt, independently verifiable without accessing internal state
+8. CT-R4-008 — Evidence Manifest Integrity: Evidence Manifest altered after closure → integrity verification fails. Requires tamper-evident, append-only ledger.
+9. CT-R4-009 — Independent Evidence Verification: third-party verifier can reproduce or verify the decision from the Manifest without accessing mutable internal state
+10. CT-R4-010 — External-Effect Claim Boundary: implementation provides post-commit evidence for non-atomic external effects and does NOT claim atomic external-effect semantics
 
 A conforming implementation MUST pass all applicable vectors in this minimal set.
 
@@ -283,7 +275,7 @@ normative minimal behavioral anchors.
 | Grant Binding | Does this decision concern exactly this action, under these exact conditions? |
 | Replay Soundness | Can the same grant be fraudulently reused? |
 | Race Soundness | Does the decision remain valid in the face of state changes? |
-| Evidence Integrity | Can we prove after the fact what was decided and executed? |
+| Evidence Integrity | Can we prove after the fact what was decided, under which bindings, and what execution evidence was recorded? |
 
 RFC-3 protects the continuity of authority. RFC-4 protects the integrity of the
 passage from authority to effect.
