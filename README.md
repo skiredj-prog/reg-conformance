@@ -1,4 +1,4 @@
-# REG Conformance Suite v0.3.0
+# REG Conformance Suite v0.3.1
 
 Implementation-agnostic conformance runner for the Runtime Execution Governance (REG) Standard.
 RFC-0 through RFC-7 (frozen).
@@ -100,8 +100,8 @@ Conformance is declared per mode. Native does not imply HTTP, and vice versa.
 
 | Mode | PASS | NOT_APPLICABLE / ADAPTER_REQUIRED | IMPLEMENTATION_GAP | FAIL |
 |---|---|---|---|---|
-| HTTP adapter | 11 | 1 | 38 | 0 |
-| Native kernel | 11 | 1 | 38 | 0 |
+| HTTP adapter | 11 | 1 | 41 | 0 |
+| Native kernel | 11 | 1 | 41 | 0 |
 
 Reference JSON: `results/reg-conformance-v0.3-*.json` (regenerated on each release).
 
