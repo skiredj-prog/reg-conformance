@@ -1,66 +1,71 @@
-# REG Conformance Suite v0.2.4
+# REG Conformance Suite v0.3.0
 
 Implementation-agnostic conformance runner for the Runtime Execution Governance (REG) Standard.
-RFC-4 (frozen) · RFC-7 (updated).
+RFC-0 through RFC-7 (frozen).
 
-15 vectors: 5 core invariants (C1–C5) + 10 commit-integrity vectors (CT-R4-001–010).
+53 vectors: 5 core invariants + 10 commit-integrity vectors (CT-R4-001–010) + 38 RFC-specific vectors.
 
 ## Requirements
 
-```bash
-pip install requests fastapi uvicorn pyyaml
-```
+    pip install requests fastapi uvicorn pyyaml
+
+The reference kernel (PolicyEngine + policy YAML) ships inside kernel/.
+No external repository required.
+
+Kernel policy version (kernel-r5-1.0.0) and code version (v0.3.0) are tracked
+independently. Policy versions evolve without code changes.
+
+## Standard Reference
+
+The normative specification for REG is pinned under `reg-standards-baseline/rfc/`:
+
+| RFC | Title |
+|---|---|
+| RFC-0 | Constitution |
+| RFC-1 | Execution Grant Envelope & Wire Protocol |
+| RFC-2 | Structural Admissibility |
+| RFC-3 | Standing & Authority Continuity |
+| RFC-4 | Commit & Execution Proof |
+| RFC-5 | Liveness & Operationalization |
+| RFC-6 | Security, Transport & Cryptography |
+| RFC-7 | Conformance Suite & Interoperability |
+
+All eight RFCs are frozen. Latest tag: `rfc-v0.3`.
 
 ## Usage
 
 ### HTTP adapter mode (interface_mode: "adapter" — evidence level 2)
 
-```bash
-# Start the reference shim (TENIR-Gov kernel behind /evaluations)
-uvicorn shim:app --host 127.0.0.1 --port 8099
+Start the reference shim:
 
-# Run suite against it
-python runner.py --mode http --endpoint http://127.0.0.1:8099
+    uvicorn shim:app --host 127.0.0.1 --port 8099
 
-# Or against any REG-compatible HTTP endpoint
-python runner.py --mode http --endpoint https://your-server.example.com --api-key TOKEN
-```
-## Reference implementations
+Run suite against it:
 
-This repo ships one **standalone kernel** (`kernel/policy_engine.py`) — a
-minimal, self-contained demonstration of the admissibility formula. It is
-deliberately 200 lines: no external dependencies, no infrastructure.
+    python runner.py --mode http --endpoint http://127.0.0.1:8099
 
-The REG reference implementation named in RFC-0 §7 is the TENIR-Gov
-middleware (`tenir-governance`), which implements a superset of this kernel:
-Ed25519 signing, Merkle ledger, state-hash commit binding. The middleware
-will be added under `reference/` when its kernel tier is extractable.
+Or against any REG-compatible HTTP endpoint:
 
-The conformance suite tests any implementation. It does not assume
-TENIR-Gov. Reference runs for the standalone kernel ship under
-`results/validate-*-v0.2.4.json`.
+    python runner.py --mode http --endpoint https://your-server.example.com --api-key TOKEN
 
 ### Native kernel mode (interface_mode: "native" — evidence level 3)
 
-```bash
-# Run directly against the in-process PolicyEngine — no HTTP required
-# This is the mode for authorize(record, payload_bytes, …) style interfaces
-python runner.py --mode native --kernel kernel/tenir_policies.yaml
-```
+Run directly against the in-process PolicyEngine — no HTTP required.
+This is the mode for authorize(record, payload_bytes, …) style interfaces.
+
+    python runner.py --mode native --kernel kernel/tenir_policies.yaml
 
 ### Both modes in one run
 
-```bash
-python runner.py --mode both \
-  --endpoint http://127.0.0.1:8099 \
-  --kernel kernel/tenir_policies.yaml \
-  --output results/my-impl.json
-```
+    python runner.py --mode both \
+      --endpoint http://127.0.0.1:8099 \
+      --kernel kernel/tenir_policies.yaml \
+      --output results/my-impl.json
 
 ## Output
 
-Console table + JSON result file.  
-Every result declares `interface_mode` and `evidence_level`.  
+Console table + JSON result file.
+Every result declares `interface_mode`, `evidence_level`, and `tier`.
 Adapter results are never promoted to native-conformance claims.
 
 ## Reporting states
@@ -73,21 +78,54 @@ Adapter results are never promoted to native-conformance claims.
 | ~ | ADAPTER_REQUIRED | Testable only via translation layer |
 | △ | IMPLEMENTATION_GAP | Requirement understood; not yet engineered |
 
-## Reference results (standalone kernel v0.1 / shim v0.2.4)
+## Test tiers
+
+| Tier | Meaning |
+|---|---|
+| 1 | Testable against reference shim now |
+| 2 | Requires shim enrichment (composition, delegation, evidence) |
+| 3 | Requires infrastructure (mTLS, detached signatures, Merkle ledger) |
+| 4 | Meta-conformance; requires secondary harness |
+
+## Interface modes
+
+Conformance is declared per mode. Native does not imply HTTP, and vice versa.
+
+| Mode | interface_mode | Evidence level | Description |
+|---|---|---|---|
+| `--mode http` | `"adapter"` | 2 — Adapter-Tested | Tests against a REG HTTP endpoint. Behavioral compatibility; not native conformance. |
+| `--mode native` | `"native"` | 3 — Native-Conformant | Tests in-process kernel directly via NativeKernelAdapter. No HTTP layer. |
+
+## Reference results (standalone kernel v0.1 / shim v0.3.0)
 
 | Mode | PASS | NOT_APPLICABLE / ADAPTER_REQUIRED | IMPLEMENTATION_GAP | FAIL |
 |---|---|---|---|---|
-| HTTP adapter | 9 | 1 | 5 | 0 |
-| Native kernel | 9 | 1 | 5 | 0 |
+| HTTP adapter | 11 | 1 | 38 | 0 |
+| Native kernel | 11 | 1 | 38 | 0 |
 
-Reference JSON: `results/validate-native-v0.2.4.json`, `results/validate-adapter-v0.2.4.json`.
+Reference JSON: `results/reg-conformance-v0.3-*.json` (regenerated on each release).
 
 Known gaps:
+- C3 — permissive revocation after standing change is non-conformant to RFC-4 §2.2 MUST (reported as IMPLEMENTATION_GAP, not PASS)
+- CT-R4-005 — `state_hash_at_verdict` not implemented
+- CT-R4-007 — structural receipt present; cryptographic signing absent
+- CT-R4-008 / CT-R4-009 — no tamper-evident Evidence Manifest / independent verifier path
+- RFC-2 epistemic taxonomy, RFC-3 delegation algebra, RFC-6 mTLS and detached signatures — see `gap_by_tier` in results JSON
 
-- **C3** — permissive revocation after standing change is non-conformant to RFC-4 §2.2 MUST (reported as IMPLEMENTATION_GAP, not PASS)
-- **CT-R4-005** — `state_hash_at_verdict` not implemented
-- **CT-R4-007** — structural receipt present; cryptographic signing absent
-- **CT-R4-008 / CT-R4-009** — no tamper-evident Evidence Manifest / independent verifier path
+## Repository layout
+
+    reg-conformance/
+      kernel/                     Reference PolicyEngine + policy YAML
+        policy_engine.py
+        tenir_policies.yaml
+      reg-standards-baseline/
+        rfc/                      RFC-0 through RFC-7 (frozen)
+      results/                    Committed conformance run artefacts
+      LICENSE
+      README.md
+      runner.py                   Conformance runner (adapter + native modes)
+      shim.py                     HTTP shim wrapping the kernel
+      spec.md                     Conformance specification
 
 ## License
 
