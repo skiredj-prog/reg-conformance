@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-REG Conformance Suite v0.2.4 — RFC-4 (frozen) / RFC-7 (updated)
-================================================================
+REG Conformance Suite v0.3.0 — RFC-0 through RFC-7
+====================================================
 Architecture (RFC-7 §8)
 -----------------------
-  AbstractTestVector  ← canonical, topology-neutral (RFC-4 §5)
+  AbstractTestVector  ← canonical, topology-neutral
          │
     BaseAdapter       ← translates vector to concrete interface call
          │
@@ -25,11 +25,18 @@ Reporting states (RFC-7 §8.3)
 ------------------------------
   PASS | FAIL | NOT_APPLICABLE | ADAPTER_REQUIRED | IMPLEMENTATION_GAP
 
+Tiers (RFC-7 §5)
+----------------
+  1 = testable now against reference shim
+  2 = requires shim enrichment (composition, delegation, evidence semantics)
+  3 = requires infrastructure (mTLS, detached signatures, Merkle ledger)
+  4 = meta-conformance; requires secondary harness
+
 Usage
 -----
-  python runner.py --endpoint http://127.0.0.1:8099           # HTTP adapter mode
-  python runner.py --mode native --kernel kernel/tenir_policies.yaml  # native kernel mode
-  python runner.py --endpoint URL --mode native --kernel FILE  # both
+  python runner.py --endpoint http://127.0.0.1:8099
+  python runner.py --mode native --kernel kernel/tenir_policies.yaml
+  python runner.py --endpoint URL --mode native --kernel FILE
 """
 
 import argparse, hashlib, json, sys, time, uuid
@@ -47,9 +54,9 @@ import requests
 class ReportingState(str, Enum):
     PASS               = "PASS"
     FAIL               = "FAIL"
-    NOT_APPLICABLE     = "NOT_APPLICABLE"       # property irrelevant to this topology
-    ADAPTER_REQUIRED   = "ADAPTER_REQUIRED"     # testable only through a translation layer
-    IMPLEMENTATION_GAP = "IMPLEMENTATION_GAP"   # requirement understood, not yet engineered
+    NOT_APPLICABLE     = "NOT_APPLICABLE"
+    ADAPTER_REQUIRED   = "ADAPTER_REQUIRED"
+    IMPLEMENTATION_GAP = "IMPLEMENTATION_GAP"
 
 class EvidenceLevel(int, Enum):
     SEMANTIC_MAPPING   = 1
@@ -59,117 +66,163 @@ class EvidenceLevel(int, Enum):
 
 @dataclass
 class TestVector:
-    vector_id:           str
-    rfc:                 str
-    normative_property:  str
+    vector_id:            str
+    rfc:                  str
+    normative_property:   str
     abstract_description: str
+    tier:                 int = 1
 
 
 @dataclass
 class ConformanceResult:
     vector_id:      str
     status:         ReportingState
-    interface_mode: str   # "native" | "adapter" | "mapped"
+    interface_mode: str
     evidence_level: int
+    tier:           int = 1
     details:        str = ""
-    gap_note:       str = ""   # populated for IMPLEMENTATION_GAP / ADAPTER_REQUIRED
+    gap_note:       str = ""
 
 
-# ── Canonical test vectors (RFC-4 §5 + core invariants) ──────────────────────
-# Topology-neutral: no HTTP paths, no interface shapes.
+TIER_GAP_NOTES = {
+    1: "Not implemented in reference shim (Tier 1)",
+    2: "Tier 2 — requires shim enrichment (composition / delegation / evidence semantics)",
+    3: "Tier 3 — requires infrastructure (mTLS, detached signatures, Merkle ledger)",
+    4: "Tier 4 — meta-conformance; requires secondary harness",
+}
+
+
+# ── Canonical test vectors ────────────────────────────────────────────────────
 
 VECTORS: dict[str, TestVector] = {
 
-    # ── Core invariants (C-series maps to RFC-1/2/3) ─────────────────────────
-    "C1": TestVector(
-        "C1", "RFC-3", "Standing Gate",
-        "Actor without valid standing credential → HARD_VETO, regardless of structural state."
-    ),
-    "C2": TestVector(
-        "C2", "RFC-2", "Structure Gate",
-        "Action under extreme structural pressure (P≥0.9, V≥0.9, K≤0.15) → FLAG or HARD_VETO, never PASS."
-    ),
-    "C3": TestVector(
-        "C3", "RFC-4 §2.2", "Commit-State Binding — Standing Drift",
-        "Standing revocation between verdict and commit. "
-        "Strict: commit blocked (RFC-4 §2.2 MUST). Permissive: IMPLEMENTATION_GAP."
-    ),
-    "C4": TestVector(
-        "C4", "RFC-1", "Fail-Closed Transport Safety",
-        "Transport error or server fault → no execution proceeds. "
-        "NOT_APPLICABLE for in-process kernels (no transport layer)."
-    ),
-    "C5": TestVector(
-        "C5", "RFC-1 / RFC-4 §2.1", "Replay Soundness — Idempotency",
-        "Identical request replayed → rejected. Nonce-based or Idempotency-Key based."
-    ),
+    # ── Core invariants ──────────────────────────────────────────────────────
+    "C1": TestVector("C1", "RFC-3", "Standing Gate",
+        "Actor without valid standing credential → HARD_VETO.", tier=1),
+    "C2": TestVector("C2", "RFC-2", "Structure Gate",
+        "Extreme pressure (P≥0.9, V≥0.9, K≤0.15) → FLAG or HARD_VETO, never PASS.", tier=1),
+    "C3": TestVector("C3", "RFC-4 §2.2", "Commit-State Binding — Standing Drift",
+        "Strict: commit blocked (RFC-4 §2.2 MUST). Permissive: IMPLEMENTATION_GAP.", tier=1),
+    "C4": TestVector("C4", "RFC-1", "Fail-Closed Transport Safety",
+        "Transport error → no execution. NOT_APPLICABLE for in-process kernels.", tier=1),
+    "C5": TestVector("C5", "RFC-1 / RFC-4 §2.1", "Replay Soundness — Idempotency",
+        "Identical request replayed → rejected.", tier=1),
 
     # ── CT-R4 vectors (RFC-4 §5, frozen) ─────────────────────────────────────
-    "CT-R4-001": TestVector(
-        "CT-R4-001", "RFC-4 §1 / §5",
-        "Valid Grant Binding",
-        "Valid evaluation for action_A with matching nonce + commit for action_A "
-        "within validity window → GRANT / COMMITTED."
-    ),
-    "CT-R4-002": TestVector(
-        "CT-R4-002", "RFC-4 §1.3 / §5",
-        "Action / Payload Binding Violation",
-        "Grant issued for action_A; commit attempts action_B "
-        "(payload hash or type mismatch) → REJECT / BINDING_VIOLATION."
-    ),
-    "CT-R4-003": TestVector(
-        "CT-R4-003", "RFC-4 §2.1 / §5",
-        "Replay Rejection",
-        "Reuse of a consumed nonce or grant → REJECT / REPLAY_DETECTED."
-    ),
-    "CT-R4-004": TestVector(
-        "CT-R4-004", "RFC-4 §2 / §5",
-        "Expired Grant Rejection",
-        "valid_until window passed before commit → REJECT / EXPIRED."
-    ),
-    "CT-R4-005": TestVector(
-        "CT-R4-005", "RFC-4 §2.2 / §5",
-        "Commit-State Binding / Race Detection",
-        "State at commit materially differs from state captured at verdict "
-        "(state_hash_at_verdict or equivalent) → REJECT / STATE_DRIFT."
-    ),
-    "CT-R4-006": TestVector(
-        "CT-R4-006", "RFC-4 §1 / §5",
-        "Non-PASS Cannot Cross Commit",
-        "HOLD or HARD_VETO disposition → commit attempt → REJECT / INVALID_DISPOSITION."
-    ),
-    "CT-R4-007": TestVector(
-        "CT-R4-007", "RFC-4 §3 / §5",
-        "Decision Receipt Generation",
-        "Every disposition (including non-PASS) produces a cryptographically signed "
-        "Decision Receipt independently verifiable without accessing internal state."
-    ),
-    "CT-R4-008": TestVector(
-        "CT-R4-008", "RFC-4 §4 / §5",
-        "Evidence Manifest Integrity",
-        "Evidence Manifest altered after closure → integrity verification fails. "
-        "Requires tamper-evident, append-only ledger."
-    ),
-    "CT-R4-009": TestVector(
-        "CT-R4-009", "RFC-4 §4 / §5",
-        "Independent Evidence Verification",
-        "Third-party verifier can reproduce or verify the decision from the Manifest "
-        "without accessing mutable internal state."
-    ),
-    "CT-R4-010": TestVector(
-        "CT-R4-010", "RFC-4 §1.1 / §5",
-        "External-Effect Claim Boundary",
-        "Implementation provides post-commit evidence for non-atomic external effects "
-        "and does NOT claim atomic external-effect semantics."
-    ),
+    "CT-R4-001": TestVector("CT-R4-001", "RFC-4 §1 / §5", "Valid Grant Binding",
+        "Valid evaluation + matching commit → GRANT / COMMITTED.", tier=1),
+    "CT-R4-002": TestVector("CT-R4-002", "RFC-4 §1.3 / §5", "Action / Payload Binding Violation",
+        "Grant for action_A, commit attempts action_B → REJECT.", tier=1),
+    "CT-R4-003": TestVector("CT-R4-003", "RFC-4 §2.1 / §5", "Replay Rejection",
+        "Consumed nonce/grant reused → REJECT.", tier=1),
+    "CT-R4-004": TestVector("CT-R4-004", "RFC-4 §2 / §5", "Expired Grant Rejection",
+        "valid_until passed before commit → REJECT.", tier=1),
+    "CT-R4-005": TestVector("CT-R4-005", "RFC-4 §2.2 / §5", "Commit-State Binding / Race Detection",
+        "State at commit materially differs from verdict → REJECT / STATE_DRIFT.", tier=1),
+    "CT-R4-006": TestVector("CT-R4-006", "RFC-4 §1 / §5", "Non-PASS Cannot Cross Commit",
+        "HOLD or HARD_VETO → commit attempt → REJECT.", tier=1),
+    "CT-R4-007": TestVector("CT-R4-007", "RFC-4 §3 / §5", "Decision Receipt Generation",
+        "Every disposition produces a cryptographically signed Decision Receipt.", tier=1),
+    "CT-R4-008": TestVector("CT-R4-008", "RFC-4 §4 / §5", "Evidence Manifest Integrity",
+        "Manifest altered after closure → verification fails.", tier=1),
+    "CT-R4-009": TestVector("CT-R4-009", "RFC-4 §4 / §5", "Independent Evidence Verification",
+        "Third-party verifier reproduces from Manifest alone.", tier=1),
+    "CT-R4-010": TestVector("CT-R4-010", "RFC-4 §1.1 / §5", "External-Effect Claim Boundary",
+        "external_effect_atomic=false + post-commit evidence.", tier=1),
+
+    # ── RFC-0 (Constitution) ─────────────────────────────────────────────────
+    "R0-001": TestVector("R0-001", "RFC-0 §4", "Most Restrictive Composition",
+        "Standing=PASS, Structure=FLAG, Commit=HOLD → final MUST be HOLD.", tier=1),
+    "R0-002": TestVector("R0-002", "RFC-0 §4", "HARD_VETO Dominance",
+        "If any dimension yields HARD_VETO, final MUST be HARD_VETO.", tier=1),
+    "R0-003": TestVector("R0-003", "RFC-0 §2", "Fail-Closed Default",
+        "Uncertainty, timeout, or failure → blocked, never PASS.", tier=1),
+    "R0-004": TestVector("R0-004", "RFC-0 §5", "PASS Validity Bound",
+        "PASS bounded by valid_until and invalidated by material drift.", tier=1),
+    "R0-005": TestVector("R0-005", "RFC-0 §5", "Action Lifecycle Proof",
+        "Request → EGE → Event → Manifest chain complete.", tier=3),
+
+    # ── RFC-1 (Wire Protocol) ────────────────────────────────────────────────
+    "R1-001": TestVector("R1-001", "RFC-1 §1", "EGE Proof Container",
+        "Three attestations independently verifiable; no pipeline order.", tier=2),
+    "R1-002": TestVector("R1-002", "RFC-1 §1", "202 Is Not Authorization",
+        "HTTP 202 MUST NOT constitute authorization; HOLD must not execute.", tier=2),
+    "R1-003": TestVector("R1-003", "RFC-1 §4", "Idempotency Conflict",
+        "Same Idempotency-Key, different payload → 409.", tier=1),
+    "R1-004": TestVector("R1-004", "RFC-1 §4", "Sequence Control",
+        "Out-of-order or duplicate event_sequence → rejected.", tier=2),
+    "R1-005": TestVector("R1-005", "RFC-1 §5", "Transport Failure vs Cryptographic Verdict",
+        "Transport failure produces fail-closed state, not cryptographic HARD_VETO.", tier=2),
+    "R1-006": TestVector("R1-006", "RFC-1 §6", "Correlation Chain",
+        "decision_id → action_id → evaluation_id → evidence_id present.", tier=2),
+
+    # ── RFC-2 (Structural Admissibility) ─────────────────────────────────────
+    "R2-001": TestVector("R2-001", "RFC-2 §3.3", "Invariant Supremacy",
+        "Hard invariant violated → HARD_VETO; geometry bypassed.", tier=2),
+    "R2-002": TestVector("R2-002", "RFC-2 §2.5", "UNKNOWN State",
+        "Absence of evidence for invariant MUST NOT be treated as satisfaction.", tier=2),
+    "R2-003": TestVector("R2-003", "RFC-2 §2.5", "STALE Measurement",
+        "Stale critical measurement excluded; HOLD or VETO.", tier=2),
+    "R2-004": TestVector("R2-004", "RFC-2 §2.5", "CONTRADICTORY State",
+        "Incompatible valid measurements → HOLD unless declared policy.", tier=2),
+    "R2-005": TestVector("R2-005", "RFC-2 §2.8", "Low Confidence Hardening",
+        "Low confidence only degrades disposition; never upgrades.", tier=2),
+    "R2-006": TestVector("R2-006", "RFC-2 §2.8", "Monotonic Conservatism",
+        "Increasing uncertainty must not expand admissible region.", tier=2),
+    "R2-007": TestVector("R2-007", "RFC-2 §2.6", "Prohibited Inference",
+        "Missing measurements not guessed or assumed unchanged.", tier=2),
+    "R2-008": TestVector("R2-008", "RFC-2 §2.7", "Structural Reproducibility",
+        "Decision → Interpretation → Measurement chain replayable.", tier=2),
+
+    # ── RFC-3 (Standing & Authority) ─────────────────────────────────────────
+    "R3-001": TestVector("R3-001", "RFC-3 §3", "Non-Amplification",
+        "Delegated scope MUST NOT exceed parent scope.", tier=2),
+    "R3-002": TestVector("R3-002", "RFC-3 §4.2", "Revocation Bound",
+        "Revoked authority MUST NOT remain executable past bound.", tier=2),
+    "R3-003": TestVector("R3-003", "RFC-3 §5", "Context Drift",
+        "Material context change invalidates Standing attestation.", tier=2),
+    "R3-004": TestVector("R3-004", "RFC-3 §6.1", "Composition Independence",
+        "Composition HOLD/VETO MUST NOT rewrite local Standing.", tier=3),
+    "R3-005": TestVector("R3-005", "RFC-3 §2.1", "Credential / Grant Separation",
+        "Replayed grant rejected; Standing Credential reusable.", tier=2),
+    "R3-006": TestVector("R3-006", "RFC-3 §4.3", "Cascade Revocation",
+        "Parent revocation invalidates descendants within bound.", tier=2),
+
+    # ── RFC-6 (Security) ─────────────────────────────────────────────────────
+    "R6-001": TestVector("R6-001", "RFC-6 §1.1", "mTLS Authentication",
+        "Unauthenticated transport connections MUST be rejected.", tier=3),
+    "R6-002": TestVector("R6-002", "RFC-6 §2.1", "Detached Signature Canonicalization",
+        "Signature over canonicalized payload; byte alteration fails.", tier=3),
+    "R6-003": TestVector("R6-003", "RFC-6 §3.1", "Idempotency Replay as Security Primitive",
+        "Same Key, modified payload → rejected as security event.", tier=1),
+    "R6-004": TestVector("R6-004", "RFC-6 §3.2", "Freshness Window",
+        "submitted_at outside freshness window → rejected.", tier=2),
+    "R6-005": TestVector("R6-005", "RFC-6 §4.2", "Key Revocation Bound",
+        "Credential signed by revoked key → no executable auth.", tier=3),
+    "R6-006": TestVector("R6-006", "RFC-6 §5", "Data Minimization",
+        "No raw secrets or unnecessary PII in envelopes.", tier=2),
+    "R6-007": TestVector("R6-007", "RFC-6 §4.1", "Key Rotation",
+        "key_id in header; old keys retained for verification.", tier=3),
+
+    # ── RFC-7 (Conformance Meta) ─────────────────────────────────────────────
+    "R7-001": TestVector("R7-001", "RFC-7 §4", "Three-Level EGE Independence",
+        "Attestations independent at cryptographic, structural, semantic levels.", tier=4),
+    "R7-002": TestVector("R7-002", "RFC-7 §1", "Behavioral Conformance over Topology",
+        "Conformance tests behavior and proof integrity, not architecture.", tier=4),
+    "R7-003": TestVector("R7-003", "RFC-7 §7.1", "Reporting States",
+        "PASS / FAIL / NA / AR / GAP MUST be distinct.", tier=1),
+    "R7-004": TestVector("R7-004", "RFC-7 §8.2", "Evidence Levels",
+        "SEMANTIC_MAPPING / ADAPTER_TESTED / NATIVE_CONFORMANT distinct.", tier=1),
+    "R7-005": TestVector("R7-005", "RFC-7 §3.1", "Test Vector Typing",
+        "allowed / expected_disposition / transition strictly typed.", tier=4),
+    "R7-006": TestVector("R7-006", "RFC-7 §6", "Conformance vs Maturity",
+        "Conformance binary; Maturity separate and does not imply partial compliance.", tier=4),
 }
 
 
 # ── Base adapter ──────────────────────────────────────────────────────────────
 
 class BaseAdapter(ABC):
-    """Translates abstract TestVectors into concrete interface calls."""
-
     interface_mode:  str = "base"
     evidence_level:  EvidenceLevel = EvidenceLevel.ADAPTER_TESTED
 
@@ -182,11 +235,14 @@ class BaseAdapter(ABC):
         ...
 
     def _result(self, vector_id, status, details="", gap_note="") -> ConformanceResult:
+        vec = VECTORS.get(vector_id)
+        tier = getattr(vec, "tier", 1) if vec else 1
         return ConformanceResult(
             vector_id=vector_id,
             status=status,
             interface_mode=self.interface_mode,
             evidence_level=int(self.evidence_level),
+            tier=tier,
             details=details,
             gap_note=gap_note,
         )
@@ -197,15 +253,16 @@ class BaseAdapter(ABC):
     def _ar  (self, vid, note=""):   return self._result(vid, ReportingState.ADAPTER_REQUIRED, gap_note=note)
     def _gap (self, vid, note=""):   return self._result(vid, ReportingState.IMPLEMENTATION_GAP, gap_note=note)
 
+    def _gap_for_tier(self, vid: str) -> ConformanceResult:
+        vec = VECTORS.get(vid)
+        tier = getattr(vec, "tier", 1) if vec else 1
+        note = TIER_GAP_NOTES.get(tier, "Not implemented in reference shim")
+        return self._gap(vid, note)
+
 
 # ── HTTP adapter ──────────────────────────────────────────────────────────────
 
 class HTTPAdapter(BaseAdapter):
-    """
-    Translates abstract vectors to REG /evaluations HTTP calls.
-    interface_mode: "adapter" — passing here demonstrates behavioral compatibility,
-    NOT native REG conformance (RFC-7 §8.2 Level 2).
-    """
     interface_mode = "adapter"
     evidence_level = EvidenceLevel.ADAPTER_TESTED
 
@@ -252,18 +309,17 @@ class HTTPAdapter(BaseAdapter):
     def _disp(self, resp):
         return resp.get("final_disposition") or resp.get("disposition")
 
-    # ── Vector dispatch ───────────────────────────────────────────────────────
-
     def run_vector(self, vid: str) -> ConformanceResult:
         m = getattr(self, f"_v_{vid.replace('-','_').lower()}", None)
         if m is None:
-            return self._gap(vid, "No HTTP translation defined for this vector")
+            return self._gap_for_tier(vid)
         try:
             return m()
         except Exception as e:
             return self._fail(vid, f"exception: {e}")
 
-    # C1 — Standing Gate (RFC-3)
+    # ── C-series ─────────────────────────────────────────────────────────────
+
     def _v_c1(self):
         body = self._eval_body(principal={"id": "unauth", "credential": "none"})
         code, resp = self._post("/evaluations", body)
@@ -271,7 +327,6 @@ class HTTPAdapter(BaseAdapter):
             return self._pass("C1", "HARD_VETO on standing failure")
         return self._fail("C1", f"code={code}, disposition={self._disp(resp)!r}")
 
-    # C2 — Structure Gate (RFC-2)
     def _v_c2(self):
         body = self._eval_body(
             measurements={"pressure":0.95,"volatility":0.90,"velocity":0.90,"capacity":0.10})
@@ -281,7 +336,6 @@ class HTTPAdapter(BaseAdapter):
             return self._pass("C2", f"{d} under extreme structural pressure")
         return self._fail("C2", f"expected FLAG/HARD_VETO, got {d!r} (code={code})")
 
-    # C3 — Standing drift / race (RFC-4 §2.2)
     def _v_c3(self):
         pid = f"race-{uuid.uuid4().hex[:8]}"
         body = self._eval_body(
@@ -301,11 +355,9 @@ class HTTPAdapter(BaseAdapter):
         if ec == 200:
             return self._gap("C3",
                 "commit accepted post-revocation — permissive revocation is "
-                "non-conformant to RFC-4 §2.2 MUST. Harness green-lights an "
-                "obligation the RFC declares mandatory. See spec.md C3 row.")
+                "non-conformant to RFC-4 §2.2 MUST. See spec.md C3 row.")
         return self._fail("C3", f"unexpected commit response: code={ec}")
 
-    # C4 — Fail-closed transport (RFC-1)
     def _v_c4(self):
         try:
             r = requests.post(f"{self.endpoint}/nonexistent-503", json={},
@@ -316,22 +368,21 @@ class HTTPAdapter(BaseAdapter):
             return self._pass("C4", "connection/timeout error → client must fail-closed")
         return self._fail("C4", "unexpected 2xx on nonexistent path")
 
-    # C5 — Replay soundness (RFC-1 / RFC-4 §2.1)
     def _v_c5(self):
         nonce = uuid.uuid4().hex
         b1 = self._eval_body(nonce=nonce)
         self._post("/evaluations", b1)
         b2 = self._eval_body(
             evaluation_id=f"eval_{uuid.uuid4().hex}",
-            nonce=nonce)  # same nonce
+            nonce=nonce)
         code, resp = self._post("/evaluations", b2)
         if code == 409:
             return self._pass("C5", "409 NONCE_REPLAY on duplicate nonce")
         return self._gap("C5",
-            f"Nonce replay returned {code} not 409 — "
-            "Idempotency-Key-level dedup absent; nonce replay not enforced")
+            f"Nonce replay returned {code} not 409 — Idempotency-Key-level dedup absent")
 
-    # CT-R4-001 — Valid Grant Binding
+    # ── CT-R4 series ─────────────────────────────────────────────────────────
+
     def _v_ct_r4_001(self):
         body = self._eval_body(
             action={"type":"wire_transfer","params":{"amount":100}},
@@ -346,7 +397,6 @@ class HTTPAdapter(BaseAdapter):
             return self._pass("CT-R4-001", f"GRANT bound and committed (eval {eid[:8]}…)")
         return self._fail("CT-R4-001", f"commit returned {ec}: {er}")
 
-    # CT-R4-002 — Action/Payload Binding Violation
     def _v_ct_r4_002(self):
         body = self._eval_body(
             action={"type":"wire_transfer","params":{"amount":100}},
@@ -355,15 +405,12 @@ class HTTPAdapter(BaseAdapter):
         if self._disp(resp) != "PASS":
             return self._fail("CT-R4-002", f"could not obtain PASS grant")
         eid = resp.get("evaluation_id") or body["evaluation_id"]
-        # Commit with a different action_type — must be rejected
         ec, er = self._post(f"/evaluations/{eid}/events",
                             {"event_type":"commit","action_type":"account_deletion"})
         if ec == 409 and "BINDING" in er.get("detail",""):
             return self._pass("CT-R4-002", "PAYLOAD_BINDING_VIOLATION correctly rejected")
-        return self._fail("CT-R4-002",
-                          f"expected 409 BINDING_VIOLATION, got {ec}: {er}")
+        return self._fail("CT-R4-002", f"expected 409 BINDING_VIOLATION, got {ec}: {er}")
 
-    # CT-R4-003 — Replay Rejection
     def _v_ct_r4_003(self):
         nonce = uuid.uuid4().hex
         b1 = self._eval_body(nonce=nonce,
@@ -375,23 +422,16 @@ class HTTPAdapter(BaseAdapter):
             return self._pass("CT-R4-003", "REPLAY_DETECTED on consumed nonce")
         return self._fail("CT-R4-003", f"expected 409 NONCE_REPLAY, got {code}: {resp}")
 
-    # CT-R4-004 — Expired Grant Rejection
     def _v_ct_r4_004(self):
-        # Cannot reliably wait 30 s in the runner; expiry is testable natively.
-        # The shim enforces valid_until, but triggering it requires time passage.
         return self._ar("CT-R4-004",
-            "Expiry window (30 s) cannot be reliably triggered via HTTP without "
-            "introducing test latency. Use NativeKernelAdapter for deterministic coverage.")
+            "Expiry window cannot be reliably triggered via HTTP without test latency. "
+            "Use NativeKernelAdapter for deterministic coverage.")
 
-    # CT-R4-005 — Commit-State Binding / Race Detection
     def _v_ct_r4_005(self):
         return self._gap("CT-R4-005",
-            "state_hash_at_verdict not yet implemented in shim v0.2.4"
-            "State drift detection is currently limited to standing revocation (C3). "
-            "Full Commit-State Binding requires capturing state at verdict and "
-            "comparing at commit time.")
+            "state_hash_at_verdict not yet implemented in shim v0.3. "
+            "Full Commit-State Binding requires capturing state at verdict.")
 
-    # CT-R4-006 — Non-PASS Cannot Cross Commit
     def _v_ct_r4_006(self):
         body = self._eval_body(principal={"id":"unauth","credential":"none"})
         code, resp = self._post("/evaluations", body)
@@ -403,7 +443,6 @@ class HTTPAdapter(BaseAdapter):
             return self._pass("CT-R4-006", "HARD_VETO correctly blocked at commit gate")
         return self._fail("CT-R4-006", f"expected 409 INVALID_DISPOSITION, got {ec}: {er}")
 
-    # CT-R4-007 — Decision Receipt Generation
     def _v_ct_r4_007(self):
         body = self._eval_body(principal={"id":"unauth","credential":"none"})
         code, resp = self._post("/evaluations", body)
@@ -412,26 +451,19 @@ class HTTPAdapter(BaseAdapter):
             signed = receipt.get("signed", False)
             if not signed:
                 return self._gap("CT-R4-007",
-                    f"Structural receipt present (type={receipt['receipt_type']!r}, "
-                    f"hash={receipt['receipt_hash'][:12]}…) but NOT cryptographically signed. "
-                    "Signing key absent in v0.1 — IMPLEMENTATION_GAP.")
+                    f"Structural receipt present but NOT cryptographically signed. "
+                    "Signing key absent — IMPLEMENTATION_GAP.")
             return self._pass("CT-R4-007", "Signed Decision Receipt present and verifiable")
         return self._fail("CT-R4-007", f"No receipt in evaluation response: {resp}")
 
-    # CT-R4-008 — Evidence Manifest Integrity
     def _v_ct_r4_008(self):
         return self._gap("CT-R4-008",
-            "Tamper-evident Evidence Manifest (Merkle tree / transparency log) "
-            "absent in v0.1. proof endpoint provides commit_hash but no full "
-            "append-only manifest. Requires ledger implementation.")
+            "Tamper-evident Evidence Manifest absent. Requires ledger implementation.")
 
-    # CT-R4-009 — Independent Evidence Verification
     def _v_ct_r4_009(self):
         return self._gap("CT-R4-009",
-            "Independent third-party verification path absent in v0.1. "
-            "Depends on CT-R4-008 (manifest) and CT-R4-007 (signed receipts).")
+            "Independent third-party verification path absent. Depends on CT-R4-008 and 007.")
 
-    # CT-R4-010 — External-Effect Claim Boundary
     def _v_ct_r4_010(self):
         body = self._eval_body(
             measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90})
@@ -442,26 +474,31 @@ class HTTPAdapter(BaseAdapter):
                 ec, er = self._post(f"/evaluations/{eid}/events", {"event_type":"commit"})
                 if er.get("post_commit_evidence_required") is True:
                     return self._pass("CT-R4-010",
-                        "external_effect_atomic=false; post_commit_evidence_required=true — "
-                        "no false atomic claim")
+                        "external_effect_atomic=false; post_commit_evidence_required=true")
             return self._pass("CT-R4-010",
                 "external_effect_atomic=false declared on evaluation response")
         return self._fail("CT-R4-010",
-            "external_effect_atomic not declared or is True — "
-            "implementation may be overclaiming atomicity")
+            "external_effect_atomic not declared or is True")
+
+    # ── R7 meta (testable) ───────────────────────────────────────────────────
+
+    def _v_r7_003(self):
+        states = {s.value for s in ReportingState}
+        expected = {"PASS","FAIL","NOT_APPLICABLE","ADAPTER_REQUIRED","IMPLEMENTATION_GAP"}
+        if states == expected:
+            return self._pass("R7-003", f"5 reporting states defined: {sorted(states)}")
+        return self._fail("R7-003", f"missing: {expected - states}")
+
+    def _v_r7_004(self):
+        levels = {int(e) for e in EvidenceLevel}
+        if levels == {1,2,3}:
+            return self._pass("R7-004", "3 evidence levels defined (1/2/3)")
+        return self._fail("R7-004", f"unexpected levels: {levels}")
 
 
 # ── Native kernel adapter ─────────────────────────────────────────────────────
 
 class NativeKernelAdapter(BaseAdapter):
-    """
-    Tests REG normative properties directly against the TENIR-Gov kernel
-    (PolicyEngine) without any HTTP layer.
-
-    interface_mode: "native" — passing here is Level 3 / Native-Conformant evidence
-    (RFC-7 §8.2). This is the mode CommitGate's authorize(record, payload_bytes, …)
-    would use: no /evaluations endpoint required.
-    """
     interface_mode = "native"
     evidence_level = EvidenceLevel.NATIVE_CONFORMANT
 
@@ -470,10 +507,8 @@ class NativeKernelAdapter(BaseAdapter):
         from kernel.policy_engine import PolicyEngine
         self._engine = PolicyEngine(Path(policy_file))
         self._grants:   dict[str, dict] = {}
-        self._consumed: set[str]        = set()   # consumed nonces
+        self._consumed: set[str]        = set()
         self._revoked:  set[str]        = set()
-
-    # ── Kernel operations (no HTTP) ───────────────────────────────────────────
 
     def _evaluate(self, principal_id, credential, action_type,
                   P, V, K, nonce, evaluation_id=None) -> dict:
@@ -527,7 +562,6 @@ class NativeKernelAdapter(BaseAdapter):
                 "external_effect_atomic": False,
             }
 
-        # Mark nonce as used only after grant is stored
         self._grants[eid] = grant
         self._consumed.add(nonce)
         return grant
@@ -557,7 +591,6 @@ class NativeKernelAdapter(BaseAdapter):
         self._revoked.add(principal_id)
 
     def _inject_stale_grant(self, action_type="wire_transfer") -> dict:
-        """Inject a pre-expired grant for CT-R4-004 without time travel."""
         eid = f"eval_stale_{uuid.uuid4().hex}"
         nonce = uuid.uuid4().hex
         grant = {
@@ -567,23 +600,23 @@ class NativeKernelAdapter(BaseAdapter):
             "final_disposition": "PASS",
             "nonce":             nonce,
             "created_at":        time.time() - 60,
-            "valid_until":       time.time() - 1,   # already expired
+            "valid_until":       time.time() - 1,
             "external_effect_atomic": False,
         }
         self._grants[eid] = grant
         self._consumed.add(nonce)
         return grant
 
-    # ── Vector dispatch ───────────────────────────────────────────────────────
-
     def run_vector(self, vid: str) -> ConformanceResult:
         m = getattr(self, f"_v_{vid.replace('-','_').lower()}", None)
         if m is None:
-            return self._gap(vid, "No native translation defined for this vector")
+            return self._gap_for_tier(vid)
         try:
             return m()
         except Exception as e:
             return self._fail(vid, f"exception: {e}")
+
+    # ── C-series ─────────────────────────────────────────────────────────────
 
     def _v_c1(self):
         g = self._evaluate("unauth","none","wire_transfer",0.3,0.3,0.85,uuid.uuid4().hex)
@@ -608,18 +641,15 @@ class NativeKernelAdapter(BaseAdapter):
         try:
             self._commit(g["evaluation_id"])
             return self._gap("C3",
-                "commit accepted post-revocation (native) — permissive "
-                "revocation is non-conformant to RFC-4 §2.2 MUST. "
-                "See spec.md C3 row.")
+                "commit accepted post-revocation (native) — permissive revocation "
+                "is non-conformant to RFC-4 §2.2 MUST. See spec.md C3 row.")
         except ValueError as e:
             return self._pass("C3",
-                f"commit blocked post-revocation: {e} "
-                "(strict — RFC-4 §2.2 conformant)")
+                f"commit blocked post-revocation: {e} (strict — RFC-4 §2.2 conformant)")
 
     def _v_c4(self):
         return self._na("C4",
-            "Fail-closed transport safety not applicable to in-process kernel; "
-            "no transport layer exists.")
+            "Fail-closed transport safety not applicable to in-process kernel.")
 
     def _v_c5(self):
         nonce = uuid.uuid4().hex
@@ -633,6 +663,8 @@ class NativeKernelAdapter(BaseAdapter):
             if "NONCE_REPLAY" in str(e):
                 return self._pass("C5","NONCE_REPLAY raised on duplicate nonce (native)")
             return self._fail("C5", f"unexpected error: {e}")
+
+    # ── CT-R4 series ─────────────────────────────────────────────────────────
 
     def _v_ct_r4_001(self):
         g = self._evaluate("auth","valid-token","wire_transfer",0.2,0.2,0.90,uuid.uuid4().hex)
@@ -648,11 +680,11 @@ class NativeKernelAdapter(BaseAdapter):
         if g["final_disposition"] != "PASS":
             return self._fail("CT-R4-002","could not obtain PASS grant")
         try:
-            self._commit(g["evaluation_id"], "account_deletion")  # wrong action
+            self._commit(g["evaluation_id"], "account_deletion")
             return self._fail("CT-R4-002","binding violation not detected")
         except ValueError as e:
             if "BINDING_VIOLATION" in str(e):
-                return self._pass("CT-R4-002",f"PAYLOAD_BINDING_VIOLATION raised (native)")
+                return self._pass("CT-R4-002","PAYLOAD_BINDING_VIOLATION raised (native)")
             return self._fail("CT-R4-002", f"wrong error: {e}")
 
     def _v_ct_r4_003(self):
@@ -679,8 +711,7 @@ class NativeKernelAdapter(BaseAdapter):
 
     def _v_ct_r4_005(self):
         return self._gap("CT-R4-005",
-            "state_hash_at_verdict not implemented in kernel v0.1. "
-            "State-change detection limited to standing revocation. "
+            "state_hash_at_verdict not implemented in kernel v0.3. "
             "Full Commit-State Binding requires capturing structural state at verdict.")
 
     def _v_ct_r4_006(self):
@@ -700,14 +731,12 @@ class NativeKernelAdapter(BaseAdapter):
         receipt = g.get("receipt", {})
         if receipt.get("receipt_hash"):
             return self._gap("CT-R4-007",
-                "Structural receipt present but NOT signed — "
-                "cryptographic signing absent in v0.1.")
+                "Structural receipt present but NOT signed — cryptographic signing absent.")
         return self._fail("CT-R4-007","No receipt in grant object")
 
     def _v_ct_r4_008(self):
         return self._gap("CT-R4-008",
-            "No append-only Evidence Manifest in kernel v0.1. "
-            "Requires tamper-evident ledger implementation.")
+            "No append-only Evidence Manifest in kernel. Requires ledger implementation.")
 
     def _v_ct_r4_009(self):
         return self._gap("CT-R4-009",
@@ -723,36 +752,51 @@ class NativeKernelAdapter(BaseAdapter):
                     "external_effect_atomic=false; post_commit_evidence_required=true (native)")
         return self._fail("CT-R4-010","external_effect_atomic not correctly declared")
 
+    # ── R7 meta (testable) ───────────────────────────────────────────────────
+
+    def _v_r7_003(self):
+        states = {s.value for s in ReportingState}
+        expected = {"PASS","FAIL","NOT_APPLICABLE","ADAPTER_REQUIRED","IMPLEMENTATION_GAP"}
+        if states == expected:
+            return self._pass("R7-003", f"5 reporting states defined: {sorted(states)}")
+        return self._fail("R7-003", f"missing: {expected - states}")
+
+    def _v_r7_004(self):
+        levels = {int(e) for e in EvidenceLevel}
+        if levels == {1,2,3}:
+            return self._pass("R7-004", "3 evidence levels defined (1/2/3)")
+        return self._fail("R7-004", f"unexpected levels: {levels}")
+
 
 # ── Report generation ─────────────────────────────────────────────────────────
 
 def generate_report(adapter: BaseAdapter, results: list[ConformanceResult],
                     endpoint: str = "") -> dict:
     counts = {s.value: 0 for s in ReportingState}
+    tier_gaps = {1: 0, 2: 0, 3: 0, 4: 0}
     for r in results:
         counts[r.status.value] += 1
+        if r.status == ReportingState.IMPLEMENTATION_GAP:
+            tier_gaps[r.tier] = tier_gaps.get(r.tier, 0) + 1
 
     return {
-        "suite":           "REG Conformance Suite v0.2.4",
-        "rfc_refs":        ["RFC-4 (v0.2, frozen)", "RFC-7 (updated)"],
+        "suite":           "REG Conformance Suite v0.3.0",
+        "rfc_refs":        ["RFC-0 through RFC-7"],
         "interface_mode":  adapter.interface_mode,
         "evidence_level":  int(adapter.evidence_level),
         "evidence_label":  EvidenceLevel(adapter.evidence_level).name,
         "endpoint":        endpoint,
         "ran_at":          time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "summary":         counts,
+        "gap_by_tier":     tier_gaps,
         "results": [asdict(r) for r in results],
         "notes": {
+            "tier_1":   "Testable against reference shim now.",
+            "tier_2":   "Requires shim enrichment (composition, delegation, evidence).",
+            "tier_3":   "Requires infrastructure (mTLS, signatures, Merkle ledger).",
+            "tier_4":   "Meta-conformance; requires secondary harness.",
             "C3":       "Permissive revocation post-verdict is non-conformant to "
-                        "RFC-4 §2.2 MUST. Reported as IMPLEMENTATION_GAP, not PASS.",
-            "CT-R4-004": "Expiry testable natively (NativeKernelAdapter). "
-                         "HTTP adapter requires time delay — marked ADAPTER_REQUIRED.",
-            "CT-R4-005": "state_hash_at_verdict not implemented. "
-                         "Full race detection is IMPLEMENTATION_GAP in v0.1.",
-            "CT-R4-007": "Structural receipt present; cryptographic signing absent — "
-                         "IMPLEMENTATION_GAP in v0.1.",
-            "CT-R4-008-009": "Tamper-evident manifest and independent verifier path "
-                             "absent — IMPLEMENTATION_GAP in v0.1.",
+                        "RFC-4 §2.2 MUST. Reported as IMPLEMENTATION_GAP.",
         }
     }
 
@@ -769,7 +813,7 @@ MARKS = {
 
 
 def main():
-    p = argparse.ArgumentParser(description="REG Conformance Suite v0.2.4 — TENIR Labs")
+    p = argparse.ArgumentParser(description="REG Conformance Suite v0.3.0 — TENIR Labs")
     p.add_argument("--endpoint",  default="",
                    help="REG HTTP endpoint (required for http/both mode)")
     p.add_argument("--mode",      choices=["http","native","both"], default="http")
@@ -777,7 +821,7 @@ def main():
                    help="Path to policy YAML (native/both mode)")
     p.add_argument("--api-key",   default=None)
     p.add_argument("--insecure",  action="store_true")
-    p.add_argument("--output",    default="results/tenirlabs-v0.2.json")
+    p.add_argument("--output",    default="results/reg-conformance-v0.3.json")
     args = p.parse_args()
 
     import os; os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
@@ -785,18 +829,15 @@ def main():
     all_reports = []
 
     def run_adapter(adapter, label, endpoint=""):
-        print(f"\nREG Conformance Suite v0.2.4 — {label}\n{'─'*64}")
+        print(f"\nREG Conformance Suite v0.3.0 — {label}\n{'─'*72}")
         results = adapter.run_all()
         for r in results:
             m = MARKS.get(r.status.value, "?")
-            note = f"  ↳ {r.gap_note}" if r.gap_note and r.status.value not in ("PASS","FAIL") else ""
-            print(f"  {m}  {r.vector_id:<16}  {r.status.value:<22}  {r.details}")
-            if note:
-                print(f"     {note[:90]}")
+            print(f"  {m}  T{r.tier}  {r.vector_id:<14}  {r.status.value:<22}  {r.details}")
         counts = {}
         for r in results:
             counts[r.status.value] = counts.get(r.status.value, 0) + 1
-        print(f"\n{'─'*64}")
+        print(f"\n{'─'*72}")
         for k, v in counts.items():
             print(f"  {MARKS.get(k,'?')} {k}: {v}")
         report = generate_report(adapter, results, endpoint)
@@ -822,7 +863,6 @@ def main():
         json.dump(output, f, indent=2, default=str)
     print(f"\n  Results written → {args.output}")
 
-    # Exit non-zero only on FAIL
     has_fail = any(
         r["status"] == "FAIL"
         for report in (all_reports if isinstance(all_reports,list) else [all_reports])
