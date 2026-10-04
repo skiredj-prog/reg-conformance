@@ -2,14 +2,14 @@
 
 This index points to normative properties in the RFCs; it does not replace them. Status reflects the current repository source, not a historical result or a claim of conformance.
 
-**Inventory note:** the current `runner.py` registry contains 15 IDs (C1–C5 and CT-R4-001–010). CT-R4-009 and CT-R4-010 are registered but return an implementation-gap result without exercising the property. The other 38 extended IDs below occur in the saved v0.3.1 reports but are absent from the current runner. They are indexed under the `CT-RX` namespace with their historical IDs retained in `location`.
+**Inventory note:** the current `runner.py` registry contains 15 IDs (C1–C5 and CT-R4-001–010). C4 is adapter-required and cannot exercise the fail-closed property; CT-R4-009 and CT-R4-010 return implementation-gap results without exercising their properties. The other 38 extended IDs below occur in the saved v0.3.1 reports but are absent from the current runner. They are indexed under the `CT-RX` namespace with their historical IDs retained in `location`.
 
 | vector_id | family | rfc | normative_property | status | location |
 |---|---|---|---|---|---|
 | C1 | CORE | RFC-3 | Invalid standing must yield HARD_VETO regardless of structural state. | IMPLEMENTED | `runner.py` VECTORS / `_v_c1`; RFC-3 §2–4 |
 | C2 | CORE | RFC-2 | Extreme structural pressure must not yield PASS. | IMPLEMENTED | `runner.py` VECTORS / `_v_c2`; RFC-2 §3 |
 | C3 | CORE | RFC-4 §2.2; RFC-3 §4.2 | Revocation after verdict and before commit must yield HARD_VETO and block commit. | IMPLEMENTED | `runner.py` VECTORS / `_v_c3`; `shim.py` `commit_event`; RFC-4 §2.2; RFC-3 §4.2 |
-| C4 | CORE | RFC-1 §1, §5; RFC-6 §1.2 | Transport uncertainty must fail closed and must not authorize execution. | IMPLEMENTED | `runner.py` VECTORS / `_v_c4`; HTTP is adapter-required and native is not applicable |
+| C4 | CORE | RFC-1 §1, §5; RFC-6 §1.2 | Transport uncertainty must fail closed and must not authorize execution. | DECLARED | `runner.py` `_v_c4` returns adapter-required without exercising transport failure; RFC-1 §1, §5; RFC-6 §1.2 |
 | C5 | CORE | RFC-1 §4; RFC-6 §3.1 | Reuse of an idempotency key/nonce with a different request must be rejected. | IMPLEMENTED | `runner.py` VECTORS / `_v_c5`; RFC-1 §4; RFC-6 §3.1 |
 | CT-R4-001 | COMMIT | RFC-4 §1, §1.2 | A valid grant binds evaluation, action, nonce, and commit within its validity window. | IMPLEMENTED | `runner.py` VECTORS / `_v_ct_r4_001`; RFC-4 §1 |
 | CT-R4-002 | COMMIT | RFC-4 §1.1, §1.3 | Commit for an action different from the granted action must be rejected. | IMPLEMENTED | `runner.py` VECTORS / `_v_ct_r4_002`; RFC-4 §1.1–1.3 |
