@@ -8,7 +8,7 @@ Known gaps remain explicit, including independent decision reproduction and
 external-effect evidence.
 """
 
-import argparse, base64, hashlib, json, sys, time, uuid
+import argparse, base64, hashlib, json, subprocess, sys, time, uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from enum import Enum
@@ -209,8 +209,10 @@ class HTTPAdapter(BaseAdapter):
         if rc not in (200,202):
             return self._ar("C3", f"Protected /admin/revoke unavailable (HTTP {rc}); configure REG_ADMIN_TOKEN and --admin-token")
         ec, er = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
-        if ec == 409 and "STANDING_REVOKED" in str(er):
-            return self._pass("C3","commit blocked after standing revocation")
+        detail = er.get("detail", {}) if isinstance(er, dict) else {}
+        if (ec == 409 and detail.get("code") == "STANDING_REVOKED" and
+                detail.get("final_disposition") == "HARD_VETO"):
+            return self._pass("C3","post-verdict revocation produced HARD_VETO; commit blocked")
         if ec == 200:
             return self._fail("C3","commit accepted after revocation")
         return self._fail("C3", f"expected STANDING_REVOKED, got {ec}: {er}")
@@ -293,17 +295,17 @@ class HTTPAdapter(BaseAdapter):
             return self._fail("CT-R4-005","could not obtain PASS grant")
         eid = r.get("evaluation_id")
         epoch_at_verdict = r.get("policy_epoch")
-        # Simulate policy reload between verdict and commit
         rc, _ = self._post("/admin/reload-policy", {})
         if rc not in (200,202):
-            return self._gap("CT-R4-005","/admin/reload-policy absent — cannot test epoch drift")
+            return self._ar("CT-R4-005", "Protected policy reload helper unavailable; configure REG_ADMIN_TOKEN and --admin-token")
         cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
-        detail = cr.get("detail","")
+        refusal = cr.get("detail", {}) if isinstance(cr, dict) else {}
         return (self._pass("CT-R4-005",
-                    f"STATE_DRIFT raised (epoch {epoch_at_verdict}→{epoch_at_verdict+1})")
-                if cc == 409 and "STATE_DRIFT" in detail
+                    f"STATE_DRIFT produced HARD_VETO (epoch {epoch_at_verdict}→{epoch_at_verdict+1})")
+                if cc == 409 and refusal.get("code") == "STATE_DRIFT" and
+                   refusal.get("final_disposition") == "HARD_VETO"
                 else self._fail("CT-R4-005",
-                    f"expected 409 STATE_DRIFT, got {cc}: {detail!r}"))
+                    f"expected 409 STATE_DRIFT/HARD_VETO, got {cc}: {cr}"))
 
     # CT-R4-006
     def _v_ct_r4_006(self):
@@ -451,17 +453,38 @@ class NativeKernelAdapter(BaseAdapter):
         if action_id != g["action_id"] or nonce != g["nonce"]:
             raise ValueError("GRANT_BINDING_VIOLATION")
         if g["final_disposition"] in ("HARD_VETO","HOLD"): raise ValueError("INVALID_DISPOSITION")
-        if g["principal_id"] in self._revoked: raise ValueError("STANDING_REVOKED")
+        if g["principal_id"] in self._revoked:
+            self._veto_commit(g, "STANDING_REVOKED")
         if g.get("_committed"):  raise ValueError("ALREADY_COMMITTED")
         if time.time() > g["valid_until"]: raise ValueError("EVALUATION_EXPIRED")
         if self._epoch != g["policy_epoch"]:
-            raise ValueError(f"STATE_DRIFT: epoch_at_verdict={g['policy_epoch']} current={self._epoch}")
+            self._veto_commit(g, "STATE_DRIFT")
         if action_type and action_type != g["action_type"]:
             raise ValueError(f"PAYLOAD_BINDING_VIOLATION: granted={g['action_type']!r}")
         g["_committed"] = True
         g["committed_at"] = time.time()
         self._manifest.append({"type":"commit","evaluation_id":eid,"timestamp":g["committed_at"]})
         return {"status":"COMMITTED","evaluation_id":eid,"post_commit_evidence_required":True}
+
+    def _veto_commit(self, grant, reason_code):
+        now = time.time()
+        receipt = self._sign(self._priv, {
+            "receipt_id": str(uuid.uuid4()), "receipt_type": "Refusal Receipt",
+            "evaluation_id": grant["evaluation_id"], "action_id": grant["action_id"],
+            "final_disposition": "HARD_VETO", "reason_codes": [reason_code],
+            "policy_version": grant["policy_version"],
+            "threshold_version": grant["policy_version"],
+            "reproducibility_class": "R0", "issued_at": now,
+        })
+        grant["commit_disposition"] = "HARD_VETO"
+        grant["commit_refusal_reason"] = reason_code
+        grant["commit_refusal_receipt"] = receipt
+        self._manifest.append({"type":"commit_refusal",
+                               "evaluation_id":grant["evaluation_id"],
+                               "final_disposition":"HARD_VETO",
+                               "reason_code":reason_code,"receipt":receipt,
+                               "timestamp":now})
+        raise ValueError(f"{reason_code}:HARD_VETO")
 
     def _revoke(self, pid): self._revoked.add(pid)
     def _reload_policy(self): self._epoch += 1
@@ -524,8 +547,9 @@ class NativeKernelAdapter(BaseAdapter):
             self._commit(g["evaluation_id"],action_id=g["action_id"],nonce=g["nonce"])
             return self._fail("C3","commit accepted after revocation")
         except ValueError as e:
-            return (self._pass("C3",f"commit blocked after revocation (native): {e}")
-                    if "STANDING_REVOKED" in str(e) else self._fail("C3",str(e)))
+            return (self._pass("C3",f"post-verdict revocation produced HARD_VETO; commit blocked (native): {e}")
+                    if "STANDING_REVOKED:HARD_VETO" in str(e) and
+                       g.get("commit_disposition") == "HARD_VETO" else self._fail("C3",str(e)))
 
     def _v_c4(self):
         return self._na("C4","No transport layer in in-process kernel.")
@@ -589,8 +613,9 @@ class NativeKernelAdapter(BaseAdapter):
             return self._fail("CT-R4-005","STATE_DRIFT not detected")
         except ValueError as e:
             return (self._pass("CT-R4-005",
-                        f"STATE_DRIFT raised (epoch {epoch_before}→{self._epoch}) (native)")
-                    if "STATE_DRIFT" in str(e) else self._fail("CT-R4-005",str(e)))
+                        f"STATE_DRIFT produced HARD_VETO (epoch {epoch_before}→{self._epoch}) (native)")
+                    if "STATE_DRIFT:HARD_VETO" in str(e) and
+                       g.get("commit_disposition") == "HARD_VETO" else self._fail("CT-R4-005",str(e)))
 
     def _v_ct_r4_006(self):
         g = self._evaluate("u","none","wt",0.2,0.2,0.90,uuid.uuid4().hex)
@@ -647,6 +672,12 @@ MARKS = {"PASS":"✓","FAIL":"✗","NOT_APPLICABLE":"○",
 
 def generate_report(adapter, results, endpoint=""):
     counts = {s.value:0 for s in ReportingState}
+    try:
+        source_revision = subprocess.check_output(
+            ["git", "-C", str(Path(__file__).parent), "rev-parse", "HEAD"],
+            text=True, stderr=subprocess.DEVNULL).strip()
+    except Exception:
+        source_revision = None
     for r in results: counts[r.status.value] += 1
     return {"suite":"REG Conformance Suite v0.3.1",
             "rfc_refs":["RFC-4 (frozen)","RFC-7 (updated)"],
@@ -657,6 +688,7 @@ def generate_report(adapter, results, endpoint=""):
                                    "INCOMPLETE" if counts["IMPLEMENTATION_GAP"] or counts["ADAPTER_REQUIRED"] else
                                    "CONFORMANT"),
             "endpoint":endpoint,
+            "source_revision":source_revision,
             "ran_at":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
             "summary":counts,
             "results":[asdict(r) for r in results]}
@@ -702,17 +734,19 @@ def main():
     if args.mode in ("native","both"):
         run(NativeKernelAdapter(args.kernel), "Native kernel (TENIR-Gov PolicyEngine)")
 
+    has_fail = any(rep["summary"]["FAIL"] for rep in all_reports)
+    has_incomplete = any(rep["summary"]["IMPLEMENTATION_GAP"] or
+                         rep["summary"]["ADAPTER_REQUIRED"] for rep in all_reports)
+    exit_code = 1 if has_fail else 2 if has_incomplete else 0
     out = all_reports[0] if len(all_reports)==1 else all_reports
+    if isinstance(out, dict):
+        out["exit_code"] = exit_code
+    else:
+        for report in out:
+            report["exit_code"] = exit_code
     with open(args.output,"w") as f: json.dump(out, f, indent=2, default=str)
     print(f"\n  Results → {args.output}")
-
-    has_fail = any(r["status"]=="FAIL"
-                   for rep in (all_reports if isinstance(all_reports,list) else [all_reports])
-                   for r in rep["results"])
-    has_incomplete = any(r["status"] in ("IMPLEMENTATION_GAP", "ADAPTER_REQUIRED")
-                         for rep in (all_reports if isinstance(all_reports,list) else [all_reports])
-                         for r in rep["results"])
-    sys.exit(1 if has_fail else 2 if has_incomplete else 0)
+    sys.exit(exit_code)
 
 if __name__ == "__main__":
     main()

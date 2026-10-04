@@ -87,6 +87,24 @@ def _record_hash(obj: dict) -> str:
     return hashlib.sha256(
         json.dumps(obj, sort_keys=True, default=str).encode()).hexdigest()
 
+
+
+def _veto_commit(record: dict, reason_code: str):
+    """Record a post-verdict refusal as HARD_VETO and prevent commit."""
+    now = time.time()
+    veto = {**record, "final_disposition": "HARD_VETO", "reason": reason_code,
+            "reason_codes": [reason_code], "created_at": now}
+    receipt = _make_receipt(veto)
+    record["commit_disposition"] = "HARD_VETO"
+    record["commit_refusal_reason"] = reason_code
+    record["commit_refusal_receipt"] = receipt
+    _manifest.append({"type": "commit_refusal", "evaluation_id": record["evaluation_id"],
+                      "final_disposition": "HARD_VETO", "reason_code": reason_code,
+                      "receipt": receipt, "timestamp": now})
+    raise HTTPException(409, detail={"code": reason_code,
+                                     "final_disposition": "HARD_VETO",
+                                     "receipt": receipt})
+
 def _make_receipt(record: dict) -> dict:
     disp = record.get("final_disposition", "UNKNOWN")
     label = {"PASS": "Grant/Authorization Receipt",
@@ -213,7 +231,7 @@ async def commit_event(eval_id: str, event: CommitEvent):
     if rec["final_disposition"] in ("HARD_VETO", "HOLD"):
         raise HTTPException(409, "INVALID_DISPOSITION")
     if rec["principal_id"] in _revoked:
-        raise HTTPException(409, "STANDING_REVOKED")
+        _veto_commit(rec, "STANDING_REVOKED")
     if eval_id in _commits:
         raise HTTPException(409, "ALREADY_COMMITTED")
     if time.time() > rec["valid_until"]:
@@ -221,9 +239,7 @@ async def commit_event(eval_id: str, event: CommitEvent):
 
     # CT-R4-005 — policy epoch check
     if _policy_epoch != rec["policy_epoch"]:
-        raise HTTPException(409,
-            detail=f"STATE_DRIFT: policy epoch at verdict={rec['policy_epoch']} "
-                   f"current={_policy_epoch}")
+        _veto_commit(rec, "STATE_DRIFT")
 
     # CT-R4-002 — action/payload binding
     if event.policy_version != rec["policy_version"]:
