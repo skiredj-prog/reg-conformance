@@ -8,13 +8,32 @@
   "evidence_level": 2,
   "evidence_label": "ADAPTER_TESTED",
   "endpoint": "http://127.0.0.1:8099",
-  "ran_at": "2026-10-04T01:48:54Z",
+  "ran_at": "2026-10-04T07:24:39Z",
+  "vector_sets": {
+    "core": 15,
+    "extended": 38,
+    "total": 53
+  },
   "summary": {
+    "PASS": 17,
+    "FAIL": 0,
+    "NOT_APPLICABLE": 0,
+    "ADAPTER_REQUIRED": 0,
+    "IMPLEMENTATION_GAP": 36
+  },
+  "summary_core": {
     "PASS": 15,
     "FAIL": 0,
     "NOT_APPLICABLE": 0,
     "ADAPTER_REQUIRED": 0,
     "IMPLEMENTATION_GAP": 0
+  },
+  "summary_extended": {
+    "PASS": 2,
+    "FAIL": 0,
+    "NOT_APPLICABLE": 0,
+    "ADAPTER_REQUIRED": 0,
+    "IMPLEMENTATION_GAP": 36
   },
   "results": [
     {
@@ -46,7 +65,7 @@
       "status": "PASS",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "server returned 404; fail-closed",
+      "details": "404 \u2192 fail-closed",
       "gap_note": ""
     },
     {
@@ -54,7 +73,7 @@
       "status": "PASS",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "409 NONCE_REPLAY on duplicate nonce",
+      "details": "409 NONCE_REPLAY",
       "gap_note": ""
     },
     {
@@ -62,7 +81,7 @@
       "status": "PASS",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "GRANT bound and committed (eval_d1e\u2026)",
+      "details": "GRANT bound and committed (eval_58e\u2026)",
       "gap_note": ""
     },
     {
@@ -70,7 +89,7 @@
       "status": "PASS",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "PAYLOAD_BINDING_VIOLATION correctly rejected",
+      "details": "PAYLOAD_BINDING_VIOLATION rejected",
       "gap_note": ""
     },
     {
@@ -78,7 +97,7 @@
       "status": "PASS",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "REPLAY_DETECTED on consumed nonce",
+      "details": "REPLAY_DETECTED",
       "gap_note": ""
     },
     {
@@ -94,7 +113,7 @@
       "status": "PASS",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "STATE_DRIFT raised (epoch 0\u21921)",
+      "details": "STATE_DRIFT (epoch 0\u21921)",
       "gap_note": ""
     },
     {
@@ -110,7 +129,7 @@
       "status": "PASS",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "Ed25519 receipt verified against JWKS (type='Refusal Receipt')",
+      "details": "Ed25519 verified (type='Refusal Receipt')",
       "gap_note": ""
     },
     {
@@ -118,7 +137,7 @@
       "status": "PASS",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "Hash-chain intact (length=14, head=456f287f2440\u2026)",
+      "details": "Hash-chain intact (len=14, head=795f4ee954d3\u2026)",
       "gap_note": ""
     },
     {
@@ -126,7 +145,7 @@
       "status": "PASS",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "Independent verification OK (manifest pos=14, class=R1)",
+      "details": "Independent verify OK (pos=14, class=R1)",
       "gap_note": ""
     },
     {
@@ -136,6 +155,310 @@
       "evidence_level": 2,
       "details": "external_effect_atomic=false; post_commit_evidence_required=true",
       "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R0-001",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Policy anchor hash endpoint not yet implemented."
+    },
+    {
+      "vector_id": "CT-R0-002",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "RFC version declaration endpoint absent."
+    },
+    {
+      "vector_id": "CT-R0-003",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Governance scope declaration not formally specified in implementation."
+    },
+    {
+      "vector_id": "CT-R0-004",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Normative RFC SHAs not yet pinned in implementation manifest."
+    },
+    {
+      "vector_id": "CT-R0-005",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Constitutional override prohibition not formally tested."
+    },
+    {
+      "vector_id": "CT-R1-001",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Response schema validation endpoint absent; schema not machine-readable."
+    },
+    {
+      "vector_id": "CT-R1-002",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Content-Type header present in practice; formal compliance test absent."
+    },
+    {
+      "vector_id": "CT-R1-003",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "HTTP status semantics partially correct; formal semantic validation absent."
+    },
+    {
+      "vector_id": "CT-R1-004",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Configurable request timeout not enforced at server level."
+    },
+    {
+      "vector_id": "CT-R1-005",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "TLS enforcement absent; --insecure flag provided as dev workaround only."
+    },
+    {
+      "vector_id": "CT-R1-006",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Request size limit not enforced (FastAPI default only)."
+    },
+    {
+      "vector_id": "CT-R1-007",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Concurrent isolation not formally tested (in-memory dict is not thread-safe)."
+    },
+    {
+      "vector_id": "CT-R2-001",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Threshold declaration endpoint absent; thresholds accessible in YAML only."
+    },
+    {
+      "vector_id": "CT-R2-002",
+      "status": "PASS",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "S=4.192604, disp='PASS' \u2014 deterministic across calls",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R2-003",
+      "status": "PASS",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "Zero-denominator handled; S=850000.0, disp='PASS'",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R2-004",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Exact boundary behavior (S == threshold) not formally specified."
+    },
+    {
+      "vector_id": "CT-R2-005",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Out-of-range P/V/K accepted and computed; 422 rejection not implemented."
+    },
+    {
+      "vector_id": "CT-R2-006",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Institutional threshold override audit logging absent."
+    },
+    {
+      "vector_id": "CT-R3-001",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Credential format validation limited to null/empty check."
+    },
+    {
+      "vector_id": "CT-R3-002",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Revocation propagation latency not declared or measured."
+    },
+    {
+      "vector_id": "CT-R3-003",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Multi-principal isolation not formally tested."
+    },
+    {
+      "vector_id": "CT-R3-004",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Revocation events not appended to hash-chain manifest."
+    },
+    {
+      "vector_id": "CT-R3-005",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Delegation depth enforcement not implemented."
+    },
+    {
+      "vector_id": "CT-R3-006",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Temporal credential binding (time-limited credentials) not implemented."
+    },
+    {
+      "vector_id": "CT-R3-007",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Standing scope boundary not declared or enforced."
+    },
+    {
+      "vector_id": "CT-R3-008",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Credential rotation invalidation not implemented."
+    },
+    {
+      "vector_id": "CT-R5-001",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Manifest export endpoint absent; manifest in-memory only."
+    },
+    {
+      "vector_id": "CT-R5-002",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Manifest import and re-verification path absent."
+    },
+    {
+      "vector_id": "CT-R5-003",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Evidence retention policy not declared."
+    },
+    {
+      "vector_id": "CT-R5-004",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Redaction prohibition not formally enforced (in-memory list)."
+    },
+    {
+      "vector_id": "CT-R5-005",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Cross-epoch manifest continuity not formally tested."
+    },
+    {
+      "vector_id": "CT-R6-001",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Override audit logging absent."
+    },
+    {
+      "vector_id": "CT-R6-002",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Override authority validation absent."
+    },
+    {
+      "vector_id": "CT-R6-003",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Override time window not implemented."
+    },
+    {
+      "vector_id": "CT-R6-004",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Override receipt generation absent."
+    },
+    {
+      "vector_id": "CT-R7-001",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Formal equivalence test between adapter and native modes absent."
+    },
+    {
+      "vector_id": "CT-R7-002",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Evidence level non-promotion enforced structurally; formal test absent."
+    },
+    {
+      "vector_id": "CT-R7-003",
+      "status": "IMPLEMENTATION_GAP",
+      "interface_mode": "adapter",
+      "evidence_level": 2,
+      "details": "",
+      "gap_note": "Cross-implementation testing requires second independent implementation."
     }
   ],
   "result_file": "tenirlabs-v0.3.1-adapter.json"
