@@ -15,25 +15,28 @@
     "total": 53
   },
   "summary": {
-    "PASS": 17,
-    "FAIL": 0,
+    "PASS": 12,
+    "FAIL": 2,
     "NOT_APPLICABLE": 0,
-    "ADAPTER_REQUIRED": 0,
-    "IMPLEMENTATION_GAP": 36
+    "ADAPTER_REQUIRED": 1,
+    "IMPLEMENTATION_GAP": 38,
+    "INCONCLUSIVE": 0
   },
   "summary_core": {
-    "PASS": 15,
-    "FAIL": 0,
+    "PASS": 10,
+    "FAIL": 2,
     "NOT_APPLICABLE": 0,
-    "ADAPTER_REQUIRED": 0,
-    "IMPLEMENTATION_GAP": 0
+    "ADAPTER_REQUIRED": 1,
+    "IMPLEMENTATION_GAP": 2,
+    "INCONCLUSIVE": 0
   },
   "summary_extended": {
     "PASS": 2,
     "FAIL": 0,
     "NOT_APPLICABLE": 0,
     "ADAPTER_REQUIRED": 0,
-    "IMPLEMENTATION_GAP": 36
+    "IMPLEMENTATION_GAP": 36,
+    "INCONCLUSIVE": 0
   },
   "results": [
     {
@@ -54,19 +57,23 @@
     },
     {
       "vector_id": "C3",
-      "status": "PASS",
+      "status": "FAIL",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "commit accepted \u2014 revocation prospective; IMPLEMENTATION_NOTE",
-      "gap_note": ""
+      "details": "commit accepted — revocation prospective; IMPLEMENTATION_NOTE",
+      "gap_note": "",
+      "recorded_status": "PASS",
+      "assessment_note": "The observed commit acceptance after standing revocation violates RFC-3 §4.2 and RFC-4 §2.2; the recorded PASS was incorrect."
     },
     {
       "vector_id": "C4",
-      "status": "PASS",
+      "status": "ADAPTER_REQUIRED",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "404 \u2192 fail-closed",
-      "gap_note": ""
+      "details": "404 → fail-closed",
+      "gap_note": "",
+      "recorded_status": "PASS",
+      "assessment_note": "The generic 404/fail-closed observation does not establish that an execution endpoint prevented an external effect."
     },
     {
       "vector_id": "C5",
@@ -81,7 +88,7 @@
       "status": "PASS",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "GRANT bound and committed (eval_58e\u2026)",
+      "details": "GRANT bound and committed (eval_58e…)",
       "gap_note": ""
     },
     {
@@ -110,11 +117,13 @@
     },
     {
       "vector_id": "CT-R4-005",
-      "status": "PASS",
+      "status": "FAIL",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "STATE_DRIFT (epoch 0\u21921)",
-      "gap_note": ""
+      "details": "STATE_DRIFT (epoch 0→1)",
+      "gap_note": "",
+      "recorded_status": "PASS",
+      "assessment_note": "STATE_DRIFT was detected, but the evidence does not show the required HARD_VETO at commit."
     },
     {
       "vector_id": "CT-R4-006",
@@ -137,24 +146,28 @@
       "status": "PASS",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "Hash-chain intact (len=14, head=795f4ee954d3\u2026)",
+      "details": "Hash-chain intact (len=14, head=795f4ee954d3…)",
       "gap_note": ""
     },
     {
       "vector_id": "CT-R4-009",
-      "status": "PASS",
+      "status": "IMPLEMENTATION_GAP",
       "interface_mode": "adapter",
       "evidence_level": 2,
       "details": "Independent verify OK (pos=14, class=R1)",
-      "gap_note": ""
+      "gap_note": "Signature and manifest-chain verification alone do not reproduce or independently verify the decision from recorded inputs and policy.",
+      "recorded_status": "PASS",
+      "assessment_note": "Signature and manifest-chain verification alone do not reproduce or independently verify the decision from recorded inputs and policy."
     },
     {
       "vector_id": "CT-R4-010",
-      "status": "PASS",
+      "status": "IMPLEMENTATION_GAP",
       "interface_mode": "adapter",
       "evidence_level": 2,
       "details": "external_effect_atomic=false; post_commit_evidence_required=true",
-      "gap_note": ""
+      "gap_note": "Declaring a non-atomic effect and a post-commit-evidence requirement is not evidence that the external effect occurred.",
+      "recorded_status": "PASS",
+      "assessment_note": "Declaring a non-atomic effect and a post-commit-evidence requirement is not evidence that the external effect occurred."
     },
     {
       "vector_id": "CT-R0-001",
@@ -265,7 +278,7 @@
       "status": "PASS",
       "interface_mode": "adapter",
       "evidence_level": 2,
-      "details": "S=4.192604, disp='PASS' \u2014 deterministic across calls",
+      "details": "S=4.192604, disp='PASS' — deterministic across calls",
       "gap_note": ""
     },
     {
@@ -461,5 +474,18 @@
       "gap_note": "Cross-implementation testing requires second independent implementation."
     }
   ],
-  "result_file": "tenirlabs-v0.3.1-adapter.json"
+  "result_file": "tenirlabs-v0.3.1-adapter.json",
+  "report_kind": "historical_run_corrected_assessment",
+  "assessment_date": "2026-10-04",
+  "assessment_note": "Statuses were reassessed against the frozen normative requirements. Raw execution details and original statuses are retained per vector. This is not a new execution; source revision was not recorded in the original report.",
+  "source_revision": null,
+  "conformance_status": "FAILED",
+  "exit_code": 1,
+  "certification_status": "NOT_CERTIFIABLE",
+  "certification_gaps": [
+    "The original run did not record an immutable harness revision or working-tree state.",
+    "The original run did not record a source-tree hash, RFC content hashes, or OCI environment digest.",
+    "The original run did not pin the subject implementation revision.",
+    "No dependency lock, CI provenance attestation, or signed report is available."
+  ]
 }

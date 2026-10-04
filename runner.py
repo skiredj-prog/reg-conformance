@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-REG Conformance Suite v0.3.1 — RFC-4 and RFC-7
-================================================
-Runs the five core vectors and ten RFC-4 vectors supported by this runner.
-Results report conformance status separately from interface evidence level.
-Known gaps remain explicit, including independent decision reproduction and
-external-effect evidence.
+REG Conformance Suite v0.3.1 — RFC-0 through RFC-7
+==================================================
+Registers 15 core/commit vectors and 38 extended integration vectors.
+Results separate vector coverage, observed conformance status, and evidence level.
+Extended vectors without an executable adapter report IMPLEMENTATION_GAP.
 """
 
-import argparse, base64, hashlib, json, subprocess, sys, time, uuid
+import argparse, base64, hashlib, importlib.metadata, json, subprocess, sys, time, uuid
+import platform, re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from enum import Enum
@@ -23,6 +23,7 @@ import requests
 class ReportingState(str, Enum):
     PASS               = "PASS"
     FAIL               = "FAIL"
+    INCONCLUSIVE       = "INCONCLUSIVE"
     NOT_APPLICABLE     = "NOT_APPLICABLE"
     ADAPTER_REQUIRED   = "ADAPTER_REQUIRED"
     IMPLEMENTATION_GAP = "IMPLEMENTATION_GAP"
@@ -49,15 +50,15 @@ class ConformanceResult:
     gap_note:       str = ""
 
 
-# ── Canonical vectors (RFC-4 §5 + core invariants) ────────────────────────────
+# ── Core vectors — 15 (RFC-4 §5 + C-series) ──────────────────────────────────
 
-VECTORS: dict[str, TestVector] = {
+CORE_VECTORS: dict[str, TestVector] = {
     "C1":       TestVector("C1","RFC-3","Standing Gate",
                     "Invalid credential → HARD_VETO regardless of structural state."),
     "C2":       TestVector("C2","RFC-2","Structure Gate",
                     "P≥0.9, V≥0.9, K≤0.15 → FLAG or HARD_VETO, never PASS."),
-    "C3":       TestVector("C3","RFC-4 §2.2","Commit-State Binding — Standing Drift",
-                    "Revocation between verdict and commit; behaviour must be declared."),
+    "C3":       TestVector("C3","RFC-3 §4.2; RFC-4 §2.2","Commit-State Binding — Standing Revocation",
+                    "Revocation after verdict and before/during commit must produce HARD_VETO and prevent the governed effect."),
     "C4":       TestVector("C4","RFC-1","Fail-Closed Transport Safety",
                     "Transport fault → no execution. NOT_APPLICABLE for in-process kernels."),
     "C5":       TestVector("C5","RFC-1/4","Replay Soundness — Idempotency",
@@ -85,6 +86,141 @@ VECTORS: dict[str, TestVector] = {
 }
 
 
+# ── Extended vectors — 38 (RFC-0/1/2/3/5/6/7) ────────────────────────────────
+# Infrastructure not yet built. Two exceptions: CT-R2-002 and CT-R2-003
+# are mathematical properties of the PolicyEngine kernel — testable now.
+
+EXTENDED_VECTORS: dict[str, TestVector] = {
+    # RFC-0 — Constitution (5)
+    "CT-R0-001":TestVector("CT-R0-001","RFC-0","Policy Anchor Integrity",
+                    "Policy file hash verifiable independently."),
+    "CT-R0-002":TestVector("CT-R0-002","RFC-0","RFC Version Declaration",
+                    "Implementation declares conformant RFC versions."),
+    "CT-R0-003":TestVector("CT-R0-003","RFC-0","Governance Scope Declaration",
+                    "Declared scope matches tested behavior."),
+    "CT-R0-004":TestVector("CT-R0-004","RFC-0","Normative Reference Binding",
+                    "All referenced RFCs pinned with SHA/date."),
+    "CT-R0-005":TestVector("CT-R0-005","RFC-0","Constitutional Override Prohibition",
+                    "No mechanism bypasses REG constitution."),
+    # RFC-1 — Wire Protocol (7)
+    "CT-R1-001":TestVector("CT-R1-001","RFC-1","Response Schema Compliance",
+                    "Response fields match declared schema exactly."),
+    "CT-R1-002":TestVector("CT-R1-002","RFC-1","Content-Type Declaration",
+                    "Responses declare Content-Type: application/json."),
+    "CT-R1-003":TestVector("CT-R1-003","RFC-1","HTTP Status Semantics",
+                    "2xx/4xx/5xx used per RFC semantics."),
+    "CT-R1-004":TestVector("CT-R1-004","RFC-1","Request Timeout Enforcement",
+                    "Requests time out within declared window."),
+    "CT-R1-005":TestVector("CT-R1-005","RFC-1","TLS Requirement (production)",
+                    "Non-TLS connections rejected in production mode."),
+    "CT-R1-006":TestVector("CT-R1-006","RFC-1","Request Size Limit",
+                    "Oversized payloads rejected with 413."),
+    "CT-R1-007":TestVector("CT-R1-007","RFC-1","Concurrent Request Isolation",
+                    "Parallel evaluations do not interfere."),
+    # RFC-2 — Structure (6)
+    "CT-R2-001":TestVector("CT-R2-001","RFC-2","Threshold Declaration",
+                    "Thresholds declared and pinned in policy file."),
+    "CT-R2-002":TestVector("CT-R2-002","RFC-2","S-Score Determinism",
+                    "Identical P/V/K → identical S and disposition across independent calls."),
+    "CT-R2-003":TestVector("CT-R2-003","RFC-2","Epsilon Guard",
+                    "Zero-denominator (P=0, V=0) handled without error; epsilon prevents divide-by-zero."),
+    "CT-R2-004":TestVector("CT-R2-004","RFC-2","Boundary Exactness",
+                    "Values at threshold boundaries produce consistent, declared dispositions."),
+    "CT-R2-005":TestVector("CT-R2-005","RFC-2","Measurement Range Validation",
+                    "P/V/K outside [0,1] rejected with 422."),
+    "CT-R2-006":TestVector("CT-R2-006","RFC-2","Institutional Override Audit",
+                    "Threshold overrides logged with policy_epoch."),
+    # RFC-3 — Standing (8)
+    "CT-R3-001":TestVector("CT-R3-001","RFC-3","Credential Format Validation",
+                    "Malformed credentials rejected before evaluation."),
+    "CT-R3-002":TestVector("CT-R3-002","RFC-3","Revocation Propagation",
+                    "Revocation effective within declared latency window."),
+    "CT-R3-003":TestVector("CT-R3-003","RFC-3","Multi-Principal Isolation",
+                    "Revocation of A does not affect principal B."),
+    "CT-R3-004":TestVector("CT-R3-004","RFC-3","Revocation Audit Trail",
+                    "All revocation events appended to manifest."),
+    "CT-R3-005":TestVector("CT-R3-005","RFC-3","Delegation Depth Enforcement",
+                    "Delegation chain depth limit enforced."),
+    "CT-R3-006":TestVector("CT-R3-006","RFC-3","Temporal Credential Binding",
+                    "Time-limited credentials expire as declared."),
+    "CT-R3-007":TestVector("CT-R3-007","RFC-3","Standing Scope Boundary",
+                    "Standing valid only within declared organizational scope."),
+    "CT-R3-008":TestVector("CT-R3-008","RFC-3","Credential Rotation",
+                    "Rotated credentials invalidate prior grants."),
+    # RFC-5 — Audit Chain (5)
+    "CT-R5-001":TestVector("CT-R5-001","RFC-5","Manifest Export",
+                    "Full manifest exportable as verifiable artifact."),
+    "CT-R5-002":TestVector("CT-R5-002","RFC-5","Manifest Import Verification",
+                    "Imported manifest verifies from genesis block."),
+    "CT-R5-003":TestVector("CT-R5-003","RFC-5","Evidence Retention Policy",
+                    "Evidence retained for declared minimum period."),
+    "CT-R5-004":TestVector("CT-R5-004","RFC-5","Redaction Prohibition",
+                    "No evidence silently deleted from closed manifest."),
+    "CT-R5-005":TestVector("CT-R5-005","RFC-5","Cross-Epoch Continuity",
+                    "Manifest chain survives policy epoch changes."),
+    # RFC-6 — Override / Escalation (4)
+    "CT-R6-001":TestVector("CT-R6-001","RFC-6","Emergency Override Audit",
+                    "Override decisions always appended to manifest."),
+    "CT-R6-002":TestVector("CT-R6-002","RFC-6","Override Authority Validation",
+                    "Only declared principals may invoke override."),
+    "CT-R6-003":TestVector("CT-R6-003","RFC-6","Override Time Window",
+                    "Override grant valid only within declared window."),
+    "CT-R6-004":TestVector("CT-R6-004","RFC-6","Override Receipt Generation",
+                    "Override decisions generate signed receipts."),
+    # RFC-7 — Interoperability (3)
+    "CT-R7-001":TestVector("CT-R7-001","RFC-7","Adapter Result Equivalence",
+                    "Adapter and native modes produce identical dispositions for same inputs."),
+    "CT-R7-002":TestVector("CT-R7-002","RFC-7","Evidence Level Non-Promotion",
+                    "Adapter results never promoted to native-conformance claims."),
+    "CT-R7-003":TestVector("CT-R7-003","RFC-7","Cross-Implementation Compatibility",
+                    "Two independent implementations agree on disposition for same inputs."),
+}
+
+# All 53 vectors
+VECTORS = {**CORE_VECTORS, **EXTENDED_VECTORS}
+
+# Gap notes for the 36 extended vectors that are IMPLEMENTATION_GAP
+EXTENDED_GAP_NOTES: dict[str, str] = {
+    "CT-R0-001": "Policy anchor hash endpoint not yet implemented.",
+    "CT-R0-002": "RFC version declaration endpoint absent.",
+    "CT-R0-003": "Governance scope declaration not formally specified in implementation.",
+    "CT-R0-004": "Normative RFC SHAs not yet pinned in implementation manifest.",
+    "CT-R0-005": "Constitutional override prohibition not formally tested.",
+    "CT-R1-001": "Response schema validation endpoint absent; schema not machine-readable.",
+    "CT-R1-002": "Content-Type header present in practice; formal compliance test absent.",
+    "CT-R1-003": "HTTP status semantics partially correct; formal semantic validation absent.",
+    "CT-R1-004": "Configurable request timeout not enforced at server level.",
+    "CT-R1-005": "TLS enforcement absent; --insecure flag provided as dev workaround only.",
+    "CT-R1-006": "Request size limit not enforced (FastAPI default only).",
+    "CT-R1-007": "Concurrent isolation not formally tested (in-memory dict is not thread-safe).",
+    "CT-R2-001": "Threshold declaration endpoint absent; thresholds accessible in YAML only.",
+    # CT-R2-002 and CT-R2-003: PASS — no entry here
+    "CT-R2-004": "Exact boundary behavior (S == threshold) not formally specified.",
+    "CT-R2-005": "Out-of-range P/V/K accepted and computed; 422 rejection not implemented.",
+    "CT-R2-006": "Institutional threshold override audit logging absent.",
+    "CT-R3-001": "Credential format validation limited to null/empty check.",
+    "CT-R3-002": "Revocation propagation latency not declared or measured.",
+    "CT-R3-003": "Multi-principal isolation not formally tested.",
+    "CT-R3-004": "Revocation events not appended to hash-chain manifest.",
+    "CT-R3-005": "Delegation depth enforcement not implemented.",
+    "CT-R3-006": "Temporal credential binding (time-limited credentials) not implemented.",
+    "CT-R3-007": "Standing scope boundary not declared or enforced.",
+    "CT-R3-008": "Credential rotation invalidation not implemented.",
+    "CT-R5-001": "Manifest export endpoint absent; manifest in-memory only.",
+    "CT-R5-002": "Manifest import and re-verification path absent.",
+    "CT-R5-003": "Evidence retention policy not declared.",
+    "CT-R5-004": "Redaction prohibition not formally enforced (in-memory list).",
+    "CT-R5-005": "Cross-epoch manifest continuity not formally tested.",
+    "CT-R6-001": "Override audit logging absent.",
+    "CT-R6-002": "Override authority validation absent.",
+    "CT-R6-003": "Override time window not implemented.",
+    "CT-R6-004": "Override receipt generation absent.",
+    "CT-R7-001": "Formal equivalence test between adapter and native modes absent.",
+    "CT-R7-002": "Evidence level non-promotion enforced structurally; formal test absent.",
+    "CT-R7-003": "Cross-implementation testing requires second independent implementation.",
+}
+
+
 # ── Base adapter ──────────────────────────────────────────────────────────────
 
 class BaseAdapter(ABC):
@@ -102,6 +238,7 @@ class BaseAdapter(ABC):
                                  int(self.evidence_level), details, gap_note)
     def _pass(self, v, d=""): return self._r(v, ReportingState.PASS, d)
     def _fail(self, v, d=""): return self._r(v, ReportingState.FAIL, d)
+    def _inconclusive(self, v, d=""): return self._r(v, ReportingState.INCONCLUSIVE, d)
     def _na  (self, v, n=""): return self._r(v, ReportingState.NOT_APPLICABLE,  gap_note=n)
     def _ar  (self, v, n=""): return self._r(v, ReportingState.ADAPTER_REQUIRED, gap_note=n)
     def _gap (self, v, n=""): return self._r(v, ReportingState.IMPLEMENTATION_GAP, gap_note=n)
@@ -175,9 +312,13 @@ class HTTPAdapter(BaseAdapter):
 
     def run_vector(self, vid):
         m = getattr(self, f"_v_{vid.replace('-','_').lower()}", None)
-        if not m: return self._gap(vid, "No HTTP translation defined")
+        if not m:
+            note = EXTENDED_GAP_NOTES.get(vid, "No HTTP translation defined")
+            return self._gap(vid, note)
         try:    return m()
-        except Exception as e: return self._fail(vid, f"exception: {e}")
+        except Exception as e:
+            status = self._inconclusive if vid == "C3" else self._fail
+            return status(vid, f"exception prevents a determinate result: {e}")
 
     # C1
     def _v_c1(self):
@@ -203,19 +344,23 @@ class HTTPAdapter(BaseAdapter):
             principal={"id":pid,"credential":self.credential},
             measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
         if self._disp(r) != "PASS":
-            return self._ar("C3", "Could not obtain PASS for race test")
+            return self._inconclusive("C3", "Could not establish the valid-verdict precondition")
         eid = r.get("evaluation_id")
         rc, rr = self._post("/admin/revoke", {"principal_id":pid,"reason":"C3"})
-        if rc not in (200,202):
+        if rc in (401,403,404,503):
             return self._ar("C3", f"Protected /admin/revoke unavailable (HTTP {rc}); configure REG_ADMIN_TOKEN and --admin-token")
+        if rc == 202:
+            return self._inconclusive("C3", "revocation was accepted asynchronously; its effective ordering before commit is unproven")
+        if rc != 200:
+            return self._inconclusive("C3", f"revocation outcome is uncertain (HTTP {rc}: {rr})")
         ec, er = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         detail = er.get("detail", {}) if isinstance(er, dict) else {}
         if (ec == 409 and detail.get("code") == "STANDING_REVOKED" and
                 detail.get("final_disposition") == "HARD_VETO"):
             return self._pass("C3","post-verdict revocation produced HARD_VETO; commit blocked")
-        if ec == 200:
+        if ec in (200,201):
             return self._fail("C3","commit accepted after revocation")
-        return self._fail("C3", f"expected STANDING_REVOKED, got {ec}: {er}")
+        return self._inconclusive("C3", f"revocation occurred, but HARD_VETO and non-commit were not both established (HTTP {ec}: {er})")
 
     def _v_c4(self):
         return self._ar("C4",
@@ -379,6 +524,36 @@ class HTTPAdapter(BaseAdapter):
             "evidence of the external effect.")
 
 
+# ── Extended: CT-R2-002 and CT-R2-003 (only extended vectors that PASS) ──
+
+    def _v_ct_r2_002(self):
+        """S-score determinism: same P/V/K → same S and disposition, always."""
+        m = {"pressure":0.4,"volatility":0.5,"capacity":0.75}
+        _, r1 = self._post("/evaluations", self._eb(measurements=m))
+        _, r2 = self._post("/evaluations", self._eb(measurements=m,
+                           evaluation_id=f"eval_{uuid.uuid4().hex}",
+                           nonce=uuid.uuid4().hex))
+        s1, s2 = r1.get("s_score"), r2.get("s_score")
+        d1, d2 = self._disp(r1), self._disp(r2)
+        if (s1 is not None and s2 is not None
+                and abs(s1-s2) < 1e-9 and d1 == d2):
+            return self._pass("CT-R2-002",
+                f"S={s1:.6f}, disp={d1!r} — deterministic across calls")
+        return self._fail("CT-R2-002",
+            f"Non-deterministic: s1={s1}, s2={s2}, d1={d1!r}, d2={d2!r}")
+
+    def _v_ct_r2_003(self):
+        """Epsilon guard: P=0, V=0 → no divide-by-zero; valid disposition returned."""
+        c, r = self._post("/evaluations", self._eb(
+            measurements={"pressure":0.0,"volatility":0.0,"velocity":0.0,"capacity":0.85}))
+        if c in (200,202) and self._disp(r) is not None:
+            return self._pass("CT-R2-003",
+                f"Zero-denominator handled; S={r.get('s_score')}, "
+                f"disp={self._disp(r)!r}")
+        return self._fail("CT-R2-003",
+            f"Zero-denominator error: code={c}, resp={r}")
+
+
 class NativeKernelAdapter(BaseAdapter):
     """
     Tests REG normative properties directly against the TENIR-Gov kernel.
@@ -521,9 +696,13 @@ class NativeKernelAdapter(BaseAdapter):
 
     def run_vector(self, vid):
         m = getattr(self, f"_v_{vid.replace('-','_').lower()}", None)
-        if not m: return self._gap(vid,"No native translation defined")
+        if not m:
+            note = EXTENDED_GAP_NOTES.get(vid, "No native translation defined")
+            return self._gap(vid, note)
         try:    return m()
-        except Exception as e: return self._fail(vid, f"exception: {e}")
+        except Exception as e:
+            status = self._inconclusive if vid == "C3" else self._fail
+            return status(vid, f"exception prevents a determinate result: {e}")
 
     def _v_c1(self):
         g = self._evaluate("u","none","wt",0.3,0.3,0.85,uuid.uuid4().hex)
@@ -541,7 +720,7 @@ class NativeKernelAdapter(BaseAdapter):
         pid = f"race-{uuid.uuid4().hex[:8]}"
         g = self._evaluate(pid,"valid","wt",0.2,0.2,0.90,uuid.uuid4().hex)
         if g["final_disposition"] != "PASS":
-            return self._ar("C3","Could not obtain PASS")
+            return self._inconclusive("C3","Could not establish the valid-verdict precondition")
         self._revoke(pid)
         try:
             self._commit(g["evaluation_id"],action_id=g["action_id"],nonce=g["nonce"])
@@ -549,7 +728,8 @@ class NativeKernelAdapter(BaseAdapter):
         except ValueError as e:
             return (self._pass("C3",f"post-verdict revocation produced HARD_VETO; commit blocked (native): {e}")
                     if "STANDING_REVOKED:HARD_VETO" in str(e) and
-                       g.get("commit_disposition") == "HARD_VETO" else self._fail("C3",str(e)))
+                       g.get("commit_disposition") == "HARD_VETO" else
+                    self._inconclusive("C3",f"commit rejection did not establish HARD_VETO: {e}"))
 
     def _v_c4(self):
         return self._na("C4","No transport layer in in-process kernel.")
@@ -667,10 +847,123 @@ class NativeKernelAdapter(BaseAdapter):
             "evidence of an external effect.")
 
 
-MARKS = {"PASS":"✓","FAIL":"✗","NOT_APPLICABLE":"○",
+# ── Extended: CT-R2-002 and CT-R2-003 ────────────────────────────────────
+
+    def _v_ct_r2_002(self):
+        """S-score determinism: same P/V/K → same S and disposition."""
+        P, V, K = 0.4, (0.4*0.5)**0.5, 0.75
+        r1 = self._engine.evaluate(P, V, K)
+        r2 = self._engine.evaluate(P, V, K)
+        if abs(r1["s_score"]-r2["s_score"]) < 1e-9 and r1["decision"]==r2["decision"]:
+            return self._pass("CT-R2-002",
+                f"S={r1['s_score']:.6f}, disp={r1['decision']!r} — deterministic (native)")
+        return self._fail("CT-R2-002","Non-deterministic results")
+
+    def _v_ct_r2_003(self):
+        """Epsilon guard: P=0, V=0 → no crash; epsilon prevents divide-by-zero."""
+        try:
+            r = self._engine.evaluate(0.0, 0.0, 0.85)
+            if r["decision"] in ("PASS","FLAG","HARD_VETO"):
+                return self._pass("CT-R2-003",
+                    f"Epsilon guard active; S={r['s_score']}, "
+                    f"disp={r['decision']!r} (native)")
+            return self._fail("CT-R2-003",f"Unexpected result: {r}")
+        except Exception as e:
+            return self._fail("CT-R2-003",f"Divide-by-zero not handled: {e}")
+
+
+MARKS = {"PASS":"✓","FAIL":"✗","INCONCLUSIVE":"?","NOT_APPLICABLE":"○",
          "ADAPTER_REQUIRED":"~","IMPLEMENTATION_GAP":"△"}
 
-def generate_report(adapter, results, endpoint=""):
+def build_evidence_binding(adapter, args):
+    root = Path(__file__).resolve().parent
+    try:
+        source_revision = subprocess.check_output(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            text=True, stderr=subprocess.DEVNULL).strip()
+        dirty = bool(subprocess.check_output(
+            ["git", "-C", str(root), "status", "--porcelain"],
+            text=True, stderr=subprocess.DEVNULL).strip())
+    except Exception:
+        source_revision, dirty = None, None
+
+    tree_hash = hashlib.sha256()
+    excluded_dirs = {".git", "results", "__pycache__", ".venv", ".pytest_cache"}
+    source_files = sorted(
+        path for path in root.rglob("*")
+        if path.is_file() and not any(part in excluded_dirs for part in path.relative_to(root).parts)
+    )
+    for path in source_files:
+        rel = path.relative_to(root).as_posix().encode("utf-8")
+        tree_hash.update(len(rel).to_bytes(8, "big")); tree_hash.update(rel)
+        data = path.read_bytes()
+        tree_hash.update(len(data).to_bytes(8, "big")); tree_hash.update(data)
+
+    specifications = {}
+    for rfc in ("rfc-3.md", "rfc-4.md"):
+        path = root / "reg-standards-baseline" / "rfc" / rfc
+        if path.is_file():
+            specifications[rfc] = hashlib.sha256(path.read_bytes()).hexdigest()
+
+    if adapter.interface_mode == "native":
+        subject = {
+            "repository": "local-reference-kernel",
+            "revision": source_revision,
+            "version": None,
+            "worktree_state": "clean" if dirty is False else "dirty" if dirty else "unknown",
+        }
+    else:
+        subject = {
+            "repository": args.subject_repository or None,
+            "revision": args.subject_revision or None,
+            "version": args.subject_version or None,
+            "worktree_state": args.subject_worktree_state,
+        }
+
+    environment_digest = args.environment_digest or None
+    dependency_versions = {}
+    for distribution in ("requests", "fastapi", "uvicorn", "PyYAML", "cryptography"):
+        try:
+            dependency_versions[distribution] = importlib.metadata.version(distribution)
+        except importlib.metadata.PackageNotFoundError:
+            dependency_versions[distribution] = None
+    missing = []
+    if not source_revision: missing.append("harness commit SHA")
+    if dirty is not False: missing.append("clean harness worktree")
+    if len(specifications) != 2: missing.append("RFC-3/RFC-4 content hashes")
+    if not subject["repository"]: missing.append("subject repository")
+    if not subject["revision"] or not re.fullmatch(r"[0-9a-fA-F]{40}", subject["revision"]):
+        missing.append("full subject commit SHA")
+    if subject["worktree_state"] != "clean": missing.append("clean subject worktree")
+    if not environment_digest or not re.fullmatch(r"sha256:[0-9a-fA-F]{64}", environment_digest):
+        missing.append("OCI environment digest")
+
+    return {
+        "conformance_profile": args.conformance_profile,
+        "harness": {
+            "repository": "skiredj-prog/reg-conformance",
+            "revision": source_revision,
+            "worktree_clean": dirty is False,
+            "source_tree_sha256": tree_hash.hexdigest(),
+        },
+        "specification_sha256": specifications,
+        "subject": subject,
+        "environment": {
+            "oci_digest": environment_digest,
+            "python": platform.python_version(),
+            "dependencies": dependency_versions,
+        },
+        "certification_status": "NOT_CERTIFIABLE" if missing else "EVIDENCE_BOUND",
+        "missing_bindings": missing,
+        "release_claim_ready": False,
+        "release_claim_gaps": [
+            "requirements.txt is not a dependency lock file.",
+            "No CI provenance attestation is generated by this runner.",
+            "The JSON report is not signed; retain and publish its SHA-256 separately.",
+        ],
+    }
+
+def generate_report(adapter, results, endpoint="", evidence_binding=None):
     counts = {s.value:0 for s in ReportingState}
     try:
         source_revision = subprocess.check_output(
@@ -679,16 +972,27 @@ def generate_report(adapter, results, endpoint=""):
     except Exception:
         source_revision = None
     for r in results: counts[r.status.value] += 1
+    core_results = [r for r in results if r.vector_id in CORE_VECTORS]
+    extended_results = [r for r in results if r.vector_id in EXTENDED_VECTORS]
     return {"suite":"REG Conformance Suite v0.3.1",
             "rfc_refs":["RFC-4 (frozen)","RFC-7 (updated)"],
             "interface_mode":adapter.interface_mode,
             "evidence_level":int(adapter.evidence_level),
             "evidence_label":EvidenceLevel(adapter.evidence_level).name,
             "conformance_status": ("FAILED" if counts["FAIL"] else
+                                   "INCONCLUSIVE" if counts["INCONCLUSIVE"] else
                                    "INCOMPLETE" if counts["IMPLEMENTATION_GAP"] or counts["ADAPTER_REQUIRED"] else
                                    "CONFORMANT"),
             "endpoint":endpoint,
             "source_revision":source_revision,
+            "evidence_binding":evidence_binding,
+            "vector_sets":{"core":len(CORE_VECTORS),
+                           "extended":len(EXTENDED_VECTORS),
+                           "total":len(VECTORS)},
+            "summary_core":{s.value:sum(r.status == s for r in core_results)
+                            for s in ReportingState},
+            "summary_extended":{s.value:sum(r.status == s for r in extended_results)
+                                for s in ReportingState},
             "ran_at":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
             "summary":counts,
             "results":[asdict(r) for r in results]}
@@ -704,6 +1008,17 @@ def main():
     p.add_argument("--principal-credential", default="valid-token",
                    help="Credential sent in test evaluation requests (shim requires REG_CREDENTIAL_TOKEN to match)")
     p.add_argument("--insecure", action="store_true")
+    p.add_argument("--conformance-profile", choices=["REG-v0.3.1-RFC-4-strict-C3"],
+                   default="REG-v0.3.1-RFC-4-strict-C3")
+    p.add_argument("--subject-repository", default="",
+                   help="Repository for the implementation under test (required for certification binding)")
+    p.add_argument("--subject-revision", default="",
+                   help="Full 40-character commit SHA of the implementation under test")
+    p.add_argument("--subject-version", default="",
+                   help="Optional release tag/version; the full commit SHA remains authoritative")
+    p.add_argument("--subject-worktree-state", choices=["clean", "dirty", "unknown"], default="unknown")
+    p.add_argument("--environment-digest", default="",
+                   help="OCI image digest in sha256:<64 hex> form")
     p.add_argument("--output", default="results/tenirlabs-v0.3.1.json")
     args = p.parse_args()
 
@@ -722,7 +1037,9 @@ def main():
         for r in results: counts[r.status.value] = counts.get(r.status.value,0)+1
         print(f"\n{'─'*66}")
         for k,v in counts.items(): print(f"  {MARKS.get(k,'?')} {k}: {v}")
-        all_reports.append(generate_report(adapter, results, endpoint))
+        all_reports.append(generate_report(
+            adapter, results, endpoint,
+            build_evidence_binding(adapter, args)))
 
     if args.mode in ("http","both"):
         if not args.endpoint:
@@ -735,9 +1052,10 @@ def main():
         run(NativeKernelAdapter(args.kernel), "Native kernel (TENIR-Gov PolicyEngine)")
 
     has_fail = any(rep["summary"]["FAIL"] for rep in all_reports)
+    has_inconclusive = any(rep["summary"]["INCONCLUSIVE"] for rep in all_reports)
     has_incomplete = any(rep["summary"]["IMPLEMENTATION_GAP"] or
                          rep["summary"]["ADAPTER_REQUIRED"] for rep in all_reports)
-    exit_code = 1 if has_fail else 2 if has_incomplete else 0
+    exit_code = 1 if has_fail else 3 if has_inconclusive else 2 if has_incomplete else 0
     out = all_reports[0] if len(all_reports)==1 else all_reports
     if isinstance(out, dict):
         out["exit_code"] = exit_code

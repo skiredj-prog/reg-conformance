@@ -3,7 +3,7 @@
 Implementation-agnostic conformance runner for the Runtime Execution Governance (REG) Standard.
 RFC-0 through RFC-7 (frozen).
 
-The executable runner currently covers 15 vectors: 5 core invariants and 10 RFC-4 vectors. The additional RFC-specific vectors are tracked in the standards and historical result artifacts, but are not executed by this runner.
+The runner registers 53 vector IDs across the core/commit and extended integration sets. Registration is distinct from a behavioral test and from conformance: vectors without an executable probe report `IMPLEMENTATION_GAP`. [`VECTORS.md`](VECTORS.md) is the single vector inventory, including each RFC mapping and test-coverage status.
 
 ## Requirements
 
@@ -82,6 +82,7 @@ Adapter results are never promoted to native-conformance claims.
 |---|---|---|
 | ✓ | PASS | Normative requirement satisfied |
 | ✗ | FAIL | Normative requirement violated |
+| ? | INCONCLUSIVE | Evidence cannot establish PASS or FAIL; never counted as PASS |
 | ○ | NOT_APPLICABLE | Property irrelevant to this topology |
 | ~ | ADAPTER_REQUIRED | Testable only via translation layer |
 | △ | IMPLEMENTATION_GAP | Requirement understood; not yet engineered |
@@ -106,11 +107,22 @@ Conformance is declared per mode. Native does not imply HTTP, and vice versa.
 
 ## Reference results (shim v0.3.1 / kernel-r5-1.0.0)
 
-The JSON files under `results/` are historical snapshots and are not regenerated evidence for the current source tree. Their prior 53-vector totals and PASS claims must not be interpreted as output from the current 15-vector runner. Run the command above to produce a fresh report.
+The committed JSON files under `results/` are historical runs that have been re-scored against the frozen normative requirements. Each corrected result preserves the original status and observed details. They are not fresh executions of the corrected source. A runtime with the listed dependencies is required to generate a new report.
+
+| Historical report | PASS | FAIL | INCONCLUSIVE | NOT_APPLICABLE | ADAPTER_REQUIRED | IMPLEMENTATION_GAP | Assessment |
+|---|---:|---:|---:|---:|---:|---:|---|
+| HTTP adapter | 12 | 2 | 0 | 0 | 1 | 38 | `FAILED` |
+| Native kernel | 12 | 2 | 0 | 1 | 0 | 38 | `FAILED` |
+
+These corrected assessments replace the earlier 15 PASS / 0 GAP / 0 FAIL headline. In particular, C3 and CT-R4-005 are scored `FAIL`; CT-R4-009 and CT-R4-010 remain `IMPLEMENTATION_GAP` because the historical evidence does not establish the required behavior.
+
+The historical files are **not certifiable evidence**: they have no pinned source/subject revision, source-tree hash, OCI environment digest, or dependency lock. `requirements.txt` is currently unpinned. Fresh reports include `evidence_binding` with the local harness revision and source-tree hash, RFC-3/RFC-4 content hashes, runtime/dependency versions, and any supplied subject/environment bindings. Supply `--subject-repository`, `--subject-revision` (full commit SHA), `--subject-worktree-state clean`, and `--environment-digest sha256:<64 hex>` to bind an HTTP run. `--conformance-profile` selects the declared profile. A `CONFORMANT` behavior summary does not imply `EVIDENCE_BOUND` or release certification; the runner does not create CI provenance or sign reports.
+
+`VECTORS.md` says whether a normative property has an executable probe (`IMPLEMENTED`) or remains declared/reserved. A run report says what that probe observed. An ID being registered or marked implemented does not by itself prove scenario coverage or conformance.
 
 CT-R4-009 remains a gap: signed receipts are verified, but the manifest does not retain enough inputs and policy state to reproduce the decision. CT-R4-010 remains a gap: the implementation declares the need for post-commit evidence but does not provide evidence of an external effect.
 
-The runner reports `conformance_status` separately from the interface evidence level. Any FAIL exits with code 1; any `IMPLEMENTATION_GAP` or `ADAPTER_REQUIRED` exits with code 2. Only a run with all applicable vectors passing is `CONFORMANT` (exit 0).
+The runner reports `conformance_status` separately from evidence binding. Any FAIL exits with code 1; any `INCONCLUSIVE` exits with code 3; otherwise any `IMPLEMENTATION_GAP` or `ADAPTER_REQUIRED` exits with code 2. Exit 0 means all applicable probes passed, but does not by itself certify the report's revision/environment bindings.
 
 
 ## Repository layout

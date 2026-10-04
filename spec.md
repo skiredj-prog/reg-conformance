@@ -41,6 +41,7 @@ A report mixing native and adapter results without explicit labeling is non-conf
 |---|---|---|
 | `PASS` | ✓ | Normative requirement satisfied |
 | `FAIL` | ✗ | Normative requirement violated |
+| `INCONCLUSIVE` | ? | Evidence cannot establish PASS or FAIL; never treated as PASS |
 | `NOT_APPLICABLE` | ○ | Property does not apply to this topology |
 | `ADAPTER_REQUIRED` | ~ | Testable only through a translation layer |
 | `IMPLEMENTATION_GAP` | △ | Requirement understood; not yet engineered |
@@ -53,9 +54,11 @@ A report mixing native and adapter results without explicit labeling is non-conf
 |---|---|---|---|---|
 | C1 | RFC-3 | Standing Gate | Actor with invalid credential | `HARD_VETO` — no structural computation |
 | C2 | RFC-2 | Structure Gate | P≥0.9, V≥0.9, K≤0.15 | `FLAG` or `HARD_VETO` — never `PASS` |
-| C3 | RFC-3 | Standing Continuity at Commit | Standing revoked between verdict and commit | Commit blocked with `STANDING_REVOKED`. |
+| C3 | RFC-3 §4.2; RFC-4 §2.2 | Standing Continuity at Commit | Standing revoked between verdict and commit | `HARD_VETO`; commit blocked. |
 | C4 | RFC-1 | Fail-Closed Transport Safety | Transport fault or 5xx | No execution proceeds — `NOT_APPLICABLE` for in-process kernels |
 | C5 | RFC-1/4 §2.1 | Replay Soundness — Idempotency | Duplicate nonce or request | `REJECT` / `NONCE_REPLAY` |
+
+C3 has three evidence outcomes. **C3-A:** revocation is established and commit is blocked with `HARD_VETO` → `PASS`. **C3-B:** commit is accepted after revocation → `FAIL`. **C3-C:** timing, veto, or commit outcome cannot be established → `INCONCLUSIVE`; uncertainty never becomes `PASS` or `FAIL` without evidence. The runner's single C3 probe applies this oracle to each execution.
 
 ---
 
@@ -70,7 +73,7 @@ No HTTP paths. No interface shape. Adapters translate.
 | CT-R4-002 | Action/Payload Binding Violation | Grant for action_A; commit attempts action_B | `REJECT` / `PAYLOAD_BINDING_VIOLATION` |
 | CT-R4-003 | Replay Rejection | Consumed nonce reused | `REJECT` / `REPLAY_DETECTED` |
 | CT-R4-004 | Expired Grant Rejection | `valid_until` passed before commit | `REJECT` / `EVALUATION_EXPIRED` |
-| CT-R4-005 | Commit-State Binding / Race Detection | State at commit differs from state at verdict (beyond declared tolerance) | `REJECT` / `STATE_DRIFT` |
+| CT-R4-005 | Commit-State Binding / Race Detection | Relevant state at commit differs from state at verdict | `HARD_VETO` / `STATE_DRIFT`; commit blocked |
 | CT-R4-006 | Non-PASS Cannot Cross Commit | `HOLD` or `HARD_VETO` disposition → commit attempt | `REJECT` / `INVALID_DISPOSITION` |
 | CT-R4-007 | Decision Receipt Generation | Any disposition (including non-PASS) | Signed Decision Receipt independently verifiable |
 | CT-R4-008 | Evidence Manifest Integrity | Copy of manifest altered after closure | Integrity verification fails without changing the original |
@@ -81,7 +84,7 @@ No HTTP paths. No interface shape. Adapters translate.
 
 ## Current execution scope and known gaps (shim v0.3.1 / kernel-r5-1.0.0)
 
-The runner executes the five core vectors and ten CT-R4 vectors only. Additional RFC-specific vectors are not wired into `VECTORS`; historical JSON files in `results/` are not proof that those vectors ran against current source. HTTP C4 is `ADAPTER_REQUIRED` because the generic adapter cannot establish that a transport failure prevented execution. Native C4 is `NOT_APPLICABLE`. CT-R4-009 remains a gap because the manifest lacks enough inputs and policy state for independent decision reproduction. CT-R4-010 remains a gap because the implementation does not provide external-effect evidence. Protected administrative test helpers require `REG_ADMIN_TOKEN` on the shim and `--admin-token` on the runner.
+The runner registers and dispatches 53 vectors: five C-series vectors, ten CT-R4 vectors, and 38 extended RFC-0/1/2/3/5/6/7 vectors. The two RFC-2 math vectors have active probes; the other 36 extended vectors report `IMPLEMENTATION_GAP` because their adapter tests are not implemented. HTTP C4 is `ADAPTER_REQUIRED` because the generic adapter cannot establish that a transport failure prevented execution. Native C4 is `NOT_APPLICABLE`. CT-R4-009 remains a gap because the manifest lacks enough inputs and policy state for independent decision reproduction. CT-R4-010 remains a gap because the implementation does not provide external-effect evidence. Protected administrative test helpers require `REG_ADMIN_TOKEN` on the shim and `--admin-token` on the runner. Reports record harness/specification hashes and disclose missing target/environment bindings; they are not externally certifiable without a clean pinned subject and reproducible environment. The per-vector inventory is maintained in [`VECTORS.md`](VECTORS.md).
 
 ---
 
@@ -129,7 +132,7 @@ The suite runs in two modes. **Conformance is declared per mode.** Native does n
 
 ### Same vectors, same criteria — different interface only
 
-Both modes run the identical 15 vectors from the same `VECTORS` dict. Pass/fail criteria are identical. The only legitimate differences between modes:
+Both modes run the same 53 registered IDs from `VECTORS`. Pass/fail criteria are identical where an executable probe exists. The only legitimate differences between modes:
 
 - **C4** (`Fail-Closed Transport Safety`) — `NOT_APPLICABLE` for native: no transport layer exists. This is architectural, not a permissiveness concession.
 - **CT-R4-004** (`Expired Grant Rejection`) — native uses `_inject_stale_grant()` to set `valid_until = now - 1 s`, rather than waiting 30 s. The normative property tested is identical: commit on an expired grant must be rejected with `EVALUATION_EXPIRED`. The precondition mechanism differs; the criterion does not.
