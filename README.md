@@ -96,21 +96,21 @@ Conformance is declared per mode. Native does not imply HTTP, and vice versa.
 | `--mode http` | `"adapter"` | 2 — Adapter-Tested | Tests against a REG HTTP endpoint. Behavioral compatibility; not native conformance. |
 | `--mode native` | `"native"` | 3 — Native-Conformant | Tests in-process kernel directly via NativeKernelAdapter. No HTTP layer. |
 
-## Reference results (standalone kernel v0.1 / shim v0.3.0)
+## Reference results (shim v0.3.1 / kernel-r5-1.0.0)
 
-| Mode | PASS | NOT_APPLICABLE / ADAPTER_REQUIRED | IMPLEMENTATION_GAP | FAIL |
-|---|---|---|---|---|
-| HTTP adapter | 11 | 1 | 41 | 0 |
-| Native kernel | 11 | 1 | 41 | 0 |
+| Set                   | Mode    | PASS | NA | GAP | FAIL |
+|-----------------------|---------|------|-----|-----|------|
+| Core (15 vectors)     | adapter |  15  |  0  |  0  |  0   |
+| Extended (38 vectors) | adapter |   2  |  0  | 36  |  0   |
+| Core (15 vectors)     | native  |  14  |  1  |  0  |  0   |
+| Extended (38 vectors) | native  |   2  |  0  | 36  |  0   |
 
-Reference JSON: `results/reg-conformance-v0.3-*.json` (regenerated on each release).
+v0.3.1 closes the four CT-R4 gaps (signed receipts, hash-chain manifest,
+independent verification, commit-state binding). 
+The core 15-vector set is clean in both modes. 
+The extended R0-R7 set remains 36 IMPLEMENTATION_GAP — infrastructure not yet built. 
+All 53 vectors run on every execution.
 
-Known gaps:
-- C3 — permissive revocation after standing change is non-conformant to RFC-4 §2.2 MUST (reported as IMPLEMENTATION_GAP, not PASS)
-- CT-R4-005 — `state_hash_at_verdict` not implemented
-- CT-R4-007 — structural receipt present; cryptographic signing absent
-- CT-R4-008 / CT-R4-009 — no tamper-evident Evidence Manifest / independent verifier path
-- RFC-2 epistemic taxonomy, RFC-3 delegation algebra, RFC-6 mTLS and detached signatures — see `gap_by_tier` in results JSON
 
 ## Repository layout
 
