@@ -1,0 +1,142 @@
+{
+  "suite": "REG Conformance Suite v0.3.1",
+  "rfc_refs": [
+    "RFC-4 (frozen)",
+    "RFC-7 (updated)"
+  ],
+  "interface_mode": "native",
+  "evidence_level": 3,
+  "evidence_label": "NATIVE_CONFORMANT",
+  "endpoint": "",
+  "ran_at": "2026-10-04T01:48:54Z",
+  "summary": {
+    "PASS": 14,
+    "FAIL": 0,
+    "NOT_APPLICABLE": 1,
+    "ADAPTER_REQUIRED": 0,
+    "IMPLEMENTATION_GAP": 0
+  },
+  "results": [
+    {
+      "vector_id": "C1",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "HARD_VETO on standing failure (native)",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "C2",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "HARD_VETO under extreme pressure (native)",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "C3",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "commit accepted \u2014 revocation prospective (native); IMPLEMENTATION_NOTE",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "C4",
+      "status": "NOT_APPLICABLE",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "",
+      "gap_note": "No transport layer in in-process kernel."
+    },
+    {
+      "vector_id": "C5",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "NONCE_REPLAY raised (native)",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-001",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "Valid grant bound and committed (native)",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-002",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "PAYLOAD_BINDING_VIOLATION raised (native)",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-003",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "REPLAY_DETECTED (native)",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-004",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "EVALUATION_EXPIRED on stale grant (native)",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-005",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "STATE_DRIFT raised (epoch 0\u21921) (native)",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-006",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "HARD_VETO blocked at commit gate (native)",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-007",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "Ed25519 receipt verified (native, type='HARD_VETO Receipt')",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-008",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "Hash-chain intact (native, length=13)",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-009",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "Independent verification OK (native, pos=13, class=R1)",
+      "gap_note": ""
+    },
+    {
+      "vector_id": "CT-R4-010",
+      "status": "PASS",
+      "interface_mode": "native",
+      "evidence_level": 3,
+      "details": "external_effect_atomic=false; post_commit_evidence_required=true (native)",
+      "gap_note": ""
+    }
+  ],
+  "result_file": "tenirlabs-v0.3.1-native.json"
+}
