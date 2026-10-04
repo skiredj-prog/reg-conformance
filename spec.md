@@ -1,4 +1,4 @@
-# REG Conformance Spec — v0.2.4
+# REG Conformance Spec — v0.3.1
 **TENIR Labs** | 2026-09-29 | RFC-4 (frozen) · RFC-7 (updated)
 
 ---
@@ -53,7 +53,7 @@ A report mixing native and adapter results without explicit labeling is non-conf
 |---|---|---|---|---|
 | C1 | RFC-3 | Standing Gate | Actor with invalid credential | `HARD_VETO` — no structural computation |
 | C2 | RFC-2 | Structure Gate | P≥0.9, V≥0.9, K≤0.15 | `FLAG` or `HARD_VETO` — never `PASS` |
-| C3 | RFC-4 §2.2 | Commit-State Binding — Standing Drift | Standing revoked between verdict and commit | Commit blocked (strict). Permissive behavior is non-conformant to RFC-4 §2.2 MUST and is declared as IMPLEMENTATION_GAP. |
+| C3 | RFC-3 | Standing Continuity at Commit | Standing revoked between verdict and commit | Commit blocked with `STANDING_REVOKED`. |
 | C4 | RFC-1 | Fail-Closed Transport Safety | Transport fault or 5xx | No execution proceeds — `NOT_APPLICABLE` for in-process kernels |
 | C5 | RFC-1/4 §2.1 | Replay Soundness — Idempotency | Duplicate nonce or request | `REJECT` / `NONCE_REPLAY` |
 
@@ -73,21 +73,15 @@ No HTTP paths. No interface shape. Adapters translate.
 | CT-R4-005 | Commit-State Binding / Race Detection | State at commit differs from state at verdict (beyond declared tolerance) | `REJECT` / `STATE_DRIFT` |
 | CT-R4-006 | Non-PASS Cannot Cross Commit | `HOLD` or `HARD_VETO` disposition → commit attempt | `REJECT` / `INVALID_DISPOSITION` |
 | CT-R4-007 | Decision Receipt Generation | Any disposition (including non-PASS) | Signed Decision Receipt independently verifiable |
-| CT-R4-008 | Evidence Manifest Integrity | Manifest altered after closure | Integrity verification fails |
+| CT-R4-008 | Evidence Manifest Integrity | Copy of manifest altered after closure | Integrity verification fails without changing the original |
 | CT-R4-009 | Independent Evidence Verification | Third-party verifier, no mutable internal state | Decision reproducible from Manifest |
 | CT-R4-010 | External-Effect Claim Boundary | Non-atomic external effect | `external_effect_atomic=false`; post-commit evidence provided |
 
 ---
 
-## Known gaps in reference implementation (shim v0.2.4 / kernel v0.1)
+## Current execution scope and known gaps (shim v0.3.1 / kernel-r5-1.0.0)
 
-| Vector | Gap | Gap type |
-|---|---|---|
-| CT-R4-004 | Expiry not triggerable via HTTP without wait — use `NativeKernelAdapter` | `ADAPTER_REQUIRED` (HTTP) |
-| CT-R4-005 | `state_hash_at_verdict` not implemented — drift detection limited to standing | `IMPLEMENTATION_GAP` |
-| CT-R4-007 | Structural receipt present; cryptographic signing absent | `IMPLEMENTATION_GAP` |
-| CT-R4-008 | Tamper-evident manifest absent; commit hash only | `IMPLEMENTATION_GAP` |
-| CT-R4-009 | Depends on CT-R4-007 and CT-R4-008 | `IMPLEMENTATION_GAP` |
+The runner executes the five core vectors and ten CT-R4 vectors only. Additional RFC-specific vectors are not wired into `VECTORS`; historical JSON files in `results/` are not proof that those vectors ran against current source. HTTP C4 is `ADAPTER_REQUIRED` because the generic adapter cannot establish that a transport failure prevented execution. Native C4 is `NOT_APPLICABLE`. CT-R4-009 remains a gap because the manifest lacks enough inputs and policy state for independent decision reproduction. CT-R4-010 remains a gap because the implementation does not provide external-effect evidence. Protected administrative test helpers require `REG_ADMIN_TOKEN` on the shim and `--admin-token` on the runner.
 
 ---
 

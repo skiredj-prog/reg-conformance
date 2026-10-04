@@ -3,16 +3,16 @@
 Implementation-agnostic conformance runner for the Runtime Execution Governance (REG) Standard.
 RFC-0 through RFC-7 (frozen).
 
-53 vectors: 5 core invariants + 10 commit-integrity vectors (CT-R4-001–010) + 38 RFC-specific vectors.
+The executable runner currently covers 15 vectors: 5 core invariants and 10 RFC-4 vectors. The additional RFC-specific vectors are tracked in the standards and historical result artifacts, but are not executed by this runner.
 
 ## Requirements
 
-    pip install requests fastapi uvicorn pyyaml
+    pip install requests fastapi uvicorn pyyaml cryptography
 
 The reference kernel (PolicyEngine + policy YAML) ships inside kernel/.
 No external repository required.
 
-Kernel policy version (kernel-r5-1.0.0) and code version (v0.3.0) are tracked
+Kernel policy version (kernel-r5-1.0.0) and suite code version (v0.3.1) are tracked
 independently. Policy versions evolve without code changes.
 
 ## Standard Reference
@@ -36,15 +36,23 @@ All eight RFCs are frozen. Latest tag: `rfc-v0.3`.
 
 ### HTTP adapter mode (interface_mode: "adapter" — evidence level 2)
 
-Start the reference shim:
+Start the reference shim (from the repository root):
 
+    $env:REG_ADMIN_TOKEN = "replace-with-a-long-random-secret"
+    $env:REG_CREDENTIAL_TOKEN = "valid-token"
     uvicorn shim:app --host 127.0.0.1 --port 8099
+
+The shim accepts only the credential configured as `REG_CREDENTIAL_TOKEN`; an unset
+variable rejects all principals. Pass the same value via `--principal-credential`.
+Admin-only test helpers require `X-REG-Admin-Token`. If `REG_ADMIN_TOKEN` is unset,
+they return `503 ADMIN_ENDPOINTS_DISABLED`. Supply the same token to the runner with
+`--admin-token`; never expose the reference shim to an untrusted network.
 
 Run suite against it:
 
-    python runner.py --mode http --endpoint http://127.0.0.1:8099
+    python runner.py --mode http --endpoint http://127.0.0.1:8099 --admin-token "$env:REG_ADMIN_TOKEN"
 
-Or against any REG-compatible HTTP endpoint:
+For third-party endpoints, omit `--admin-token` when authenticated test helpers are not available; affected vectors are reported as `ADAPTER_REQUIRED`.
 
     python runner.py --mode http --endpoint https://your-server.example.com --api-key TOKEN
 
@@ -65,7 +73,7 @@ This is the mode for authorize(record, payload_bytes, …) style interfaces.
 ## Output
 
 Console table + JSON result file.
-Every result declares `interface_mode`, `evidence_level`, and `tier`.
+Every result declares `interface_mode` and `evidence_level`.
 Adapter results are never promoted to native-conformance claims.
 
 ## Reporting states
@@ -98,18 +106,11 @@ Conformance is declared per mode. Native does not imply HTTP, and vice versa.
 
 ## Reference results (shim v0.3.1 / kernel-r5-1.0.0)
 
-| Set                   | Mode    | PASS | NA | GAP | FAIL |
-|-----------------------|---------|------|-----|-----|------|
-| Core (15 vectors)     | adapter |  15  |  0  |  0  |  0   |
-| Extended (38 vectors) | adapter |   2  |  0  | 36  |  0   |
-| Core (15 vectors)     | native  |  14  |  1  |  0  |  0   |
-| Extended (38 vectors) | native  |   2  |  0  | 36  |  0   |
+The JSON files under `results/` are historical snapshots and are not regenerated evidence for the current source tree. Their prior 53-vector totals and PASS claims must not be interpreted as output from the current 15-vector runner. Run the command above to produce a fresh report.
 
-v0.3.1 closes the four CT-R4 gaps (signed receipts, hash-chain manifest,
-independent verification, commit-state binding). 
-The core 15-vector set is clean in both modes. 
-The extended R0-R7 set remains 36 IMPLEMENTATION_GAP — infrastructure not yet built. 
-All 53 vectors run on every execution.
+CT-R4-009 remains a gap: signed receipts are verified, but the manifest does not retain enough inputs and policy state to reproduce the decision. CT-R4-010 remains a gap: the implementation declares the need for post-commit evidence but does not provide evidence of an external effect.
+
+The runner reports `conformance_status` separately from the interface evidence level. Any FAIL exits with code 1; any `IMPLEMENTATION_GAP` or `ADAPTER_REQUIRED` exits with code 2. Only a run with all applicable vectors passing is `CONFORMANT` (exit 0).
 
 
 ## Repository layout

@@ -9,7 +9,7 @@ dependencies: [RFC-0, RFC-1, RFC-3]
 
 # RFC-6: Security, Transport & Cryptography
 
-**Status:** Proposed Standard (Draft)
+**Status:** Proposed Standard (Frozen Draft)
 **Dependencies:** RFC-0 (Constitution), RFC-1 (Wire Protocol), RFC-3 (Standing)
 
 **Purpose:** Defines the strict security requirements for the membrane itself. It standardizes workload identity, message integrity, replay protection, key management, and data minimization at the Execution Boundary.

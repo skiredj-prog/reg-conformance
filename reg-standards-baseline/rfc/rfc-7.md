@@ -9,7 +9,7 @@ dependencies: [RFC-0, RFC-1, RFC-2, RFC-3, RFC-4, RFC-5, RFC-6]
 
 # RFC-7: Conformance Suite & Interoperability
 
-**Status:** Proposed Standard (Draft)
+**Status:** Proposed Standard (Frozen Draft)
 **Dependencies:** RFC-0 through RFC-6
 
 **Purpose:** Defines how conformance is proven. Establishes the philosophy, the test vector format, the conformance harness architecture, the mandatory test categories, the deployment maturity ladder, and the separation between implementation status and conformance status.

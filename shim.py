@@ -2,41 +2,33 @@
 """
 REG Conformance Shim — v0.3.1
 ==============================
-interface_mode: "adapter"   (HTTP layer over TENIR-Gov kernel)
-evidence_level: 2 — Adapter-Tested
+HTTP adapter around the bundled TENIR-Gov kernel.
 
-Gaps closed in v0.3.1 vs v0.2
-------------------------------
-CT-R4-005  policy_epoch captured at verdict; STATE_DRIFT raised at commit if epoch changed
-CT-R4-007  Ed25519-signed Decision Receipts; public key via GET /jwks
-CT-R4-008  Hash-chain Evidence Manifest; GET /manifest/verify
-CT-R4-009  GET /evaluations/{id}/verify — independent path, no mutable state access
+Provides nonce/action/evaluation binding, standing revalidation at commit,
+Ed25519-signed receipts, and a hash-chained manifest. Independent signature
+and chain verification are available, but full decision reproduction and
+external-effect evidence remain unsupported gaps.
 
-New admin endpoints
--------------------
-POST /admin/reload-policy   — increment policy_epoch (simulates config reload)
-POST /admin/expire-eval/{id} — force-expire a grant (test helper for CT-R4-004)
-GET  /jwks                  — Ed25519 public key (JWK Set)
-GET  /manifest/verify       — hash-chain integrity check
-GET  /evaluations/{id}/verify — independent receipt + manifest verification
+Administrative test helpers require REG_ADMIN_TOKEN. Evaluation requests
+require a credential matching REG_CREDENTIAL_TOKEN.
 """
 
-import hashlib, json, logging, sys, time, uuid
+import hashlib, hmac, json, logging, os, sys, time, uuid
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
 sys.path.insert(0, str(Path(__file__).parent))
-from core.policy_engine import PolicyEngine
+from kernel.policy_engine import PolicyEngine
 from reg_common import (HashChainManifest, generate_keypair,
                         sign_receipt, verify_receipt_signature, pubkey_to_jwks)
 
 logging.basicConfig(level=logging.WARNING)
 
 # ── Singletons ────────────────────────────────────────────────────────────────
-POLICY_FILE   = Path(__file__).parent / "tenir_policies.yaml"
+POLICY_FILE   = Path(__file__).parent / "kernel" / "tenir_policies.yaml"
 _engine       = PolicyEngine(POLICY_FILE)
 _priv_key, _pub_bytes = generate_keypair()
 _manifest     = HashChainManifest()
@@ -77,9 +69,12 @@ class EvaluationRequest(BaseModel):
     submitted_at:     str
 
 class CommitEvent(BaseModel):
-    event_type:     str = "commit"
-    action_type:    Optional[str] = None
-    policy_version: Optional[str] = None
+    event_type:     Literal["commit"] = "commit"
+    evaluation_id:  str
+    action_id:      str
+    nonce:          str
+    action_type:    str
+    policy_version: str
 
 class RevokeRequest(BaseModel):
     principal_id: str
@@ -102,8 +97,12 @@ def _make_receipt(record: dict) -> dict:
         "receipt_id":        str(uuid.uuid4()),
         "receipt_type":      label,
         "evaluation_id":     record.get("evaluation_id"),
+        "action_id":         record.get("action_id"),
         "final_disposition": disp,
+        "reason_codes":      record.get("reason_codes", [record.get("reason", "")]),
         "policy_version":    record.get("policy_version", _engine.version),
+        "threshold_version": record.get("policy_version", _engine.version),
+        "reproducibility_class": "R0",
         "issued_at":         record.get("created_at"),
         "signed":            False,
     }
@@ -121,14 +120,19 @@ app = FastAPI(title="REG Conformance Shim", version="0.3.1")
 async def evaluate(req: EvaluationRequest):
     global _policy_epoch
 
+    if req.evaluation_id in _evaluations:
+        raise HTTPException(409, "EVALUATION_ID_REPLAY")
     if len(req.nonce) < 8:
         raise HTTPException(422, "NONCE_TOO_SHORT")
     if req.nonce in _used_nonces:
         raise HTTPException(409, "NONCE_REPLAY")
     _used_nonces.add(req.nonce)
 
+    configured_credential = os.environ.get("REG_CREDENTIAL_TOKEN")
+    credential_valid = bool(configured_credential) and hmac.compare_digest(
+        req.principal.credential, configured_credential)
     standing_fail = (
-        req.principal.credential in ("none", "", "invalid")
+        not credential_valid
         or req.principal.id in _revoked
     )
 
@@ -182,6 +186,7 @@ async def evaluate(req: EvaluationRequest):
         "final_disposition": record["final_disposition"],
         "policy_epoch":    record["policy_epoch"],
         "record_hash":     record["_hash"],
+        "receipt":         record["receipt"],
         "timestamp":       record["created_at"],
     })
 
@@ -198,8 +203,17 @@ async def commit_event(eval_id: str, event: CommitEvent):
         raise HTTPException(404, "EVALUATION_NOT_FOUND")
     rec = _evaluations[eval_id]
 
+    if event.evaluation_id != eval_id:
+        raise HTTPException(409, "ENVELOPE_BINDING_VIOLATION")
+    if event.action_id != rec["action_id"] or event.nonce != rec["nonce"]:
+        raise HTTPException(409, "GRANT_BINDING_VIOLATION")
+    if event.action_type != rec["action_type"]:
+        raise HTTPException(409, "PAYLOAD_BINDING_VIOLATION")
+
     if rec["final_disposition"] in ("HARD_VETO", "HOLD"):
         raise HTTPException(409, "INVALID_DISPOSITION")
+    if rec["principal_id"] in _revoked:
+        raise HTTPException(409, "STANDING_REVOKED")
     if eval_id in _commits:
         raise HTTPException(409, "ALREADY_COMMITTED")
     if time.time() > rec["valid_until"]:
@@ -212,12 +226,7 @@ async def commit_event(eval_id: str, event: CommitEvent):
                    f"current={_policy_epoch}")
 
     # CT-R4-002 — action/payload binding
-    if event.action_type and event.action_type != rec["action_type"]:
-        raise HTTPException(409,
-            detail=f"PAYLOAD_BINDING_VIOLATION: "
-                   f"granted={rec['action_type']!r} attempted={event.action_type!r}")
-
-    if event.policy_version and event.policy_version != rec["policy_version"]:
+    if event.policy_version != rec["policy_version"]:
         raise HTTPException(409, "POLICY_VERSION_MISMATCH")
 
     _commits.add(eval_id)
@@ -240,7 +249,8 @@ async def commit_event(eval_id: str, event: CommitEvent):
 # POST /admin/revoke ───────────────────────────────────────────────────────────
 
 @app.post("/admin/revoke", status_code=200)
-async def revoke(req: RevokeRequest):
+async def revoke(req: RevokeRequest, x_reg_admin_token: Optional[str] = Header(None)):
+    _require_admin(x_reg_admin_token)
     _revoked.add(req.principal_id)
     return {"revoked": req.principal_id}
 
@@ -248,7 +258,8 @@ async def revoke(req: RevokeRequest):
 # POST /admin/reload-policy (CT-R4-005 test helper) ────────────────────────────
 
 @app.post("/admin/reload-policy", status_code=200)
-async def reload_policy():
+async def reload_policy(x_reg_admin_token: Optional[str] = Header(None)):
+    _require_admin(x_reg_admin_token)
     global _policy_epoch
     _policy_epoch += 1
     return {"policy_epoch": _policy_epoch,
@@ -258,11 +269,20 @@ async def reload_policy():
 # POST /admin/expire-eval/{id} (CT-R4-004 test helper) ────────────────────────
 
 @app.post("/admin/expire-eval/{eval_id}", status_code=200)
-async def expire_eval(eval_id: str):
+async def expire_eval(eval_id: str, x_reg_admin_token: Optional[str] = Header(None)):
+    _require_admin(x_reg_admin_token)
     if eval_id not in _evaluations:
         raise HTTPException(404, "EVALUATION_NOT_FOUND")
     _evaluations[eval_id]["valid_until"] = time.time() - 1
     return {"expired": eval_id}
+
+
+def _require_admin(token: Optional[str]):
+    configured = os.environ.get("REG_ADMIN_TOKEN")
+    if not configured:
+        raise HTTPException(503, "ADMIN_ENDPOINTS_DISABLED")
+    if not token or not hmac.compare_digest(token, configured):
+        raise HTTPException(403, "ADMIN_AUTH_REQUIRED")
 
 
 # GET /jwks (CT-R4-007) ────────────────────────────────────────────────────────
@@ -277,6 +297,11 @@ async def jwks():
 @app.get("/manifest/verify")
 async def manifest_verify():
     return _manifest.verify()
+
+
+@app.get("/manifest")
+async def manifest_export():
+    return {"entries": _manifest.entries, "head": _manifest.head}
 
 
 # GET /evaluations/{id}/verify (CT-R4-009) ────────────────────────────────────
@@ -302,14 +327,12 @@ async def independent_verify(eval_id: str):
     if not chain_check["integrity_ok"]:
         raise HTTPException(409, f"MANIFEST_INTEGRITY_FAILED: {chain_check}")
 
-    # Verify receipt signature (requires access to _evaluations for the receipt object)
-    # This is the one concession: the receipt is stored alongside the record.
-    # A fully independent verifier would receive the receipt out-of-band.
-    # Declared as Reproducibility Class R1 (RFC-4 §5 "Independent Reproducibility").
-    rec = _evaluations.get(eval_id)
-    if not rec or "receipt" not in rec:
+    receipt = manifest_entry["entry"].get("receipt")
+    if not receipt:
         raise HTTPException(404, "RECEIPT_NOT_FOUND")
-    receipt = rec["receipt"]
+    if (receipt.get("evaluation_id") != eval_id or
+            receipt.get("final_disposition") != manifest_entry["entry"].get("final_disposition")):
+        raise HTTPException(409, "RECEIPT_MANIFEST_BINDING_FAILED")
 
     try:
         verify_receipt_signature(_pub_bytes, receipt)
@@ -324,7 +347,8 @@ async def independent_verify(eval_id: str):
         "manifest_hash":     manifest_entry["hash"],
         "signature_valid":   sig_valid,
         "chain_intact":      chain_check["integrity_ok"],
-        "reproducibility":   "R1",
+        "reproducibility":   "R0",
+        "decision_reproduced": False,
         "verified":          True,
     }
 
@@ -344,12 +368,14 @@ async def get_proof(eval_id: str):
         "final_disposition": rec["final_disposition"],
         "eval_hash":         rec["_hash"],
         "commit_hash":       rec.get("commit_hash"),
-        "receipt_hash":      rec["receipt"]["receipt_hash"],
+        "receipt_hash":      _record_hash(rec["receipt"]),
         "receipt_signed":    rec["receipt"]["signed"],
         "manifest_length":   chain["length"],
         "manifest_head":     chain["head"],
         "manifest_intact":   chain["integrity_ok"],
-        "proof_complete":    True,
+        "proof_complete":    False,
+        "post_commit_evidence_required": True,
+        "external_effect_evidence": None,
     }
 
 

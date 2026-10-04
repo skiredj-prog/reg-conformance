@@ -9,7 +9,7 @@ dependencies: [RFC-0, RFC-1]
 
 # RFC-2: Structural Admissibility & Constraint Geometry
 
-**Status:** Proposed Standard (Draft)
+**Status:** Proposed Standard (Frozen Draft)
 **Dependencies:** RFC-0 (Constitution), RFC-1 (Wire Protocol)
 
 **Purpose:** Defines how the Structure dimension evaluates the real-time admissibility of an action based on the system's structural state. It establishes the normative definitions of the geometric primitives, the strict boundary between measurement and interpretation, and the rules for handling epistemic uncertainty.

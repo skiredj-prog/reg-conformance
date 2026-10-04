@@ -9,7 +9,7 @@ dependencies: [RFC-0]
 
 # RFC-1: The Execution Grant Envelope (EGE) & Wire Protocol
 
-**Status:** Proposed Standard (Draft)
+**Status:** Proposed Standard (Frozen Draft)
 **Dependency:** RFC-0 (Constitution)
 
 ---

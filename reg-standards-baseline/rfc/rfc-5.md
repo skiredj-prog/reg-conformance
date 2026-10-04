@@ -9,7 +9,7 @@ dependencies: [RFC-0, RFC-1, RFC-3]
 
 # RFC-5: Liveness & Operationalization
 
-**Status:** Proposed Standard (Draft)
+**Status:** Proposed Standard (Frozen Draft)
 **Dependencies:** RFC-0 (Constitution), RFC-1 (Wire Protocol), RFC-3 (Standing)
 
 **Purpose:** Translates the architecture into operational reality. Defines how τ_K is derived, how the exhaustion policy is declared, how Shadow Mode is bounded, how recovery establishes a new authorization context, and how adoption maturity is measured.

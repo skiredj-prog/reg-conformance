@@ -37,16 +37,23 @@ class HashChainManifest:
 
     def verify(self) -> dict:
         prev = self.GENESIS
-        for item in self.entries:
+        for index, item in enumerate(self.entries):
             canonical = json.dumps(item["entry"], sort_keys=True, default=str)
             expected = hashlib.sha256((prev + canonical).encode()).hexdigest()
-            if expected != item["hash"]:
-                return {"integrity_ok": False, "first_fault": item["index"],
-                        "expected": expected, "got": item["hash"]}
-            if item["prev"] != prev:
-                return {"integrity_ok": False, "first_fault": item["index"],
+            if item.get("index") != index:
+                return {"integrity_ok": False, "first_fault": index,
+                        "detail": "index mismatch"}
+            if expected != item.get("hash"):
+                return {"integrity_ok": False, "first_fault": index,
+                        "expected": expected, "got": item.get("hash")}
+            if item.get("prev") != prev:
+                return {"integrity_ok": False, "first_fault": index,
                         "detail": "prev pointer mismatch"}
             prev = item["hash"]
+        if prev != self._head:
+            return {"integrity_ok": False, "first_fault": len(self.entries),
+                    "detail": "head pointer mismatch", "expected": prev,
+                    "got": self._head}
         return {"integrity_ok": True, "length": len(self.entries),
                 "head": self._head}
 
@@ -75,12 +82,7 @@ def sign_receipt(private_key: Ed25519PrivateKey, receipt: dict) -> dict:
     Sign the canonical receipt payload (excl. signature fields).
     Adds: signed=True, signed_payload (str), signature (base64url).
     """
-    payload_fields = {
-        k: receipt[k] for k in
-        ("receipt_id", "receipt_type", "evaluation_id",
-         "final_disposition", "policy_version", "issued_at")
-        if k in receipt
-    }
+    payload_fields = _receipt_payload(receipt)
     payload_str  = json.dumps(payload_fields, sort_keys=True)
     sig_bytes    = private_key.sign(payload_str.encode())
 
@@ -99,9 +101,13 @@ def verify_receipt_signature(pub_key_bytes: bytes, receipt: dict) -> bool:
     Returns True if valid, raises on failure.
     """
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    payload = _receipt_payload(receipt)
+    canonical = json.dumps(payload, sort_keys=True)
+    if receipt.get("signed_payload") != canonical:
+        raise ValueError("signed payload does not match receipt fields")
     pub  = Ed25519PublicKey.from_public_bytes(pub_key_bytes)
     sig  = base64.urlsafe_b64decode(receipt["signature"] + "==")
-    pub.verify(sig, receipt["signed_payload"].encode())
+    pub.verify(sig, canonical.encode())
     return True
 
 
@@ -109,3 +115,13 @@ def pubkey_to_jwks(pub_bytes: bytes) -> dict:
     """Return a minimal JWK Set for the given raw Ed25519 public key bytes."""
     x = base64.urlsafe_b64encode(pub_bytes).rstrip(b"=").decode()
     return {"keys": [{"kty": "OKP", "crv": "Ed25519", "use": "sig", "x": x}]}
+
+
+def _receipt_payload(receipt: dict) -> dict:
+    required = ("receipt_id", "receipt_type", "evaluation_id", "action_id",
+                "final_disposition", "reason_codes", "policy_version",
+                "threshold_version", "reproducibility_class", "issued_at")
+    missing = [key for key in required if key not in receipt]
+    if missing:
+        raise ValueError(f"receipt missing signed fields: {', '.join(missing)}")
+    return {key: receipt[key] for key in required}

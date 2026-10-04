@@ -9,7 +9,7 @@ dependencies: []
 
 # RFC-0: Runtime Execution Governance (REG) Standard
 
-**Status:** Proposed Standard (Draft for Community Review)
+**Status:** Proposed Standard (Frozen Draft)
 **Domain:** AI Safety, Autonomous Systems, Execution Boundaries
 **Origin:** Open standard derived from the convergence of TENIR-Gov, CCEAF, and CommitGate architectures.
 

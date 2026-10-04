@@ -9,7 +9,7 @@ dependencies: [RFC-0, RFC-1]
 
 # RFC-3: Standing & Authority Continuity
 
-**Status:** Proposed Standard (Draft)
+**Status:** Proposed Standard (Frozen Draft)
 **Dependencies:** RFC-0 (Constitution), RFC-1 (Wire Protocol)
 
 **Purpose:** Defines how the Standing dimension ($St_t$) evaluates whether an actor currently possesses the authority to request an action, how that authority is cryptographically bound and preserved, and how multiple authorities compose under collective constraints. It closes the critical gaps of delegation amplification, revocation propagation, and context mutation.

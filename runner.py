@@ -1,19 +1,11 @@
 #!/usr/bin/env python3
 """
-REG Conformance Suite v0.3.1 — RFC-4 (frozen) / RFC-7 (updated)
-================================================================
-All 4 previously declared IMPLEMENTATION_GAPs now covered:
-  CT-R4-005  Commit-State Binding (policy_epoch)
-  CT-R4-007  Signed Decision Receipts (Ed25519)
-  CT-R4-008  Hash-chain Evidence Manifest
-  CT-R4-009  Independent Evidence Verification
-
-CT-R4-004 now testable in HTTP mode via POST /admin/expire-eval/{id}.
-
-Target results
---------------
-  HTTP   (adapter / level 2):  15 PASS · 0 GAP · 0 FAIL
-  Native (native  / level 3):  14 PASS · 1 NOT_APPLICABLE · 0 GAP · 0 FAIL
+REG Conformance Suite v0.3.1 — RFC-4 and RFC-7
+================================================
+Runs the five core vectors and ten RFC-4 vectors supported by this runner.
+Results report conformance status separately from interface evidence level.
+Known gaps remain explicit, including independent decision reproduction and
+external-effect evidence.
 """
 
 import argparse, base64, hashlib, json, sys, time, uuid
@@ -121,15 +113,19 @@ class HTTPAdapter(BaseAdapter):
     interface_mode = "adapter"
     evidence_level = EvidenceLevel.ADAPTER_TESTED
 
-    def __init__(self, endpoint, api_key=None, insecure=False):
+    def __init__(self, endpoint, api_key=None, insecure=False, admin_token=None, credential="valid-token"):
         self.endpoint = endpoint.rstrip("/")
         self.hdrs     = {"Content-Type": "application/json"}
         if api_key: self.hdrs["Authorization"] = f"Bearer {api_key}"
+        self.admin_token = admin_token
+        self.credential = credential
         self.verify   = not insecure
         self._jwks_cache: Optional[bytes] = None  # raw pub bytes
 
     def _post(self, path, body):
         h = {**self.hdrs, "X-Trace-Id": str(uuid.uuid4())}
+        if path.startswith("/admin/") and self.admin_token:
+            h["X-REG-Admin-Token"] = self.admin_token
         try:
             r = requests.post(f"{self.endpoint}{path}", json=body,
                               headers=h, verify=self.verify, timeout=10)
@@ -150,7 +146,7 @@ class HTTPAdapter(BaseAdapter):
             "protocol_version": "reg-1.0",
             "evaluation_id":    f"eval_{uuid.uuid4().hex}",
             "action_id":        f"act_{uuid.uuid4().hex}",
-            "principal":        {"id": "authorized-actor", "credential": "valid-token"},
+            "principal":        {"id": "authorized-actor", "credential": self.credential},
             "action":           {"type": "wire_transfer", "params": {}},
             "measurements":     {"pressure": 0.3, "volatility": 0.3, "capacity": 0.85},
             "nonce":            uuid.uuid4().hex,
@@ -158,6 +154,14 @@ class HTTPAdapter(BaseAdapter):
         }; b.update(kw); return b
 
     def _disp(self, r): return r.get("final_disposition") or r.get("disposition")
+
+    def _commit_body(self, evaluation, action_type=None):
+        return {"event_type": "commit",
+                "evaluation_id": evaluation["evaluation_id"],
+                "action_id": evaluation["action_id"],
+                "nonce": evaluation["nonce"],
+                "action_type": action_type or evaluation["action_type"],
+                "policy_version": evaluation["policy_version"]}
 
     def _pub_bytes(self) -> Optional[bytes]:
         if self._jwks_cache: return self._jwks_cache
@@ -196,30 +200,25 @@ class HTTPAdapter(BaseAdapter):
     def _v_c3(self):
         pid = f"race-{uuid.uuid4().hex[:8]}"
         c, r = self._post("/evaluations", self._eb(
-            principal={"id":pid,"credential":"valid-token"},
+            principal={"id":pid,"credential":self.credential},
             measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
         if self._disp(r) != "PASS":
             return self._ar("C3", "Could not obtain PASS for race test")
         eid = r.get("evaluation_id")
-        rc, _ = self._post("/admin/revoke", {"principal_id":pid,"reason":"C3"})
+        rc, rr = self._post("/admin/revoke", {"principal_id":pid,"reason":"C3"})
         if rc not in (200,202):
-            return self._ar("C3", "/admin/revoke absent — IMPLEMENTATION_GAP")
-        ec, er = self._post(f"/evaluations/{eid}/events", {"event_type":"commit"})
-        if ec == 409: return self._pass("C3","commit blocked post-revocation (strict)")
-        if ec == 200: return self._pass("C3",
-            "commit accepted — revocation prospective; IMPLEMENTATION_NOTE")
-        return self._fail("C3", f"unexpected commit response: {ec}")
+            return self._ar("C3", f"Protected /admin/revoke unavailable (HTTP {rc}); configure REG_ADMIN_TOKEN and --admin-token")
+        ec, er = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
+        if ec == 409 and "STANDING_REVOKED" in str(er):
+            return self._pass("C3","commit blocked after standing revocation")
+        if ec == 200:
+            return self._fail("C3","commit accepted after revocation")
+        return self._fail("C3", f"expected STANDING_REVOKED, got {ec}: {er}")
 
-    # C4
     def _v_c4(self):
-        try:
-            r = requests.post(f"{self.endpoint}/nonexistent-503", json={},
-                              headers=self.hdrs, verify=self.verify, timeout=3)
-            if r.status_code >= 400:
-                return self._pass("C4", f"server returned {r.status_code}; fail-closed")
-        except Exception:
-            return self._pass("C4", "connection/timeout error → fail-closed")
-        return self._fail("C4","unexpected 2xx on nonexistent path")
+        return self._ar("C4",
+            "The generic HTTP adapter cannot prove a transport failure prevented execution; "
+            "the checked URL is not an execution endpoint.")
 
     # C5
     def _v_c5(self):
@@ -240,7 +239,7 @@ class HTTPAdapter(BaseAdapter):
             return self._fail("CT-R4-001", f"expected PASS, got {self._disp(r)!r}")
         eid = r.get("evaluation_id")
         ec, er = self._post(f"/evaluations/{eid}/events",
-                            {"event_type":"commit","action_type":"wire_transfer"})
+                            self._commit_body(r, "wire_transfer"))
         return (self._pass("CT-R4-001", f"GRANT bound and committed ({eid[:8]}…)")
                 if ec == 200 and er.get("status") == "COMMITTED"
                 else self._fail("CT-R4-001", f"commit returned {ec}: {er}"))
@@ -254,7 +253,7 @@ class HTTPAdapter(BaseAdapter):
             return self._fail("CT-R4-002","could not obtain PASS grant")
         eid = r.get("evaluation_id")
         ec, er = self._post(f"/evaluations/{eid}/events",
-                            {"event_type":"commit","action_type":"account_deletion"})
+                            self._commit_body(r, "account_deletion"))
         return (self._pass("CT-R4-002","PAYLOAD_BINDING_VIOLATION correctly rejected")
                 if ec == 409 and "BINDING" in er.get("detail","")
                 else self._fail("CT-R4-002", f"expected 409 BINDING_VIOLATION, got {ec}: {er}"))
@@ -281,7 +280,7 @@ class HTTPAdapter(BaseAdapter):
         if ec != 200:
             return self._ar("CT-R4-004",
                 "/admin/expire-eval absent — cannot trigger expiry without wait")
-        cc, cr = self._post(f"/evaluations/{eid}/events", {"event_type":"commit"})
+        cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         return (self._pass("CT-R4-004","EVALUATION_EXPIRED on force-expired grant")
                 if cc == 409 and "EXPIRED" in cr.get("detail","")
                 else self._fail("CT-R4-004", f"expected 409 EXPIRED, got {cc}: {cr}"))
@@ -298,7 +297,7 @@ class HTTPAdapter(BaseAdapter):
         rc, _ = self._post("/admin/reload-policy", {})
         if rc not in (200,202):
             return self._gap("CT-R4-005","/admin/reload-policy absent — cannot test epoch drift")
-        cc, cr = self._post(f"/evaluations/{eid}/events", {"event_type":"commit"})
+        cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         detail = cr.get("detail","")
         return (self._pass("CT-R4-005",
                     f"STATE_DRIFT raised (epoch {epoch_at_verdict}→{epoch_at_verdict+1})")
@@ -313,7 +312,7 @@ class HTTPAdapter(BaseAdapter):
         if self._disp(r) != "HARD_VETO":
             return self._fail("CT-R4-006","could not force HARD_VETO")
         eid = r.get("evaluation_id")
-        ec, er = self._post(f"/evaluations/{eid}/events", {"event_type":"commit"})
+        ec, er = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         return (self._pass("CT-R4-006","HARD_VETO blocked at commit gate")
                 if ec == 409 and "INVALID_DISPOSITION" in er.get("detail","")
                 else self._fail("CT-R4-006", f"expected 409 INVALID_DISPOSITION, got {ec}"))
@@ -333,58 +332,50 @@ class HTTPAdapter(BaseAdapter):
         try:
             from reg_common import verify_receipt_signature
             verify_receipt_signature(pub, receipt)
-            return self._pass("CT-R4-007",
-                f"Ed25519 receipt verified against JWKS "
-                f"(type={receipt['receipt_type']!r})")
+            tampered = dict(receipt)
+            tampered["final_disposition"] = "TAMPERED"
+            try:
+                verify_receipt_signature(pub, tampered)
+                return self._fail("CT-R4-007", "Changed receipt field still verified")
+            except Exception:
+                return self._pass("CT-R4-007",
+                    f"Ed25519 signature binds receipt fields (type={receipt['receipt_type']!r})")
         except Exception as e:
             return self._fail("CT-R4-007", f"Signature verification failed: {e}")
 
     # CT-R4-008  (hash-chain manifest integrity)
     def _v_ct_r4_008(self):
-        # Run an evaluation to ensure something is in the manifest
         self._post("/evaluations", self._eb(
             measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
-        c, r = self._get("/manifest/verify")
-        if c != 200:
-            return self._gap("CT-R4-008",f"/manifest/verify returned {c}")
-        if r.get("integrity_ok") and r.get("length",0) > 0:
-            return self._pass("CT-R4-008",
-                f"Hash-chain intact (length={r['length']}, "
-                f"head={r.get('head','?')[:12]}…)")
-        return self._fail("CT-R4-008",
-            f"integrity_ok={r.get('integrity_ok')} length={r.get('length')}")
+        c, r = self._get("/manifest")
+        if c != 200 or not isinstance(r.get("entries"), list):
+            return self._ar("CT-R4-008", f"Manifest export unavailable (HTTP {c})")
+        from reg_common import HashChainManifest
+        import copy
+        manifest = HashChainManifest()
+        manifest.entries = copy.deepcopy(r["entries"])
+        manifest._head = r.get("head", "")
+        before = manifest.verify()
+        if not before.get("integrity_ok") or not manifest.entries:
+            return self._fail("CT-R4-008", f"Exported manifest invalid: {before}")
+        probe = copy.deepcopy(manifest)
+        probe.entries[0]["entry"]["tamper_probe"] = True
+        after = probe.verify()
+        return (self._pass("CT-R4-008", "Copied exported manifest verified; tampering detected")
+                if after.get("integrity_ok") is False and manifest.verify().get("integrity_ok")
+                else self._fail("CT-R4-008", f"Tampering not detected: {after}"))
 
     # CT-R4-009  (independent verification endpoint)
     def _v_ct_r4_009(self):
-        c, r = self._post("/evaluations", self._eb(
-            measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
-        if self._disp(r) != "PASS":
-            return self._fail("CT-R4-009","could not obtain PASS")
-        eid = r.get("evaluation_id")
-        self._post(f"/evaluations/{eid}/events", {"event_type":"commit"})
-        vc, vr = self._get(f"/evaluations/{eid}/verify")
-        if vc == 200 and vr.get("verified") and vr.get("signature_valid") and vr.get("chain_intact"):
-            return self._pass("CT-R4-009",
-                f"Independent verification OK (manifest pos={vr.get('manifest_position')}, "
-                f"class={vr.get('reproducibility')})")
-        return self._fail("CT-R4-009", f"verify returned {vc}: {vr}")
+        return self._gap("CT-R4-009",
+            "The manifest lacks the complete evaluation inputs and policy snapshot needed "
+            "to reproduce the decision independently.")
 
-    # CT-R4-010
     def _v_ct_r4_010(self):
-        c, r = self._post("/evaluations", self._eb(
-            measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
-        if r.get("external_effect_atomic") is not False:
-            return self._fail("CT-R4-010","external_effect_atomic not declared false")
-        eid = r.get("evaluation_id")
-        if self._disp(r) == "PASS":
-            _, er = self._post(f"/evaluations/{eid}/events", {"event_type":"commit"})
-            if er.get("post_commit_evidence_required") is True:
-                return self._pass("CT-R4-010",
-                    "external_effect_atomic=false; post_commit_evidence_required=true")
-        return self._pass("CT-R4-010","external_effect_atomic=false declared")
+        return self._gap("CT-R4-010",
+            "The shim declares the post-commit evidence requirement but does not provide "
+            "evidence of the external effect.")
 
-
-# ── Native kernel adapter ─────────────────────────────────────────────────────
 
 class NativeKernelAdapter(BaseAdapter):
     """
@@ -397,7 +388,7 @@ class NativeKernelAdapter(BaseAdapter):
 
     def __init__(self, policy_file: str):
         sys.path.insert(0, str(Path(__file__).parent))
-        from core.policy_engine import PolicyEngine
+        from kernel.policy_engine import PolicyEngine
         from reg_common import (HashChainManifest, generate_keypair,
                                 sign_receipt, verify_receipt_signature, pubkey_to_jwks)
         self._engine   = PolicyEngine(Path(policy_file))
@@ -418,8 +409,9 @@ class NativeKernelAdapter(BaseAdapter):
         if len(nonce) < 8:   raise ValueError("NONCE_TOO_SHORT")
         if nonce in self._consumed: raise ValueError("NONCE_REPLAY")
 
+        action_id = f"act_{uuid.uuid4().hex}"
         if credential in ("none","","invalid") or principal_id in self._revoked:
-            g = {"evaluation_id":eid,"action_type":action_type,
+            g = {"evaluation_id":eid,"action_id":action_id,"action_type":action_type,
                  "principal_id":principal_id,"final_disposition":"HARD_VETO",
                  "reason":"STANDING_FAILURE","nonce":nonce,
                  "policy_version":self._engine.version,"policy_epoch":self._epoch,
@@ -427,7 +419,7 @@ class NativeKernelAdapter(BaseAdapter):
                  "external_effect_atomic":False}
         else:
             kr = self._engine.evaluate(P, V, K)
-            g  = {"evaluation_id":eid,"action_type":action_type,
+            g  = {"evaluation_id":eid,"action_id":action_id,"action_type":action_type,
                   "principal_id":principal_id,"final_disposition":kr["decision"],
                   "s_score":kr["s_score"],"nonce":nonce,
                   "policy_version":kr["policy_version"],"policy_epoch":self._epoch,
@@ -436,9 +428,12 @@ class NativeKernelAdapter(BaseAdapter):
 
         raw_receipt = {"receipt_id":str(uuid.uuid4()),
                        "receipt_type":f"{g['final_disposition']} Receipt",
-                       "evaluation_id":eid,
+                       "evaluation_id":eid, "action_id":g.get("action_id", eid),
                        "final_disposition":g["final_disposition"],
+                       "reason_codes":[g.get("reason", "")],
                        "policy_version":g["policy_version"],
+                       "threshold_version":g["policy_version"],
+                       "reproducibility_class":"R0",
                        "issued_at":g["created_at"],"signed":False}
         g["receipt"] = self._sign(self._priv, raw_receipt)
 
@@ -446,13 +441,17 @@ class NativeKernelAdapter(BaseAdapter):
         self._grants[eid] = g
         self._manifest.append({"type":"evaluation","evaluation_id":eid,
                                "final_disposition":g["final_disposition"],
-                               "policy_epoch":g["policy_epoch"]})
+                               "policy_epoch":g["policy_epoch"],
+                               "receipt":g["receipt"]})
         return g
 
-    def _commit(self, eid, action_type=None):
+    def _commit(self, eid, action_type=None, action_id=None, nonce=None):
         if eid not in self._grants: raise KeyError("GRANT_NOT_FOUND")
         g = self._grants[eid]
+        if action_id != g["action_id"] or nonce != g["nonce"]:
+            raise ValueError("GRANT_BINDING_VIOLATION")
         if g["final_disposition"] in ("HARD_VETO","HOLD"): raise ValueError("INVALID_DISPOSITION")
+        if g["principal_id"] in self._revoked: raise ValueError("STANDING_REVOKED")
         if g.get("_committed"):  raise ValueError("ALREADY_COMMITTED")
         if time.time() > g["valid_until"]: raise ValueError("EVALUATION_EXPIRED")
         if self._epoch != g["policy_epoch"]:
@@ -470,13 +469,15 @@ class NativeKernelAdapter(BaseAdapter):
     def _inject_stale(self, action_type="wire_transfer"):
         eid = f"eval_stale_{uuid.uuid4().hex}"
         nonce = uuid.uuid4().hex
-        g = {"evaluation_id":eid,"action_type":action_type,"principal_id":"auth",
+        g = {"evaluation_id":eid,"action_id":f"act_{uuid.uuid4().hex}","action_type":action_type,"principal_id":"auth",
              "final_disposition":"PASS","nonce":nonce,"policy_epoch":self._epoch,
              "created_at":time.time()-60,"valid_until":time.time()-1,
              "external_effect_atomic":False}
         raw_r = {"receipt_id":str(uuid.uuid4()),"receipt_type":"Grant/Authorization Receipt",
-                 "evaluation_id":eid,"final_disposition":"PASS",
-                 "policy_version":self._engine.version,"issued_at":g["created_at"],"signed":False}
+                 "evaluation_id":eid,"action_id":g["action_id"],"final_disposition":"PASS",
+                 "reason_codes":[],"policy_version":self._engine.version,
+                 "threshold_version":self._engine.version,"reproducibility_class":"R0",
+                 "issued_at":g["created_at"],"signed":False}
         g["receipt"] = self._sign(self._priv, raw_r)
         self._consumed.add(nonce)
         self._grants[eid] = g
@@ -487,9 +488,9 @@ class NativeKernelAdapter(BaseAdapter):
         if not entry: raise KeyError("NOT_IN_MANIFEST")
         chain = self._manifest.verify()
         if not chain["integrity_ok"]: raise ValueError("MANIFEST_INTEGRITY_FAILED")
-        g = self._grants.get(eid)
-        if not g or "receipt" not in g: raise KeyError("RECEIPT_NOT_FOUND")
-        self._verify(self._pub, g["receipt"])
+        receipt = entry["entry"].get("receipt")
+        if not receipt: raise KeyError("RECEIPT_NOT_FOUND")
+        self._verify(self._pub, receipt)
         return {"verified":True,"signature_valid":True,"chain_intact":True,
                 "manifest_position":entry["index"],"reproducibility":"R1"}
 
@@ -520,10 +521,11 @@ class NativeKernelAdapter(BaseAdapter):
             return self._ar("C3","Could not obtain PASS")
         self._revoke(pid)
         try:
-            self._commit(g["evaluation_id"])
-            return self._pass("C3","commit accepted — revocation prospective (native); IMPLEMENTATION_NOTE")
+            self._commit(g["evaluation_id"],action_id=g["action_id"],nonce=g["nonce"])
+            return self._fail("C3","commit accepted after revocation")
         except ValueError as e:
-            return self._pass("C3",f"commit blocked post-revocation: {e} (strict)")
+            return (self._pass("C3",f"commit blocked after revocation (native): {e}")
+                    if "STANDING_REVOKED" in str(e) else self._fail("C3",str(e)))
 
     def _v_c4(self):
         return self._na("C4","No transport layer in in-process kernel.")
@@ -542,7 +544,7 @@ class NativeKernelAdapter(BaseAdapter):
         g = self._evaluate("a","valid","wire_transfer",0.2,0.2,0.90,uuid.uuid4().hex)
         if g["final_disposition"] != "PASS":
             return self._fail("CT-R4-001",str(g["final_disposition"]))
-        r = self._commit(g["evaluation_id"],"wire_transfer")
+        r = self._commit(g["evaluation_id"],"wire_transfer",action_id=g["action_id"],nonce=g["nonce"])
         return (self._pass("CT-R4-001","Valid grant bound and committed (native)")
                 if r["status"]=="COMMITTED" else self._fail("CT-R4-001",str(r)))
 
@@ -551,7 +553,7 @@ class NativeKernelAdapter(BaseAdapter):
         if g["final_disposition"] != "PASS":
             return self._fail("CT-R4-002","no PASS")
         try:
-            self._commit(g["evaluation_id"],"account_deletion")
+            self._commit(g["evaluation_id"],"account_deletion",action_id=g["action_id"],nonce=g["nonce"])
             return self._fail("CT-R4-002","binding violation not detected")
         except ValueError as e:
             return (self._pass("CT-R4-002","PAYLOAD_BINDING_VIOLATION raised (native)")
@@ -570,7 +572,7 @@ class NativeKernelAdapter(BaseAdapter):
     def _v_ct_r4_004(self):
         stale = self._inject_stale()
         try:
-            self._commit(stale["evaluation_id"])
+            self._commit(stale["evaluation_id"],action_id=stale["action_id"],nonce=stale["nonce"])
             return self._fail("CT-R4-004","Expired grant accepted")
         except ValueError as e:
             return (self._pass("CT-R4-004","EVALUATION_EXPIRED on stale grant (native)")
@@ -583,7 +585,7 @@ class NativeKernelAdapter(BaseAdapter):
         epoch_before = self._epoch
         self._reload_policy()
         try:
-            self._commit(g["evaluation_id"])
+            self._commit(g["evaluation_id"],action_id=g["action_id"],nonce=g["nonce"])
             return self._fail("CT-R4-005","STATE_DRIFT not detected")
         except ValueError as e:
             return (self._pass("CT-R4-005",
@@ -595,7 +597,7 @@ class NativeKernelAdapter(BaseAdapter):
         if g["final_disposition"] != "HARD_VETO":
             return self._fail("CT-R4-006","no HARD_VETO")
         try:
-            self._commit(g["evaluation_id"])
+            self._commit(g["evaluation_id"],action_id=g["action_id"],nonce=g["nonce"])
             return self._fail("CT-R4-006","HARD_VETO committed")
         except ValueError as e:
             return (self._pass("CT-R4-006","HARD_VETO blocked at commit gate (native)")
@@ -608,44 +610,37 @@ class NativeKernelAdapter(BaseAdapter):
             return self._fail("CT-R4-007","Receipt not signed")
         try:
             self._verify(self._pub, receipt)
-            return self._pass("CT-R4-007",
-                f"Ed25519 receipt verified (native, type={receipt['receipt_type']!r})")
+            tampered = dict(receipt)
+            tampered["final_disposition"] = "TAMPERED"
+            try:
+                self._verify(self._pub, tampered)
+                return self._fail("CT-R4-007", "Changed receipt field still verified")
+            except Exception:
+                return self._pass("CT-R4-007",
+                    f"Ed25519 signature binds receipt fields (native, type={receipt['receipt_type']!r})")
         except Exception as e:
             return self._fail("CT-R4-007",f"Sig verification failed: {e}")
 
     def _v_ct_r4_008(self):
         self._evaluate("a","valid","wt",0.2,0.2,0.90,uuid.uuid4().hex)
-        result = self._manifest.verify()
-        return (self._pass("CT-R4-008",
-                    f"Hash-chain intact (native, length={result['length']})")
-                if result["integrity_ok"] and result["length"] > 0
+        import copy
+        probe = copy.deepcopy(self._manifest)
+        probe.entries[0]["entry"]["final_disposition"] = "TAMPERED"
+        result = probe.verify()
+        return (self._pass("CT-R4-008","Tampering in a copied manifest was detected (native)")
+                if not result["integrity_ok"] and self._manifest.verify()["integrity_ok"]
                 else self._fail("CT-R4-008",str(result)))
 
     def _v_ct_r4_009(self):
-        g = self._evaluate("a","valid","wt",0.2,0.2,0.90,uuid.uuid4().hex)
-        if g["final_disposition"] != "PASS":
-            return self._fail("CT-R4-009","no PASS")
-        self._commit(g["evaluation_id"])
-        try:
-            vr = self._verify_independent(g["evaluation_id"])
-            return self._pass("CT-R4-009",
-                f"Independent verification OK (native, pos={vr['manifest_position']}, "
-                f"class={vr['reproducibility']})")
-        except Exception as e:
-            return self._fail("CT-R4-009",str(e))
+        return self._gap("CT-R4-009",
+            "The manifest lacks the complete evaluation inputs and policy snapshot needed "
+            "to reproduce the decision independently.")
 
     def _v_ct_r4_010(self):
-        g = self._evaluate("a","valid","wt",0.2,0.2,0.90,uuid.uuid4().hex)
-        if g.get("external_effect_atomic") is not False:
-            return self._fail("CT-R4-010","external_effect_atomic not false")
-        r = self._commit(g["evaluation_id"])
-        return (self._pass("CT-R4-010",
-                    "external_effect_atomic=false; post_commit_evidence_required=true (native)")
-                if r.get("post_commit_evidence_required") is True
-                else self._fail("CT-R4-010","post_commit_evidence_required missing"))
+        return self._gap("CT-R4-010",
+            "The adapter reports the post-commit evidence requirement but does not provide "
+            "evidence of an external effect.")
 
-
-# ── Report & main ─────────────────────────────────────────────────────────────
 
 MARKS = {"PASS":"✓","FAIL":"✗","NOT_APPLICABLE":"○",
          "ADAPTER_REQUIRED":"~","IMPLEMENTATION_GAP":"△"}
@@ -658,6 +653,9 @@ def generate_report(adapter, results, endpoint=""):
             "interface_mode":adapter.interface_mode,
             "evidence_level":int(adapter.evidence_level),
             "evidence_label":EvidenceLevel(adapter.evidence_level).name,
+            "conformance_status": ("FAILED" if counts["FAIL"] else
+                                   "INCOMPLETE" if counts["IMPLEMENTATION_GAP"] or counts["ADAPTER_REQUIRED"] else
+                                   "CONFORMANT"),
             "endpoint":endpoint,
             "ran_at":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
             "summary":counts,
@@ -667,8 +665,12 @@ def main():
     p = argparse.ArgumentParser(description="REG Conformance Suite v0.3.1")
     p.add_argument("--endpoint", default="")
     p.add_argument("--mode", choices=["http","native","both"], default="http")
-    p.add_argument("--kernel", default="tenir_policies.yaml")
+    p.add_argument("--kernel", default="kernel/tenir_policies.yaml")
     p.add_argument("--api-key", default=None)
+    p.add_argument("--admin-token", default=None,
+                   help="Token matching REG_ADMIN_TOKEN for protected shim test helpers")
+    p.add_argument("--principal-credential", default="valid-token",
+                   help="Credential sent in test evaluation requests (shim requires REG_CREDENTIAL_TOKEN to match)")
     p.add_argument("--insecure", action="store_true")
     p.add_argument("--output", default="results/tenirlabs-v0.3.1.json")
     args = p.parse_args()
@@ -693,7 +695,8 @@ def main():
     if args.mode in ("http","both"):
         if not args.endpoint:
             print("ERROR: --endpoint required", file=sys.stderr); sys.exit(1)
-        run(HTTPAdapter(args.endpoint, args.api_key, args.insecure),
+        run(HTTPAdapter(args.endpoint, args.api_key, args.insecure, args.admin_token,
+                        args.principal_credential),
             f"HTTP adapter → {args.endpoint}", args.endpoint)
 
     if args.mode in ("native","both"):
@@ -706,7 +709,10 @@ def main():
     has_fail = any(r["status"]=="FAIL"
                    for rep in (all_reports if isinstance(all_reports,list) else [all_reports])
                    for r in rep["results"])
-    sys.exit(1 if has_fail else 0)
+    has_incomplete = any(r["status"] in ("IMPLEMENTATION_GAP", "ADAPTER_REQUIRED")
+                         for rep in (all_reports if isinstance(all_reports,list) else [all_reports])
+                         for r in rep["results"])
+    sys.exit(1 if has_fail else 2 if has_incomplete else 0)
 
 if __name__ == "__main__":
     main()
