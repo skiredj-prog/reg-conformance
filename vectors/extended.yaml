@@ -1,158 +1,467 @@
 meta:
   name: extended
   version: 1.0.0
-  description: "Extended REG conformance scenarios for edge cases and advanced requirements"
-  spec_version: 1.0.0
-
+  description: Extended REG vectors (RFC-0 to RFC-7)
 vectors:
-  - id: R0
+  # RFC-0 — Constitution (5)
+  - id: CT-R0-001
+    rfc: RFC-0
     category: extended
-    status: valid
-    title: "Null or Empty Governance Context Handling"
-    description: "A runtime safely handles null, empty, or missing governance context without undefined behavior or crashes."
-    phase: pre-execution
-    severity: high
-    tags: ["edge-case", "null-safety", "robustness"]
-    assertions:
-      - statement: "Null or empty governance context is detected and handled gracefully"
-        validation: observable
-      - statement: "Behavior is well-defined and consistent (e.g., default-deny)"
-        validation: auditable
-    failure_mode: deny
-    rationale: "Prevents exploits and ensures predictable behavior under misconfiguration"
-    spec_reference: "REG Spec § 7.1"
-    added_version: "1.0.0"
+    property: Policy Anchor Integrity
+    input: Policy file hash verification
+    intended: Policy file hash verifiable independently
+    expected: hash verifiable
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Policy anchor hash endpoint not yet implemented
+    reference: RFC-0
 
-  - id: R1
+  - id: CT-R0-002
+    rfc: RFC-0
     category: extended
-    status: valid
-    title: "Partial Policy Downgrade Rejection"
-    description: "A runtime rejects policy downgrades that would weaken governance controls unless explicitly authorized."
-    phase: pre-execution
-    severity: critical
-    tags: ["policy", "downgrade", "security", "authorization"]
-    assertions:
-      - statement: "Policy downgrades are detected and rejected by default"
-        validation: observable
-      - statement: "Explicit authorization mechanisms can enable controlled downgrades"
-        validation: auditable
-    failure_mode: deny
-    rationale: "Prevents accidental or malicious weakening of governance constraints"
-    spec_reference: "REG Spec § 7.2"
-    added_version: "1.0.0"
+    property: RFC Version Declaration
+    input: RFC version declaration check
+    intended: Implementation declares conformant RFC versions
+    expected: versions declared
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: RFC version declaration endpoint absent
+    reference: RFC-0
 
-  - id: R2
+  - id: CT-R0-003
+    rfc: RFC-0
     category: extended
-    status: valid
-    title: "Out-of-Order Event Consistency"
-    description: "A runtime remains consistent even when events arrive out of order, converging on a correct state."
-    phase: execution
-    severity: high
-    tags: ["concurrency", "eventual-consistency", "distributed", "ordering"]
-    assertions:
-      - statement: "Out-of-order event ingestion does not produce inconsistent state"
-        validation: measurable
-      - statement: "Final state is identical regardless of event arrival order"
-        validation: auditable
-    failure_mode: deny
-    rationale: "Ensures correctness in distributed systems with unreliable message ordering"
-    spec_reference: "REG Spec § 7.3"
-    added_version: "1.0.0"
-    notes: "Assumes idempotent events; causal ordering may be required"
+    property: Governance Scope Declaration
+    input: Declared scope vs tested behavior
+    intended: Declared scope matches tested behavior
+    expected: scope declared
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Governance scope declaration not formally specified in implementation
+    reference: RFC-0
 
-  - id: R3
+  - id: CT-R0-004
+    rfc: RFC-0
     category: extended
-    status: valid
-    title: "Competing Decisions Convergence"
-    description: "When multiple decision engines evaluate the same input, competing decisions converge on a single authoritative outcome."
-    phase: execution
-    severity: critical
-    tags: ["distributed", "consensus", "multi-engine", "determinism"]
-    assertions:
-      - statement: "Competing decisions are resolved to a single outcome"
-        validation: observable
-      - statement: "Resolution mechanism is deterministic and documented"
-        validation: auditable
-    failure_mode: abort
-    rationale: "Prevents split-brain conditions and ensures unified enforcement"
-    spec_reference: "REG Spec § 7.4"
-    added_version: "1.0.0"
-    examples:
-      - name: "Primary-Backup Convergence"
-        description: "Primary and backup both evaluate; decision converges to primary"
-        input: "execution request with concurrent evaluations"
-        expected_output: "single unified decision with primary authority"
+    property: Normative Reference Binding
+    input: RFC references with SHA/date
+    intended: All referenced RFCs pinned with SHA/date
+    expected: pinned
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Normative RFC SHAs not yet pinned in implementation manifest
+    reference: RFC-0
 
-  - id: R4
+  - id: CT-R0-005
+    rfc: RFC-0
     category: extended
-    status: valid
-    title: "Unsupported Artifact Type Rejection"
-    description: "A runtime rejects artifacts of unsupported types with a clear, traceable reason code."
-    phase: pre-execution
-    severity: high
-    tags: ["validation", "artifact", "type-checking", "diagnostics"]
-    assertions:
-      - statement: "Unsupported artifact types are rejected"
-        validation: observable
-      - statement: "Rejection reason is traceable and machine-readable"
-        validation: auditable
-    failure_mode: deny
-    rationale: "Prevents undefined behavior with unexpected input types"
-    spec_reference: "REG Spec § 7.5"
-    added_version: "1.0.0"
+    property: Constitutional Override Prohibition
+    input: Override mechanism bypass attempt
+    intended: No mechanism bypasses REG constitution
+    expected: no bypass
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Constitutional override prohibition not formally tested
+    reference: RFC-0
 
-  - id: R5
+  # RFC-1 — Wire Protocol (7)
+  - id: CT-R1-001
+    rfc: RFC-1
     category: extended
-    status: valid
-    title: "Policy Rollback Audit Continuity"
-    description: "When a policy is rolled back, the audit trail remains continuous and unbroken, linking old and new policy eras."
-    phase: audit
-    severity: high
-    tags: ["policy", "rollback", "audit", "continuity"]
-    assertions:
-      - statement: "Audit trail remains continuous across policy rollback events"
-        validation: auditable
-      - statement: "Old and new policy eras are clearly marked and linked"
-        validation: observable
-    failure_mode: audit
-    rationale: "Preserves forensic continuity and enables historical analysis"
-    spec_reference: "REG Spec § 7.6"
-    added_version: "1.0.0"
+    property: Response Schema Compliance
+    input: Response fields from evaluation endpoint
+    intended: Response fields match declared schema exactly
+    expected: schema compliant
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Response schema validation endpoint absent; schema not machine-readable
+    reference: RFC-1
 
-  - id: R6
+  - id: CT-R1-002
+    rfc: RFC-1
     category: extended
-    status: valid
-    title: "Timeout Condition Surfacing"
-    description: "When execution or policy evaluation times out, the timeout condition is surfaced clearly without ambiguity."
-    phase: execution
-    severity: high
-    tags: ["timeout", "failure-modes", "diagnostics", "resilience"]
-    assertions:
-      - statement: "Timeout conditions are explicitly raised or logged"
-        validation: observable
-      - statement: "Timeout reason and context are unambiguous"
-        validation: auditable
-    failure_mode: deny
-    rationale: "Enables operators to distinguish timeouts from other failures"
-    spec_reference: "REG Spec § 7.7"
-    added_version: "1.0.0"
-    notes: "Timeout thresholds must be configurable per deployment"
+    property: Content-Type Declaration
+    input: HTTP response headers
+    intended: Responses declare Content-Type: application/json
+    expected: declared
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Content-Type header present in practice; formal compliance test absent
+    reference: RFC-1
 
-  - id: R7
+  - id: CT-R1-003
+    rfc: RFC-1
     category: extended
-    status: valid
-    title: "Backward Compatibility for Legacy Records"
-    description: "A runtime maintains backward compatibility with execution records from earlier REG standard versions."
-    phase: audit
-    severity: medium
-    tags: ["versioning", "backward-compatibility", "migration", "audit"]
-    assertions:
-      - statement: "Older execution records can be parsed and understood"
-        validation: measurable
-      - statement: "Schema evolution does not break historical data access"
-        validation: auditable
-    failure_mode: audit
-    rationale: "Enables long-term audit trail integrity across standard upgrades"
-    spec_reference: "REG Spec § 8.1"
-    added_version: "1.0.0"
-    notes: "Requires versioning discipline and migration tooling"
+    property: HTTP Status Semantics
+    input: HTTP status codes in responses
+    intended: 2xx/4xx/5xx used per RFC semantics
+    expected: semantically correct
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: HTTP status semantics partially correct; formal semantic validation absent
+    reference: RFC-1
+
+  - id: CT-R1-004
+    rfc: RFC-1
+    category: extended
+    property: Request Timeout Enforcement
+    input: Requests within and beyond timeout window
+    intended: Requests time out within declared window
+    expected: timeout enforced
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Configurable request timeout not enforced at server level
+    reference: RFC-1
+
+  - id: CT-R1-005
+    rfc: RFC-1
+    category: extended
+    property: TLS Requirement (production)
+    input: Non-TLS connection attempt
+    intended: Non-TLS connections rejected in production mode
+    expected: rejected
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: TLS enforcement absent; --insecure flag provided as dev workaround only
+    reference: RFC-1
+
+  - id: CT-R1-006
+    rfc: RFC-1
+    category: extended
+    property: Request Size Limit
+    input: Oversized payload submission
+    intended: Oversized payloads rejected with 413
+    expected: 413 on oversized
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Request size limit not enforced (FastAPI default only)
+    reference: RFC-1
+
+  - id: CT-R1-007
+    rfc: RFC-1
+    category: extended
+    property: Concurrent Request Isolation
+    input: Parallel evaluation requests
+    intended: Parallel evaluations do not interfere
+    expected: isolated
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Concurrent isolation not formally tested (in-memory dict is not thread-safe)
+    reference: RFC-1
+
+  # RFC-2 — Structure (6)
+  - id: CT-R2-001
+    rfc: RFC-2
+    category: extended
+    property: Threshold Declaration
+    input: Threshold values in policy file
+    intended: Thresholds declared and pinned in policy file
+    expected: declared
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Threshold declaration endpoint absent; thresholds accessible in YAML only
+    reference: RFC-2
+
+  - id: CT-R2-002
+    rfc: RFC-2
+    category: extended
+    property: S-Score Determinism
+    input: Identical P/V/K measurements
+    intended: Identical P/V/K → identical S and disposition across independent calls
+    expected: deterministic
+    status: implemented
+    native: PASS
+    observed: S and disposition deterministic across calls (native)
+    reference: RFC-2
+
+  - id: CT-R2-003
+    rfc: RFC-2
+    category: extended
+    property: Epsilon Guard
+    input: Zero-denominator case (P=0, V=0)
+    intended: Zero-denominator handled without error; epsilon prevents divide-by-zero
+    expected: no error
+    status: implemented
+    native: PASS
+    observed: Epsilon guard handles zero-denominator safely (native)
+    reference: RFC-2
+
+  - id: CT-R2-004
+    rfc: RFC-2
+    category: extended
+    property: Boundary Exactness
+    input: Values at threshold boundaries
+    intended: Values at threshold boundaries produce consistent, declared dispositions
+    expected: consistent
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Exact boundary behavior (S == threshold) not formally specified
+    reference: RFC-2
+
+  - id: CT-R2-005
+    rfc: RFC-2
+    category: extended
+    property: Measurement Range Validation
+    input: P/V/K outside [0,1]
+    intended: P/V/K outside [0,1] rejected with 422
+    expected: 422 on out-of-range
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Out-of-range P/V/K accepted and computed; 422 rejection not implemented
+    reference: RFC-2
+
+  - id: CT-R2-006
+    rfc: RFC-2
+    category: extended
+    property: Institutional Override Audit
+    input: Threshold override event
+    intended: Threshold overrides logged with policy_epoch
+    expected: logged
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Institutional threshold override audit logging absent
+    reference: RFC-2
+
+  # RFC-3 — Standing (8)
+  - id: CT-R3-001
+    rfc: RFC-3
+    category: extended
+    property: Credential Format Validation
+    input: Malformed credentials
+    intended: Malformed credentials rejected before evaluation
+    expected: rejected
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Credential format validation limited to null/empty check
+    reference: RFC-3
+
+  - id: CT-R3-002
+    rfc: RFC-3
+    category: extended
+    property: Revocation Propagation
+    input: Revocation event
+    intended: Revocation effective within declared latency window
+    expected: propagated
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Revocation propagation latency not declared or measured
+    reference: RFC-3
+
+  - id: CT-R3-003
+    rfc: RFC-3
+    category: extended
+    property: Multi-Principal Isolation
+    input: Two principals, one revoked
+    intended: Revocation of A does not affect principal B
+    expected: isolated
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Multi-principal isolation not formally tested
+    reference: RFC-3
+
+  - id: CT-R3-004
+    rfc: RFC-3
+    category: extended
+    property: Revocation Audit Trail
+    input: Revocation event
+    intended: All revocation events appended to manifest
+    expected: appended
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Revocation events not appended to hash-chain manifest
+    reference: RFC-3
+
+  - id: CT-R3-005
+    rfc: RFC-3
+    category: extended
+    property: Delegation Depth Enforcement
+    input: Delegation chain
+    intended: Delegation chain depth limit enforced
+    expected: enforced
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Delegation depth enforcement not implemented
+    reference: RFC-3
+
+  - id: CT-R3-006
+    rfc: RFC-3
+    category: extended
+    property: Temporal Credential Binding
+    input: Time-limited credentials at expiry
+    intended: Time-limited credentials expire as declared
+    expected: expired
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Temporal credential binding (time-limited credentials) not implemented
+    reference: RFC-3
+
+  - id: CT-R3-007
+    rfc: RFC-3
+    category: extended
+    property: Standing Scope Boundary
+    input: Cross-organizational credential usage
+    intended: Standing valid only within declared organizational scope
+    expected: bounded
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Standing scope boundary not declared or enforced
+    reference: RFC-3
+
+  - id: CT-R3-008
+    rfc: RFC-3
+    category: extended
+    property: Credential Rotation
+    input: Rotated credentials
+    intended: Rotated credentials invalidate prior grants
+    expected: invalidated
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Credential rotation invalidation not implemented
+    reference: RFC-3
+
+  # RFC-5 — Audit Chain (5)
+  - id: CT-R5-001
+    rfc: RFC-5
+    category: extended
+    property: Manifest Export
+    input: Full manifest export request
+    intended: Full manifest exportable as verifiable artifact
+    expected: exported
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Manifest export endpoint absent; manifest in-memory only
+    reference: RFC-5
+
+  - id: CT-R5-002
+    rfc: RFC-5
+    category: extended
+    property: Manifest Import Verification
+    input: Exported manifest re-import
+    intended: Imported manifest verifies from genesis block
+    expected: verified
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Manifest import and re-verification path absent
+    reference: RFC-5
+
+  - id: CT-R5-003
+    rfc: RFC-5
+    category: extended
+    property: Evidence Retention Policy
+    input: Evidence retention deadline
+    intended: Evidence retained for declared minimum period
+    expected: retained
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Evidence retention policy not declared
+    reference: RFC-5
+
+  - id: CT-R5-004
+    rfc: RFC-5
+    category: extended
+    property: Redaction Prohibition
+    input: Closed manifest deletion attempt
+    intended: No evidence silently deleted from closed manifest
+    expected: no deletion
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Redaction prohibition not formally enforced (in-memory list)
+    reference: RFC-5
+
+  - id: CT-R5-005
+    rfc: RFC-5
+    category: extended
+    property: Cross-Epoch Continuity
+    input: Policy epoch change during manifest growth
+    intended: Manifest chain survives policy epoch changes
+    expected: continuous
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Cross-epoch manifest continuity not formally tested
+    reference: RFC-5
+
+  # RFC-6 — Override / Escalation (4)
+  - id: CT-R6-001
+    rfc: RFC-6
+    category: extended
+    property: Emergency Override Audit
+    input: Override decision event
+    intended: Override decisions always appended to manifest
+    expected: appended
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Override audit logging absent
+    reference: RFC-6
+
+  - id: CT-R6-002
+    rfc: RFC-6
+    category: extended
+    property: Override Authority Validation
+    input: Override request from unauthorized principal
+    intended: Only declared principals may invoke override
+    expected: rejected
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Override authority validation absent
+    reference: RFC-6
+
+  - id: CT-R6-003
+    rfc: RFC-6
+    category: extended
+    property: Override Time Window
+    input: Override request outside authorization window
+    intended: Override grant valid only within declared window
+    expected: expired
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Override time window not implemented
+    reference: RFC-6
+
+  - id: CT-R6-004
+    rfc: RFC-6
+    category: extended
+    property: Override Receipt Generation
+    input: Override decision event
+    intended: Override decisions generate signed receipts
+    expected: signed receipt
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Override receipt generation absent
+    reference: RFC-6
+
+  # RFC-7 — Interoperability (3)
+  - id: CT-R7-001
+    rfc: RFC-7
+    category: extended
+    property: Adapter Result Equivalence
+    input: Same input to adapter and native modes
+    intended: Adapter and native modes produce identical dispositions for same inputs
+    expected: identical
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Formal equivalence test between adapter and native modes absent
+    reference: RFC-7
+
+  - id: CT-R7-002
+    rfc: RFC-7
+    category: extended
+    property: Evidence Level Non-Promotion
+    input: Adapter-tested result claim as native
+    intended: Adapter results never promoted to native-conformance claims
+    expected: no promotion
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Evidence level non-promotion enforced structurally; formal test absent
+    reference: RFC-7
+
+  - id: CT-R7-003
+    rfc: RFC-7
+    category: extended
+    property: Cross-Implementation Compatibility
+    input: Same inputs to two independent implementations
+    intended: Two independent implementations agree on disposition for same inputs
+    expected: agree
+    status: implemented
+    native: IMPLEMENTATION_GAP
+    observed: Cross-implementation testing requires second independent implementation
+    reference: RFC-7
