@@ -1,37 +1,158 @@
 meta:
   name: extended
   version: 1.0.0
-  description: Extended REG conformance scenarios
+  description: "Extended REG conformance scenarios for edge cases and advanced requirements"
+  spec_version: 1.0.0
+
 vectors:
   - id: R0
     category: extended
     status: valid
-    description: Empty or null governance context remains handled safely.
+    title: "Null or Empty Governance Context Handling"
+    description: "A runtime safely handles null, empty, or missing governance context without undefined behavior or crashes."
+    phase: pre-execution
+    severity: high
+    tags: ["edge-case", "null-safety", "robustness"]
+    assertions:
+      - statement: "Null or empty governance context is detected and handled gracefully"
+        validation: observable
+      - statement: "Behavior is well-defined and consistent (e.g., default-deny)"
+        validation: auditable
+    failure_mode: deny
+    rationale: "Prevents exploits and ensures predictable behavior under misconfiguration"
+    spec_reference: "REG Spec § 7.1"
+    added_version: "1.0.0"
+
   - id: R1
     category: extended
     status: valid
-    description: Partial-policy downgrade is rejected unless explicitly allowed.
+    title: "Partial Policy Downgrade Rejection"
+    description: "A runtime rejects policy downgrades that would weaken governance controls unless explicitly authorized."
+    phase: pre-execution
+    severity: critical
+    tags: ["policy", "downgrade", "security", "authorization"]
+    assertions:
+      - statement: "Policy downgrades are detected and rejected by default"
+        validation: observable
+      - statement: "Explicit authorization mechanisms can enable controlled downgrades"
+        validation: auditable
+    failure_mode: deny
+    rationale: "Prevents accidental or malicious weakening of governance constraints"
+    spec_reference: "REG Spec § 7.2"
+    added_version: "1.0.0"
+
   - id: R2
     category: extended
     status: valid
-    description: Out-of-order event ingestion remains consistent.
+    title: "Out-of-Order Event Consistency"
+    description: "A runtime remains consistent even when events arrive out of order, converging on a correct state."
+    phase: execution
+    severity: high
+    tags: ["concurrency", "eventual-consistency", "distributed", "ordering"]
+    assertions:
+      - statement: "Out-of-order event ingestion does not produce inconsistent state"
+        validation: measurable
+      - statement: "Final state is identical regardless of event arrival order"
+        validation: auditable
+    failure_mode: deny
+    rationale: "Ensures correctness in distributed systems with unreliable message ordering"
+    spec_reference: "REG Spec § 7.3"
+    added_version: "1.0.0"
+    notes: "Assumes idempotent events; causal ordering may be required"
+
   - id: R3
     category: extended
     status: valid
-    description: Competing decisions converge on a single authoritative outcome.
+    title: "Competing Decisions Convergence"
+    description: "When multiple decision engines evaluate the same input, competing decisions converge on a single authoritative outcome."
+    phase: execution
+    severity: critical
+    tags: ["distributed", "consensus", "multi-engine", "determinism"]
+    assertions:
+      - statement: "Competing decisions are resolved to a single outcome"
+        validation: observable
+      - statement: "Resolution mechanism is deterministic and documented"
+        validation: auditable
+    failure_mode: abort
+    rationale: "Prevents split-brain conditions and ensures unified enforcement"
+    spec_reference: "REG Spec § 7.4"
+    added_version: "1.0.0"
+    examples:
+      - name: "Primary-Backup Convergence"
+        description: "Primary and backup both evaluate; decision converges to primary"
+        input: "execution request with concurrent evaluations"
+        expected_output: "single unified decision with primary authority"
+
   - id: R4
     category: extended
     status: valid
-    description: Unsupported artifact types are rejected with a traceable reason.
+    title: "Unsupported Artifact Type Rejection"
+    description: "A runtime rejects artifacts of unsupported types with a clear, traceable reason code."
+    phase: pre-execution
+    severity: high
+    tags: ["validation", "artifact", "type-checking", "diagnostics"]
+    assertions:
+      - statement: "Unsupported artifact types are rejected"
+        validation: observable
+      - statement: "Rejection reason is traceable and machine-readable"
+        validation: auditable
+    failure_mode: deny
+    rationale: "Prevents undefined behavior with unexpected input types"
+    spec_reference: "REG Spec § 7.5"
+    added_version: "1.0.0"
+
   - id: R5
     category: extended
     status: valid
-    description: Policy rollback retains audit continuity.
+    title: "Policy Rollback Audit Continuity"
+    description: "When a policy is rolled back, the audit trail remains continuous and unbroken, linking old and new policy eras."
+    phase: audit
+    severity: high
+    tags: ["policy", "rollback", "audit", "continuity"]
+    assertions:
+      - statement: "Audit trail remains continuous across policy rollback events"
+        validation: auditable
+      - statement: "Old and new policy eras are clearly marked and linked"
+        validation: observable
+    failure_mode: audit
+    rationale: "Preserves forensic continuity and enables historical analysis"
+    spec_reference: "REG Spec § 7.6"
+    added_version: "1.0.0"
+
   - id: R6
     category: extended
     status: valid
-    description: Timeout conditions are surfaced without ambiguity.
+    title: "Timeout Condition Surfacing"
+    description: "When execution or policy evaluation times out, the timeout condition is surfaced clearly without ambiguity."
+    phase: execution
+    severity: high
+    tags: ["timeout", "failure-modes", "diagnostics", "resilience"]
+    assertions:
+      - statement: "Timeout conditions are explicitly raised or logged"
+        validation: observable
+      - statement: "Timeout reason and context are unambiguous"
+        validation: auditable
+    failure_mode: deny
+    rationale: "Enables operators to distinguish timeouts from other failures"
+    spec_reference: "REG Spec § 7.7"
+    added_version: "1.0.0"
+    notes: "Timeout thresholds must be configurable per deployment"
+
   - id: R7
     category: extended
     status: valid
-    description: Backward compatibility for older execution records remains intact.
+    title: "Backward Compatibility for Legacy Records"
+    description: "A runtime maintains backward compatibility with execution records from earlier REG standard versions."
+    phase: audit
+    severity: medium
+    tags: ["versioning", "backward-compatibility", "migration", "audit"]
+    assertions:
+      - statement: "Older execution records can be parsed and understood"
+        validation: measurable
+      - statement: "Schema evolution does not break historical data access"
+        validation: auditable
+    failure_mode: audit
+    rationale: "Enables long-term audit trail integrity across standard upgrades"
+    spec_reference: "REG Spec § 8.1"
+    added_version: "1.0.0"
+    notes: "Requires versioning discipline and migration tooling"

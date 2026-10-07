@@ -1,40 +1,98 @@
 meta:
   name: core
   version: 1.0.0
-  description: Core REG conformance vectors
+  description: "Core REG conformance vectors for baseline runtime actor behavior"
+  spec_version: 1.0.0
+
 vectors:
   - id: C1
     category: core
     status: valid
-    description: Baseline conformance case for a compliant runtime actor.
+    title: "Compliant Runtime Actor"
+    description: "A runtime actor implements the minimal REG conformance set, publishing valid execution context and avoiding forbidden state transitions."
+    phase: execution
+    severity: critical
+    tags: ["baseline", "execution", "context"]
     assertions:
-      - "runtime publishes a valid execution context"
-      - "no forbidden state transitions are observed"
+      - statement: "Runtime publishes a valid execution context on entry"
+        validation: observable
+      - statement: "No forbidden state transitions are observed during execution"
+        validation: auditable
+    failure_mode: deny
+    rationale: "Establishes the foundational requirements for any REG-compliant system"
+    spec_reference: "REG Spec § 3.1"
+    added_version: "1.0.0"
+
   - id: C2
     category: core
     status: valid
-    description: Constrained input accepted under standard policy.
+    title: "Constrained Input Policy Compliance"
+    description: "A runtime accepts constrained input under the active governance policy, normalizing input before enforcement and maintaining deterministic policy evaluation."
+    phase: pre-execution
+    severity: high
+    tags: ["input", "normalization", "determinism", "policy"]
     assertions:
-      - "input is normalized before enforcement"
-      - "policy evaluation remains deterministic"
+      - statement: "Input is normalized before enforcement rules are applied"
+        validation: measurable
+      - statement: "Policy evaluation remains deterministic across repeated invocations"
+        validation: auditable
+    failure_mode: deny
+    rationale: "Ensures predictable and repeatable governance decisions"
+    spec_reference: "REG Spec § 3.2"
+    added_version: "1.0.0"
+
   - id: C3
     category: core
     status: valid
-    description: Rejected execution when required controls are missing.
+    title: "Denial When Controls Are Missing"
+    description: "A runtime rejects execution when required governance controls are not present, emitting an audit trace for each denial."
+    phase: pre-execution
+    severity: critical
+    tags: ["control", "denial", "audit", "enforcement"]
     assertions:
-      - "decision is denied"
-      - "audit trace is emitted"
+      - statement: "Execution decision is denied when required controls are absent"
+        validation: observable
+      - statement: "An audit trace is emitted for each denial event"
+        validation: auditable
+    failure_mode: deny
+    dependencies: ["C1"]
+    rationale: "Prevents unauthorized execution and maintains audit trail integrity"
+    spec_reference: "REG Spec § 3.3"
+    added_version: "1.0.0"
+
   - id: C4
     category: core
     status: valid
-    description: Recovery path after a transient governance failure.
+    title: "Recovery After Transient Failure"
+    description: "A runtime recovers from transient governance failures within a defined time window, with bounded retry attempts."
+    phase: recovery
+    severity: high
+    tags: ["recovery", "resilience", "retry", "transient"]
     assertions:
-      - "recovery succeeds within the allowed window"
-      - "retry count remains bounded"
+      - statement: "Recovery succeeds within the allowed time window"
+        validation: measurable
+      - statement: "Retry count remains bounded and finite"
+        validation: measurable
+    failure_mode: abort
+    rationale: "Allows systems to survive temporary failures without compromising governance"
+    spec_reference: "REG Spec § 4.1"
+    added_version: "1.0.0"
+    notes: "Time window and retry limits must be configured at deployment time"
+
   - id: C5
     category: core
     status: valid
-    description: Conformance under concurrent execution of independent vectors.
+    title: "Concurrent Vector Execution Isolation"
+    description: "A runtime correctly executes independent conformance vectors concurrently without cross-context leakage or execution order instability."
+    phase: execution
+    severity: high
+    tags: ["concurrency", "isolation", "multi-threaded", "determinism"]
     assertions:
-      - "no cross-context leakage"
-      - "execution order remains stable"
+      - statement: "No cross-context leakage is observed between concurrent executions"
+        validation: auditable
+      - statement: "Execution order remains stable under concurrent load"
+        validation: measurable
+    failure_mode: deny
+    rationale: "Ensures governance integrity in distributed and high-concurrency environments"
+    spec_reference: "REG Spec § 5.1"
+    added_version: "1.0.0"

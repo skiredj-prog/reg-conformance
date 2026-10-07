@@ -1,145 +1,193 @@
-# REG Conformance Suite v0.3.1
+# REG Conformance Suite
 
-Implementation-agnostic conformance runner for the Runtime Execution Governance (REG) Standard.
-RFC-0 through RFC-7 (frozen).
+**Runtime Execution Governance (REG) Conformance Suite** is an implementation-agnostic test vector collection for verifying compliance with the REG standard.
 
-The runner registers 53 vector IDs across the core/commit and extended integration sets. Registration is distinct from a behavioral test and from conformance: vectors without an executable probe report `IMPLEMENTATION_GAP`. [`VECTORS.md`](VECTORS.md) is the single vector inventory, including each RFC mapping and test-coverage status.
+This repository defines and maintains machine-readable conformance vectors that describe what a REG-compliant runtime must do, how it must handle edge cases, and what audit records it must produce.
 
-## Requirements
+## Quick Start
 
-    pip install requests fastapi uvicorn pyyaml cryptography
+### View Vectors
 
-The reference kernel (PolicyEngine + policy YAML) ships inside kernel/.
-No external repository required.
+Open the **Lab Viewer**:
+```bash
+open lab/index.html
+```
 
-Kernel policy version (kernel-r5-1.0.0) and suite code version (v0.3.1) are tracked
-independently. Policy versions evolve without code changes.
+Or serve locally:
+```bash
+python3 -m http.server 8000
+open http://localhost:8000/lab/
+```
 
-## Standard Reference
+### Work with Vectors
 
-The normative specification for REG is pinned under `reg-standards-baseline/rfc/`:
+```bash
+# List all vectors as JSON
+cat vectors/dist/vectors.json | python3 -m json.tool
 
-| RFC | Title |
-|---|---|
-| RFC-0 | Constitution |
-| RFC-1 | Execution Grant Envelope & Wire Protocol |
-| RFC-2 | Structural Admissibility |
-| RFC-3 | Standing & Authority Continuity |
-| RFC-4 | Commit & Execution Proof |
-| RFC-5 | Liveness & Operationalization |
-| RFC-6 | Security, Transport & Cryptography |
-| RFC-7 | Conformance Suite & Interoperability |
+# Add a new vector
+# → Edit vectors/core.yaml, vectors/extended.yaml, or vectors/proposals.yaml
+# → Run the compiler to regenerate the JSON bundle
+python3 vectors/compile.py
+```
 
-All eight RFCs are frozen. Latest tag: `rfc-v0.3`.
+## Vector Collections
 
-## Usage
+The conformance suite is organized into three main categories:
 
-### HTTP adapter mode (interface_mode: "adapter" — evidence level 2)
+### 1. **Core Vectors (C1–C5)**
 
-Start the reference shim (from the repository root):
+Minimal set of requirements for any REG-compliant runtime.
 
-    $env:REG_ADMIN_TOKEN = "replace-with-a-long-random-secret"
-    $env:REG_CREDENTIAL_TOKEN = "valid-token"
-    uvicorn shim:app --host 127.0.0.1 --port 8099
+- **C1** — Compliant Runtime Actor
+- **C2** — Constrained Input Policy Compliance
+- **C3** — Denial When Controls Are Missing
+- **C4** — Recovery After Transient Failure
+- **C5** — Concurrent Vector Execution Isolation
 
-The shim accepts only the credential configured as `REG_CREDENTIAL_TOKEN`; an unset
-variable rejects all principals. Pass the same value via `--principal-credential`.
-Admin-only test helpers require `X-REG-Admin-Token`. If `REG_ADMIN_TOKEN` is unset,
-they return `503 ADMIN_ENDPOINTS_DISABLED`. Supply the same token to the runner with
-`--admin-token`; never expose the reference shim to an untrusted network.
+→ See [`vectors/core.yaml`](vectors/core.yaml)
 
-Run suite against it:
+### 2. **Commit Vectors (CT-R4-001–CT-R4-010)**
 
-    python runner.py --mode http --endpoint http://127.0.0.1:8099 --admin-token "$env:REG_ADMIN_TOKEN"
+Requirements for execution record integrity, audit trails, and replayability.
 
-For third-party endpoints, omit `--admin-token` when authenticated test helpers are not available; affected vectors are reported as `ADAPTER_REQUIRED`.
+- **CT-R4-001** — Unique Execution Identifier
+- **CT-R4-002** — Standard Timestamp
+- **CT-R4-003** — Governing Policy Version
+- **CT-R4-004** — Actor Identity
+- **CT-R4-005** — Input Digest
+- **CT-R4-006** — Execution Decision
+- **CT-R4-007** — Reason Code
+- **CT-R4-008** — Trace Reference
+- **CT-R4-009** — Append-Only Semantics
+- **CT-R4-010** — Replayability Without State Loss
 
-    python runner.py --mode http --endpoint https://your-server.example.com --api-key TOKEN
+→ See [`vectors/commit.yaml`](vectors/commit.yaml)
 
-### Native kernel mode (interface_mode: "native" — evidence level 3)
+### 3. **Extended Vectors (R0–R7)**
 
-Run directly against the in-process PolicyEngine — no HTTP required.
-This is the mode for authorize(record, payload_bytes, …) style interfaces.
+Advanced scenarios covering edge cases, failure modes, and distributed systems behavior.
 
-    python runner.py --mode native --kernel kernel/tenir_policies.yaml
+- **R0** — Null or Empty Governance Context Handling
+- **R1** — Partial Policy Downgrade Rejection
+- **R2** — Out-of-Order Event Consistency
+- **R3** — Competing Decisions Convergence
+- **R4** — Unsupported Artifact Type Rejection
+- **R5** — Policy Rollback Audit Continuity
+- **R6** — Timeout Condition Surfacing
+- **R7** — Backward Compatibility for Legacy Records
 
-### Both modes in one run
+→ See [`vectors/extended.yaml`](vectors/extended.yaml)
 
-    python runner.py --mode both \
-      --endpoint http://127.0.0.1:8099 \
-      --kernel kernel/tenir_policies.yaml \
-      --output results/my-impl.json
+## Structure
 
-## Output
+```
+reg-conformance/
+├── README.md                    # This file
+├── vectors/
+│   ├── core.yaml               # C1–C5 vectors
+│   ├── commit.yaml             # CT-R4-001–CT-R4-010 vectors
+│   ├── extended.yaml           # R0–R7 vectors
+│   ├── proposals.yaml          # Candidates, non-validated
+│   ├── schema.json             # JSON Schema
+│   ├── compile.py              # YAML → JSON compiler
+│   ├── CONTRIBUTING.md         # How to propose vectors
+│   └── dist/
+│       └── vectors.json        # Generated, committed
+└── lab/
+    └── index.html              # Static Lab Viewer
+```
 
-Console table + JSON result file.
-Every result declares `interface_mode` and `evidence_level`.
-Adapter results are never promoted to native-conformance claims.
+## Taxonomy
 
-## Reporting states
+### Categories
 
-| Symbol | State | Meaning |
-|---|---|---|
-| ✓ | PASS | Normative requirement satisfied |
-| ✗ | FAIL | Normative requirement violated |
-| ? | INCONCLUSIVE | Evidence cannot establish PASS or FAIL; never counted as PASS |
-| ○ | NOT_APPLICABLE | Property irrelevant to this topology |
-| ~ | ADAPTER_REQUIRED | Testable only via translation layer |
-| △ | IMPLEMENTATION_GAP | Requirement understood; not yet engineered |
+| Category | Purpose | Examples |
+|----------|---------|----------|
+| **core** | Foundational runtime behavior | C1–C5 |
+| **commit** | Audit record requirements | CT-R4-001–CT-R4-010 |
+| **extended** | Edge cases, failure modes | R0–R7 |
+| **candidate** | Proposed vectors | — |
+| **exploratory** | Under discussion | — |
 
-## Test tiers
+### Status
 
-| Tier | Meaning |
-|---|---|
-| 1 | Testable against reference shim now |
-| 2 | Requires shim enrichment (composition, delegation, evidence) |
-| 3 | Requires infrastructure (mTLS, detached signatures, Merkle ledger) |
-| 4 | Meta-conformance; requires secondary harness |
+| Status | Meaning |
+|--------|----------|
+| `valid` | Ratified; required for conformance |
+| `proposed` | Candidate; under evaluation |
+| `rejected` | Not accepted |
+| `deprecated` | Superseded |
 
-## Interface modes
+### Severity
 
-Conformance is declared per mode. Native does not imply HTTP, and vice versa.
+| Level | Meaning |
+|-------|----------|
+| `critical` | Must be satisfied for any conformance claim |
+| `high` | Required for production |
+| `medium` | Recommended |
+| `low` | Optional |
 
-| Mode | interface_mode | Evidence level | Description |
-|---|---|---|---|
-| `--mode http` | `"adapter"` | 2 — Adapter-Tested | Tests against a REG HTTP endpoint. Behavioral compatibility; not native conformance. |
-| `--mode native` | `"native"` | 3 — Native-Conformant | Tests in-process kernel directly via NativeKernelAdapter. No HTTP layer. |
+### Phases
 
-## Reference results (shim v0.3.1 / kernel-r5-1.0.0)
+Vectors apply to different runtime stages:
 
-The committed JSON files under `results/` are historical runs that have been re-scored against the frozen normative requirements. Each corrected result preserves the original status and observed details. They are not fresh executions of the corrected source. A runtime with the listed dependencies is required to generate a new report.
+- **pre-execution** — Input validation, policy setup
+- **execution** — Core governance logic
+- **post-execution** — Result handling
+- **commit** — Audit record creation
+- **audit** — Record inspection
+- **recovery** — Failure handling
 
-| Historical report | PASS | FAIL | INCONCLUSIVE | NOT_APPLICABLE | ADAPTER_REQUIRED | IMPLEMENTATION_GAP | Assessment |
-|---|---:|---:|---:|---:|---:|---:|---|
-| HTTP adapter | 12 | 2 | 0 | 0 | 1 | 38 | `FAILED` |
-| Native kernel | 12 | 2 | 0 | 1 | 0 | 38 | `FAILED` |
+## For Contributors
 
-These corrected assessments replace the earlier 15 PASS / 0 GAP / 0 FAIL headline. In particular, C3 and CT-R4-005 are scored `FAIL`; CT-R4-009 and CT-R4-010 remain `IMPLEMENTATION_GAP` because the historical evidence does not establish the required behavior.
+### Add a Vector
 
-The historical files are **not certifiable evidence**: they have no pinned source/subject revision, source-tree hash, OCI environment digest, or dependency lock. `requirements.txt` is currently unpinned. Fresh reports include `evidence_binding` with the local harness revision and source-tree hash, RFC-3/RFC-4 content hashes, runtime/dependency versions, and any supplied subject/environment bindings. Supply `--subject-repository`, `--subject-revision` (full commit SHA), `--subject-worktree-state clean`, and `--environment-digest sha256:<64 hex>` to bind an HTTP run. `--conformance-profile` selects the declared profile. A `CONFORMANT` behavior summary does not imply `EVIDENCE_BOUND` or release certification; the runner does not create CI provenance or sign reports.
+1. Edit the appropriate YAML file in `vectors/`
+2. Compile the bundle:
+   ```bash
+   python3 vectors/compile.py
+   ```
+3. Submit a pull request with the YAML file and regenerated `vectors/dist/vectors.json`
 
-`VECTORS.md` says whether a normative property has an executable probe (`IMPLEMENTED`) or remains declared/reserved. A run report says what that probe observed. An ID being registered or marked implemented does not by itself prove scenario coverage or conformance.
+### Vector Template
 
-CT-R4-009 remains a gap: signed receipts are verified, but the manifest does not retain enough inputs and policy state to reproduce the decision. CT-R4-010 remains a gap: the implementation declares the need for post-commit evidence but does not provide evidence of an external effect.
+```yaml
+- id: <unique-id>
+  category: <core|commit|extended|candidate>
+  status: <valid|proposed|rejected|deprecated>
+  title: "<short-title>"
+  description: "<detailed-description>"
+  phase: <pre-execution|execution|post-execution|commit|audit|recovery>
+  severity: <critical|high|medium|low>
+  tags: ["<tag>", "<tag>"]
+  assertions:
+    - statement: "<what-must-be-true>"
+      validation: <observable|measurable|auditable|deducible>
+  failure_mode: <deny|audit|warn|abort|retry>
+  rationale: "<why-this-matters>"
+  spec_reference: "<REG-Spec-§-X.Y>"
+  added_version: "1.0.0"
+  dependencies: ["<vector-id>"]
+```
 
-The runner reports `conformance_status` separately from evidence binding. Any FAIL exits with code 1; any `INCONCLUSIVE` exits with code 3; otherwise any `IMPLEMENTATION_GAP` or `ADAPTER_REQUIRED` exits with code 2. Exit 0 means all applicable probes passed, but does not by itself certify the report's revision/environment bindings.
+For detailed guidelines, see [`vectors/CONTRIBUTING.md`](vectors/CONTRIBUTING.md).
 
+## Schema
 
-## Repository layout
+All vectors validate against [`vectors/schema.json`](vectors/schema.json), which enforces:
 
-    reg-conformance/
-      kernel/                     Reference PolicyEngine + policy YAML
-        policy_engine.py
-        tenir_policies.yaml
-      reg-standards-baseline/
-        rfc/                      RFC-0 through RFC-7 (frozen)
-      results/                    Committed conformance run artefacts
-      LICENSE
-      README.md
-      runner.py                   Conformance runner (adapter + native modes)
-      shim.py                     HTTP shim wrapping the kernel
-      spec.md                     Conformance specification
+- Required fields: `id`, `category`, `status`, `title`, `description`
+- Standardized enums for `category`, `status`, `phase`, `severity`, `failure_mode`
+- Assertion structure with `statement` and optional `validation` type
+- Optional metadata: `rationale`, `spec_reference`, `added_version`, `dependencies`, `notes`, `examples`
 
 ## License
 
-Apache 2.0 — TENIR Labs / Abdelaziz Skiredj
+This repository is licensed under the **Apache License 2.0**. See [`LICENSE`](LICENSE) for details.
+
+## References
+
+- **REG Specification** — [https://example.org/reg-spec/](https://example.org/reg-spec/)
+- **Lab Viewer** — `lab/index.html`
+- **Contributing Guide** — [`vectors/CONTRIBUTING.md`](vectors/CONTRIBUTING.md)
