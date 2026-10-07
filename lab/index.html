@@ -1,76 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>REG Vector Lab</title>
-    <style>
-      body {
-        font-family: system-ui, sans-serif;
-        margin: 2rem;
-        background: #0f172a;
-        color: #e2e8f0;
-      }
-      h1 { margin-bottom: 0.5rem; }
-      #status {
-        margin-bottom: 1rem;
-        color: #a5f3fc;
-      }
-      ul {
-        list-style: none;
-        padding: 0;
-      }
-      li {
-        background: #1e293b;
-        padding: 0.75rem 1rem;
-        border-radius: 0.5rem;
-        margin-bottom: 0.5rem;
-      }
-      code {
-        background: rgba(148, 163, 184, 0.15);
-        padding: 0.1rem 0.35rem;
-        border-radius: 0.25rem;
-      }
-    </style>
-  </head>
-  <body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REG Vector Lab</title>
+<style>
+  :root {
+    --bg: #0e1116; --surface: #161b22; --surface-2: #1c232c;
+    --border: #2a313c; --fg: #d6dae0; --fg-muted: #8b929c;
+    --accent: #6ea8fe; --good: #4ade80; --warn: #fbbf24; --bad: #f87171;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--sans); font-size: 14.5px; line-height: 1.6;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+  header { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 24px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 6px; color: #fff; }
+  .subtitle { color: var(--fg-muted); font-size: 13px; margin: 0; }
+  .subtitle a { color: var(--accent); text-decoration: none; }
+  .subtitle a:hover { text-decoration: underline; }
+  .controls { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0; align-items: center; }
+  input[type=search], select {
+    background: var(--surface); color: var(--fg); border: 1px solid var(--border);
+    border-radius: 5px; padding: 8px 12px; font-size: 14px; font-family: inherit;
+  }
+  input[type=search] { flex: 1; min-width: 200px; }
+  .stats { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin-left: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--fg-muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  tr.row { cursor: pointer; }
+  tr.row:hover { background: var(--surface); }
+  td.id { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; color: var(--fg-muted); }
+  td.prop { color: #e6edf3; }
+  .pill {
+    display: inline-block; font-family: var(--mono); font-size: 11px;
+    padding: 2px 8px; border-radius: 3px; background: var(--surface-2); white-space: nowrap;
+  }
+  .pill.PASS { color: var(--good); }
+  .pill.FAIL { color: var(--bad); }
+  .pill.IMPLEMENTATION_GAP { color: var(--warn); }
+  .pill.NOT_APPLICABLE { color: var(--fg-muted); }
+  .pill.proposal { color: var(--fg-muted); font-style: italic; }
+  .loading, .error { padding: 40px 0; text-align: center; color: var(--fg-muted); }
+  .error { color: var(--bad); }
+  dialog {
+    background: var(--surface); color: var(--fg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 28px; max-width: 640px; width: 90vw;
+  }
+  dialog::backdrop { background: rgba(0,0,0,0.6); }
+  dialog h2 { margin: 0 0 4px; font-size: 17px; color: #fff; }
+  dialog .rfc { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); }
+  dialog dl { margin: 20px 0 0; }
+  dialog dt { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fg-muted); margin-top: 14px; }
+  dialog dd { margin: 4px 0 0; }
+  dialog .actions { margin-top: 24px; display: flex; gap: 12px; }
+  button {
+    background: var(--surface-2); color: var(--fg); border: 1px solid var(--border);
+    border-radius: 5px; padding: 8px 14px; font-size: 13px; font-family: inherit; cursor: pointer;
+  }
+  button:hover { background: var(--border); }
+  button.primary { background: var(--accent); color: #0e1116; border-color: var(--accent); font-weight: 600; }
+  code { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); padding: 2px 5px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
     <h1>REG Vector Lab</h1>
-    <div id="status">Loading vectors…</div>
-    <ul id="vector-list"></ul>
+    <p class="subtitle">
+      Source: <code>vectors/*.yaml</code> in
+      <a href="https://github.com/skiredj-prog/reg-conformance">skiredj-prog/reg-conformance</a>.
+      One vector is one pull request. A proposal becomes a named vector only after independent validation.
+    </p>
+  </header>
 
-    <script>
-      async function loadVectors() {
-        const status = document.getElementById('status');
-        const list = document.getElementById('vector-list');
+  <div class="controls">
+    <input type="search" id="q" placeholder="Search id, property, RFC…">
+    <select id="cat">
+      <option value="">All categories</option>
+      <option value="core">Core</option>
+      <option value="commit">Commit</option>
+      <option value="extended">Extended</option>
+      <option value="proposal">Proposal</option>
+    </select>
+    <select id="status">
+      <option value="">All statuses</option>
+      <option value="PASS">PASS</option>
+      <option value="FAIL">FAIL</option>
+      <option value="IMPLEMENTATION_GAP">GAP</option>
+      <option value="NOT_APPLICABLE">N/A</option>
+    </select>
+    <span class="stats" id="stats"></span>
+  </div>
 
-        try {
-          const response = await fetch('../vectors/dist/vectors.json');
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
+  <div id="content"><div class="loading">Loading catalogue…</div></div>
+</div>
 
-          const data = await response.json();
-          const vectors = Array.isArray(data.vectors) ? data.vectors : [];
+<dialog id="detail">
+  <h2 id="d-title"></h2>
+  <div class="rfc" id="d-rfc"></div>
+  <dl>
+    <dt>Intended</dt><dd id="d-intended"></dd>
+    <dt>Input</dt><dd id="d-input"></dd>
+    <dt>Expected</dt><dd id="d-expected"></dd>
+    <dt>Status</dt><dd id="d-status"></dd>
+    <dt>Observed (native v0.3.1)</dt><dd id="d-observed"></dd>
+    <dt>Reference</dt><dd id="d-reference"></dd>
+  </dl>
+  <div class="actions">
+    <button class="primary" id="d-github">Submit an issue on GitHub</button>
+    <button id="d-close">Close</button>
+  </div>
+</dialog>
 
-          status.textContent = `Loaded ${vectors.length} vectors`;
+<script>
+const REPO = "skiredj-prog/reg-conformance";
 
-          list.innerHTML = vectors
-            .map(
-              (vector) => `
-                <li>
-                  <strong>${vector.id}</strong> · <code>${vector.category}</code> · <code>${vector.status}</code>
-                  <div>${vector.description || 'No description provided.'}</div>
-                </li>
-              `
-            )
-            .join('');
-        } catch (error) {
-          status.textContent = 'Unable to load vectors.json';
-          console.error(error);
-        }
+async function load() {
+  const el = document.getElementById("content");
+  try {
+    const res = await fetch("../vectors/dist/vectors.json", { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const vectors = Array.isArray(data) ? data : (data.vectors || []);
+    render(vectors);
+  } catch (err) {
+    el.innerHTML = `<div class="error">Could not load <code>../vectors/dist/vectors.json</code>.<br>
+      ${err.message}.<br>Run <code>python vectors/compile.py</code> from the repo root and commit
+      <code>vectors/dist/vectors.json</code>.</div>`;
+  }
+}
+
+function statusPill(v) {
+  if (v.status === "proposal") return '<span class="pill proposal">proposal</span>';
+  if (!v.native) return '<span class="pill">specified</span>';
+  return `<span class="pill ${v.native}">${v.native.replace(/_/g, " ")}</span>`;
+}
+
+function render(vectors) {
+  const q = document.getElementById("q");
+  const cat = document.getElementById("cat");
+  const status = document.getElementById("status");
+  const stats = document.getElementById("stats");
+  const content = document.getElementById("content");
+
+  function apply() {
+    const query = q.value.toLowerCase().trim();
+    const c = cat.value;
+    const s = status.value;
+    const rows = vectors.filter(v => {
+      if (c && v.category !== c) return false;
+      if (s && v.native !== s) return false;
+      if (query) {
+        const blob = [v.id, v.property, v.rfc, v.intended].join(" ").toLowerCase();
+        if (!blob.includes(query)) return false;
       }
+      return true;
+    });
 
-      loadVectors();
-    </script>
-  </body>
+    const counts = { PASS: 0, FAIL: 0, IMPLEMENTATION_GAP: 0, NOT_APPLICABLE: 0 };
+    for (const v of vectors) if (counts[v.native] !== undefined) counts[v.native]++;
+    stats.textContent = `${vectors.length} vectors · ${counts.PASS} pass · ${counts.FAIL} fail · ${counts.IMPLEMENTATION_GAP} gap · ${counts.NOT_APPLICABLE} n/a`;
+
+    if (!rows.length) {
+      content.innerHTML = '<div class="loading">No vectors match.</div>';
+      return;
+    }
+
+    content.innerHTML = `<table>
+      <thead><tr><th>ID</th><th>RFC</th><th>Property</th><th>Status</th></tr></thead>
+      <tbody>${rows.map(v => `
+        <tr class="row" data-id="${v.id}">
+          <td class="id">${v.id}</td>
+          <td class="id">${v.rfc || "—"}</td>
+          <td class="prop">${v.property || "—"}</td>
+          <td>${statusPill(v)}</td>
+        </tr>`).join("")}</tbody></table>`;
+
+    content.querySelectorAll("tr.row").forEach(tr => {
+      tr.addEventListener("click", () => openDetail(vectors.find(x => x.id === tr.dataset.id)));
+    });
+  }
+
+  q.addEventListener("input", apply);
+  cat.addEventListener("change", apply);
+  status.addEventListener("change", apply);
+  apply();
+}
+
+function openDetail(v) {
+  if (!v) return;
+  document.getElementById("d-title").textContent = v.id + " — " + (v.property || "");
+  document.getElementById("d-rfc").textContent = v.rfc || "";
+  document.getElementById("d-intended").textContent = v.intended || "—";
+  document.getElementById("d-input").textContent = v.input || "—";
+  document.getElementById("d-expected").textContent = v.expected || "—";
+  document.getElementById("d-status").textContent = v.status + (v.native ? " (" + v.native + ")" : "");
+  document.getElementById("d-observed").textContent = v.observed || "—";
+  document.getElementById("d-reference").textContent = v.reference || "—";
+
+  const body = [
+    `**Vector:** ${v.id}`,
+    `**RFC:** ${v.rfc || "—"}`,
+    `**Property:** ${v.property || "—"}`,
+    `**Intended:** ${v.intended || "—"}`,
+    `**Observed (native v0.3.1):** ${v.observed || "—"}`,
+    `**Proposed change:** _describe here_`,
+    "",
+    "---",
+    "_Submitted via REG Vector Lab._"
+  ].join("\n");
+
+  const url = `https://github.com/${REPO}/issues/new`
+    + `?title=${encodeURIComponent("[vector] " + v.id + " — " + (v.property || ""))}`
+    + `&body=${encodeURIComponent(body)}`;
+  document.getElementById("d-github").onclick = () => window.open(url, "_blank", "noopener");
+
+  document.getElementById("detail").showModal();
+}
+
+document.getElementById("d-close").addEventListener("click", () => document.getElementById("detail").close());
+load();
+</script>
+</body>
 </html>
