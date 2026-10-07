@@ -1,167 +1,36 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.org/schemas/reg-vector.schema.json",
-  "title": "REG Conformance Vector",
-  "description": "Schema for Runtime Execution Governance (REG) conformance test vectors",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "required": ["meta", "vectors"],
-  "additionalProperties": false,
   "properties": {
     "meta": {
       "type": "object",
-      "description": "Metadata about this vector collection",
-      "required": ["name", "version", "description"],
-      "additionalProperties": false,
+      "required": ["name", "version"],
       "properties": {
-        "name": {
-          "type": "string",
-          "description": "Collection name (e.g., 'core', 'commit', 'extended')",
-          "minLength": 1
-        },
-        "version": {
-          "type": "string",
-          "description": "Semantic version (e.g., '1.0.0')",
-          "pattern": "^\\d+\\.\\d+\\.\\d+"
-        },
-        "description": {
-          "type": "string",
-          "description": "Human-readable description of the vector set",
-          "minLength": 1
-        },
-        "spec_version": {
-          "type": "string",
-          "description": "REG standard version this collection conforms to",
-          "default": "1.0.0"
-        }
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "description": { "type": "string" }
       }
     },
     "vectors": {
       "type": "array",
-      "description": "Array of conformance vectors",
-      "minItems": 1,
       "items": {
         "type": "object",
-        "title": "Vector",
-        "description": "A single REG conformance test case",
-        "required": ["id", "category", "status", "title", "description"],
-        "additionalProperties": false,
+        "required": ["id", "rfc", "category", "property", "intended", "status"],
         "properties": {
-          "id": {
-            "type": "string",
-            "description": "Unique identifier for this vector (e.g., C1, CT-R4-001, R0)",
-            "pattern": "^[A-Z0-9-]+$",
-            "minLength": 1,
-            "maxLength": 64
-          },
-          "category": {
-            "type": "string",
-            "description": "Vector category or phase",
-            "enum": ["core", "commit", "extended", "candidate", "exploratory"]
-          },
-          "status": {
-            "type": "string",
-            "description": "Conformance status of this vector",
-            "enum": ["valid", "proposed", "rejected", "deprecated"],
-            "default": "proposed"
-          },
-          "title": {
-            "type": "string",
-            "description": "Short title or name (can differ from description)",
-            "minLength": 1,
-            "maxLength": 256
-          },
-          "description": {
-            "type": "string",
-            "description": "Detailed description of the conformance requirement",
-            "minLength": 1
-          },
-          "phase": {
-            "type": "string",
-            "description": "Execution phase this vector applies to",
-            "enum": ["pre-execution", "execution", "post-execution", "commit", "audit", "recovery"]
-          },
-          "severity": {
-            "type": "string",
-            "description": "Criticality of this conformance requirement",
-            "enum": ["critical", "high", "medium", "low"],
-            "default": "medium"
-          },
-          "tags": {
-            "type": "array",
-            "description": "Classification tags (e.g., 'determinism', 'isolation', 'audit')",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            },
-            "minItems": 0
-          },
-          "assertions": {
-            "type": "array",
-            "description": "Specific assertions that must hold true for conformance",
-            "items": {
-              "type": "object",
-              "required": ["statement"],
-              "additionalProperties": false,
-              "properties": {
-                "statement": {
-                  "type": "string",
-                  "description": "The assertion statement",
-                  "minLength": 1
-                },
-                "validation": {
-                  "type": "string",
-                  "description": "Method or procedure to validate this assertion",
-                  "enum": ["observable", "measurable", "auditable", "deducible"]
-                }
-              }
-            },
-            "minItems": 0
-          },
-          "failure_mode": {
-            "type": "string",
-            "description": "Expected behavior when conformance fails",
-            "enum": ["deny", "audit", "warn", "abort", "retry"]
-          },
-          "dependencies": {
-            "type": "array",
-            "description": "IDs of vectors that must be satisfied first",
-            "items": {
-              "type": "string",
-              "pattern": "^[A-Z0-9-]+$"
-            }
-          },
-          "rationale": {
-            "type": "string",
-            "description": "Explanation of why this conformance rule exists"
-          },
-          "examples": {
-            "type": "array",
-            "description": "Example scenarios demonstrating this vector",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "name": { "type": "string" },
-                "description": { "type": "string" },
-                "input": { "type": "string" },
-                "expected_output": { "type": "string" }
-              }
-            }
-          },
-          "spec_reference": {
-            "type": "string",
-            "description": "Reference to REG specification section or RFC"
-          },
-          "added_version": {
-            "type": "string",
-            "description": "REG spec version when this vector was introduced",
-            "pattern": "^\\d+\\.\\d+\\.\\d+"
-          },
-          "notes": {
-            "type": "string",
-            "description": "Implementation notes or caveats"
-          }
-        }
+          "id":        { "type": "string" },
+          "rfc":       { "type": "string" },
+          "category":  { "enum": ["core", "commit", "extended", "proposal"] },
+          "property":  { "type": "string" },
+          "input":     { "type": "string" },
+          "intended":  { "type": "string" },
+          "expected":  { "type": "string" },
+          "status":    { "enum": ["implemented", "specified", "proposal"] },
+          "native":    { "enum": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_APPLICABLE", "ADAPTER_REQUIRED", "IMPLEMENTATION_GAP", null] },
+          "observed":  { "type": "string" },
+          "reference": { "type": "string" }
+        },
+        "additionalProperties": false
       }
     }
   }
