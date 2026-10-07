@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>REG Vector Lab</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 2rem;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      h1 { margin-bottom: 0.5rem; }
+      #status {
+        margin-bottom: 1rem;
+        color: #a5f3fc;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        background: #1e293b;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      code {
+        background: rgba(148, 163, 184, 0.15);
+        padding: 0.1rem 0.35rem;
+        border-radius: 0.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>REG Vector Lab</h1>
+    <div id="status">Loading vectors…</div>
+    <ul id="vector-list"></ul>
+
+    <script>
+      async function loadVectors() {
+        const status = document.getElementById('status');
+        const list = document.getElementById('vector-list');
+
+        try {
+          const response = await fetch('../vectors/dist/vectors.json');
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+          const vectors = Array.isArray(data.vectors) ? data.vectors : [];
+
+          status.textContent = `Loaded ${vectors.length} vectors`;
+
+          list.innerHTML = vectors
+            .map(
+              (vector) => `
+                <li>
+                  <strong>${vector.id}</strong> · <code>${vector.category}</code> · <code>${vector.status}</code>
+                  <div>${vector.description || 'No description provided.'}</div>
+                </li>
+              `
+            )
+            .join('');
+        } catch (error) {
+          status.textContent = 'Unable to load vectors.json';
+          console.error(error);
+        }
+      }
+
+      loadVectors();
+    </script>
+  </body>
+</html>

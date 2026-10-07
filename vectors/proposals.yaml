@@ -1,0 +1,22 @@
+meta:
+  name: proposals
+  version: 1.0.0
+  description: Candidate REG vectors awaiting validation
+candidates:
+  - id: P-001
+    category: candidate
+    status: proposed
+    note: "not validated yet"
+  - id: P-002
+    category: candidate
+    status: proposed
+    note: "not validated yet"
+  - id: P-003
+    category: candidate
+    status: proposed
+    note: "not validated yet"
+non_validated:
+  - id: NV-001
+    category: exploratory
+    status: rejected
+    note: "requires further standardization"

@@ -1,0 +1,45 @@
+meta:
+  name: commit
+  version: 1.0.0
+  description: Commit-time REG conformance vectors
+vectors:
+  - id: CT-R4-001
+    category: commit
+    status: valid
+    description: Commit record includes a unique execution identifier.
+  - id: CT-R4-002
+    category: commit
+    status: valid
+    description: Commit record includes a standard timestamp.
+  - id: CT-R4-003
+    category: commit
+    status: valid
+    description: Commit record includes the governing policy version.
+  - id: CT-R4-004
+    category: commit
+    status: valid
+    description: Commit record includes the actor identity.
+  - id: CT-R4-005
+    category: commit
+    status: valid
+    description: Commit record includes a digest of the input material.
+  - id: CT-R4-006
+    category: commit
+    status: valid
+    description: Commit record includes the resulting decision.
+  - id: CT-R4-007
+    category: commit
+    status: valid
+    description: Commit record includes the reason code.
+  - id: CT-R4-008
+    category: commit
+    status: valid
+    description: Commit record includes the trace reference.
+  - id: CT-R4-009
+    category: commit
+    status: valid
+    description: Commit record demonstrates append-only semantics.
+  - id: CT-R4-010
+    category: commit
+    status: valid
+    description: Commit record can be replayed without loss of state.

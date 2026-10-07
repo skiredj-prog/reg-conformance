@@ -1,0 +1,40 @@
+meta:
+  name: core
+  version: 1.0.0
+  description: Core REG conformance vectors
+vectors:
+  - id: C1
+    category: core
+    status: valid
+    description: Baseline conformance case for a compliant runtime actor.
+    assertions:
+      - "runtime publishes a valid execution context"
+      - "no forbidden state transitions are observed"
+  - id: C2
+    category: core
+    status: valid
+    description: Constrained input accepted under standard policy.
+    assertions:
+      - "input is normalized before enforcement"
+      - "policy evaluation remains deterministic"
+  - id: C3
+    category: core
+    status: valid
+    description: Rejected execution when required controls are missing.
+    assertions:
+      - "decision is denied"
+      - "audit trace is emitted"
+  - id: C4
+    category: core
+    status: valid
+    description: Recovery path after a transient governance failure.
+    assertions:
+      - "recovery succeeds within the allowed window"
+      - "retry count remains bounded"
+  - id: C5
+    category: core
+    status: valid
+    description: Conformance under concurrent execution of independent vectors.
+    assertions:
+      - "no cross-context leakage"
+      - "execution order remains stable"

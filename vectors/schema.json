@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/reg-vector.schema.json",
+  "title": "REG Vector",
+  "type": "object",
+  "required": ["meta", "vectors"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "vectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "category", "status", "description"],
+        "properties": {
+          "id": { "type": "string" },
+          "category": { "type": "string" },
+          "status": { "type": "string" },
+          "description": { "type": "string" },
+          "assertions": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

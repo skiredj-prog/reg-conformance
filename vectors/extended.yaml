@@ -1,0 +1,37 @@
+meta:
+  name: extended
+  version: 1.0.0
+  description: Extended REG conformance scenarios
+vectors:
+  - id: R0
+    category: extended
+    status: valid
+    description: Empty or null governance context remains handled safely.
+  - id: R1
+    category: extended
+    status: valid
+    description: Partial-policy downgrade is rejected unless explicitly allowed.
+  - id: R2
+    category: extended
+    status: valid
+    description: Out-of-order event ingestion remains consistent.
+  - id: R3
+    category: extended
+    status: valid
+    description: Competing decisions converge on a single authoritative outcome.
+  - id: R4
+    category: extended
+    status: valid
+    description: Unsupported artifact types are rejected with a traceable reason.
+  - id: R5
+    category: extended
+    status: valid
+    description: Policy rollback retains audit continuity.
+  - id: R6
+    category: extended
+    status: valid
+    description: Timeout conditions are surfaced without ambiguity.
+  - id: R7
+    category: extended
+    status: valid
+    description: Backward compatibility for older execution records remains intact.

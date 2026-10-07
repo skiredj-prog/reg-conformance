@@ -1,0 +1,41 @@
+{
+  "generated_from": [
+    "commit.yaml",
+    "core.yaml",
+    "extended.yaml",
+    "proposals.yaml"
+  ],
+  "meta": {
+    "source": "reg-conformance/vectors",
+    "format": "reg-vector-v1"
+  },
+  "vectors": [
+    { "id": "C1", "category": "core", "status": "valid", "description": "Baseline conformance case for a compliant runtime actor." },
+    { "id": "C2", "category": "core", "status": "valid", "description": "Constrained input accepted under standard policy." },
+    { "id": "C3", "category": "core", "status": "valid", "description": "Rejected execution when required controls are missing." },
+    { "id": "C4", "category": "core", "status": "valid", "description": "Recovery path after a transient governance failure." },
+    { "id": "C5", "category": "core", "status": "valid", "description": "Conformance under concurrent execution of independent vectors." },
+    { "id": "CT-R4-001", "category": "commit", "status": "valid", "description": "Commit record includes a unique execution identifier." },
+    { "id": "CT-R4-002", "category": "commit", "status": "valid", "description": "Commit record includes a standard timestamp." },
+    { "id": "CT-R4-003", "category": "commit", "status": "valid", "description": "Commit record includes the governing policy version." },
+    { "id": "CT-R4-004", "category": "commit", "status": "valid", "description": "Commit record includes the actor identity." },
+    { "id": "CT-R4-005", "category": "commit", "status": "valid", "description": "Commit record includes a digest of the input material." },
+    { "id": "CT-R4-006", "category": "commit", "status": "valid", "description": "Commit record includes the resulting decision." },
+    { "id": "CT-R4-007", "category": "commit", "status": "valid", "description": "Commit record includes the reason code." },
+    { "id": "CT-R4-008", "category": "commit", "status": "valid", "description": "Commit record includes the trace reference." },
+    { "id": "CT-R4-009", "category": "commit", "status": "valid", "description": "Commit record demonstrates append-only semantics." },
+    { "id": "CT-R4-010", "category": "commit", "status": "valid", "description": "Commit record can be replayed without loss of state." },
+    { "id": "R0", "category": "extended", "status": "valid", "description": "Empty or null governance context remains handled safely." },
+    { "id": "R1", "category": "extended", "status": "valid", "description": "Partial-policy downgrade is rejected unless explicitly allowed." },
+    { "id": "R2", "category": "extended", "status": "valid", "description": "Out-of-order event ingestion remains consistent." },
+    { "id": "R3", "category": "extended", "status": "valid", "description": "Competing decisions converge on a single authoritative outcome." },
+    { "id": "R4", "category": "extended", "status": "valid", "description": "Unsupported artifact types are rejected with a traceable reason." },
+    { "id": "R5", "category": "extended", "status": "valid", "description": "Policy rollback retains audit continuity." },
+    { "id": "R6", "category": "extended", "status": "valid", "description": "Timeout conditions are surfaced without ambiguity." },
+    { "id": "R7", "category": "extended", "status": "valid", "description": "Backward compatibility for older execution records remains intact." },
+    { "id": "P-001", "category": "candidate", "status": "proposed", "description": "Candidate vector awaiting validation." },
+    { "id": "P-002", "category": "candidate", "status": "proposed", "description": "Candidate vector awaiting validation." },
+    { "id": "P-003", "category": "candidate", "status": "proposed", "description": "Candidate vector awaiting validation." },
+    { "id": "NV-001", "category": "exploratory", "status": "rejected", "description": "Requires further standardization." }
+  ]
+}
