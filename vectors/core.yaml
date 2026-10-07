@@ -1,98 +1,64 @@
 meta:
   name: core
   version: 1.0.0
-  description: "Core REG conformance vectors for baseline runtime actor behavior"
-  spec_version: 1.0.0
-
+  description: Core REG invariants (RFC-0 to RFC-4)
 vectors:
   - id: C1
+    rfc: RFC-3
     category: core
-    status: valid
-    title: "Compliant Runtime Actor"
-    description: "A runtime actor implements the minimal REG conformance set, publishing valid execution context and avoiding forbidden state transitions."
-    phase: execution
-    severity: critical
-    tags: ["baseline", "execution", "context"]
-    assertions:
-      - statement: "Runtime publishes a valid execution context on entry"
-        validation: observable
-      - statement: "No forbidden state transitions are observed during execution"
-        validation: auditable
-    failure_mode: deny
-    rationale: "Establishes the foundational requirements for any REG-compliant system"
-    spec_reference: "REG Spec § 3.1"
-    added_version: "1.0.0"
+    property: Standing Gate
+    input: Actor with invalid credential
+    intended: HARD_VETO — no structural computation
+    expected: HARD_VETO
+    status: implemented
+    native: PASS
+    observed: HARD_VETO on standing failure (native)
+    reference: RFC-3 §4.1
 
   - id: C2
+    rfc: RFC-2
     category: core
-    status: valid
-    title: "Constrained Input Policy Compliance"
-    description: "A runtime accepts constrained input under the active governance policy, normalizing input before enforcement and maintaining deterministic policy evaluation."
-    phase: pre-execution
-    severity: high
-    tags: ["input", "normalization", "determinism", "policy"]
-    assertions:
-      - statement: "Input is normalized before enforcement rules are applied"
-        validation: measurable
-      - statement: "Policy evaluation remains deterministic across repeated invocations"
-        validation: auditable
-    failure_mode: deny
-    rationale: "Ensures predictable and repeatable governance decisions"
-    spec_reference: "REG Spec § 3.2"
-    added_version: "1.0.0"
+    property: Structure Gate
+    input: P≥0.9, V≥0.9, K≤0.15
+    intended: FLAG or HARD_VETO — never PASS
+    expected: FLAG or HARD_VETO
+    status: implemented
+    native: PASS
+    observed: HARD_VETO extreme pressure (native)
+    reference: RFC-2 §3.2
 
   - id: C3
+    rfc: RFC-3 §4.2; RFC-4 §2.2
     category: core
-    status: valid
-    title: "Denial When Controls Are Missing"
-    description: "A runtime rejects execution when required governance controls are not present, emitting an audit trace for each denial."
-    phase: pre-execution
-    severity: critical
-    tags: ["control", "denial", "audit", "enforcement"]
-    assertions:
-      - statement: "Execution decision is denied when required controls are absent"
-        validation: observable
-      - statement: "An audit trace is emitted for each denial event"
-        validation: auditable
-    failure_mode: deny
-    dependencies: ["C1"]
-    rationale: "Prevents unauthorized execution and maintains audit trail integrity"
-    spec_reference: "REG Spec § 3.3"
-    added_version: "1.0.0"
+    property: Standing Continuity at Commit
+    input: Standing revoked between verdict and commit
+    intended: HARD_VETO; commit blocked
+    expected: HARD_VETO
+    status: implemented
+    native: FAIL
+    observed: commit accepted — revocation prospective
+    reference: RFC-3 §4.2; RFC-4 §2.2
 
   - id: C4
+    rfc: RFC-1
     category: core
-    status: valid
-    title: "Recovery After Transient Failure"
-    description: "A runtime recovers from transient governance failures within a defined time window, with bounded retry attempts."
-    phase: recovery
-    severity: high
-    tags: ["recovery", "resilience", "retry", "transient"]
-    assertions:
-      - statement: "Recovery succeeds within the allowed time window"
-        validation: measurable
-      - statement: "Retry count remains bounded and finite"
-        validation: measurable
-    failure_mode: abort
-    rationale: "Allows systems to survive temporary failures without compromising governance"
-    spec_reference: "REG Spec § 4.1"
-    added_version: "1.0.0"
-    notes: "Time window and retry limits must be configured at deployment time"
+    property: Fail-Closed Transport Safety
+    input: Transport fault or 5xx
+    intended: No execution proceeds
+    expected: no execution
+    status: implemented
+    native: NOT_APPLICABLE
+    observed: No transport layer in in-process kernel
+    reference: RFC-1 §5
 
   - id: C5
+    rfc: RFC-1 §2.1; RFC-4 §2.1
     category: core
-    status: valid
-    title: "Concurrent Vector Execution Isolation"
-    description: "A runtime correctly executes independent conformance vectors concurrently without cross-context leakage or execution order instability."
-    phase: execution
-    severity: high
-    tags: ["concurrency", "isolation", "multi-threaded", "determinism"]
-    assertions:
-      - statement: "No cross-context leakage is observed between concurrent executions"
-        validation: auditable
-      - statement: "Execution order remains stable under concurrent load"
-        validation: measurable
-    failure_mode: deny
-    rationale: "Ensures governance integrity in distributed and high-concurrency environments"
-    spec_reference: "REG Spec § 5.1"
-    added_version: "1.0.0"
+    property: Replay Soundness — Idempotency
+    input: Duplicate nonce or request
+    intended: REJECT / NONCE_REPLAY
+    expected: REJECT
+    status: implemented
+    native: PASS
+    observed: NONCE_REPLAY raised (native)
+    reference: RFC-1 §2.1
