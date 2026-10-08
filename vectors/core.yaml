@@ -62,3 +62,39 @@ vectors:
     native: PASS
     observed: NONCE_REPLAY raised (native)
     reference: RFC-1 §2.1
+
+  - id: CT-R4-011
+    rfc: RFC-4 lifecycle T6
+    category: core
+    property: UNKNOWN → RESOLVED (qualified)
+    input: Qualified receipt or explicit resolve under τ_K discipline
+    intended: RESOLVED; timeout alone does not resolve
+    expected: RESOLVED when qualified
+    status: lab_validated
+    native: IMPLEMENTATION_GAP
+    observed: Validated in tenir-conformance-s1-g1 membrane (S2c); native runner adapter pending
+    reference: RFC-4 attempt lifecycle T6
+
+  - id: CT-R4-012
+    rfc: RFC-4 lifecycle T7
+    category: core
+    property: UNKNOWN → FAILED (evidence guard)
+    input: declare_failed without/with evidence_qualified
+    intended: REJECT without qualification; FAILED with qualification
+    expected: evidence guard enforced; timeout ≠ FAILED
+    status: lab_validated
+    native: IMPLEMENTATION_GAP
+    observed: Validated in tenir-conformance-s1-g1 (test_t7_t8); native adapter pending
+    reference: RFC-4 attempt lifecycle T7
+
+  - id: CT-R4-013
+    rfc: RFC-4 lifecycle T8
+    category: core
+    property: FAILED + retry_eligible → new attempt
+    input: FAILED with retry_eligible true/false
+    intended: new attempt_id allowed only if retry_eligible
+    expected: LEI unlock only when retry_eligible=true
+    status: lab_validated
+    native: IMPLEMENTATION_GAP
+    observed: Validated in tenir-conformance-s1-g1 (T8 tests); native adapter pending
+    reference: RFC-4 attempt lifecycle T8
