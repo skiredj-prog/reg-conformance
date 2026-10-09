@@ -132,6 +132,6 @@ This repository is licensed under the **Apache License 2.0**. See [`LICENSE`](LI
 
 ## References
 
-- **REG Specification** — [https://example.org/reg-spec/](https://example.org/reg-spec/)
-- **Lab Viewer** — `lab/index.html` or https://skiredj-prog.github.io/reg-conformance/lab/
+- **REG Specification** — https://github.com/skiredj-prog/reg-conformance
+- **Lab Viewer** — https://skiredj-prog.github.io/reg-conformance/lab/
 - **Contributing Guide** — [`vectors/CONTRIBUTING.md`](vectors/CONTRIBUTING.md)
