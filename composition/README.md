@@ -16,6 +16,8 @@ The current model deliberately has important limits: `tau_k_seconds` is
 provided as an input and is not derived by the simulator; LCR aggregation
 uses a simple unweighted mean; progressive unblocking is a placeholder,
 not runtime behavior; and `print()` output is not a structured audit log.
-The local tests cover nine assertion scenarios, not production safety,
+The local tests cover ten assertion scenarios, not production safety,
 concurrency, or empirical effectiveness. Run locally from the repository
 root with `python -m unittest composition.tests -v`.
+
+Last verified: 2026-10-09
