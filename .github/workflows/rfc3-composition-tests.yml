@@ -1,0 +1,48 @@
+name: RFC-3 Composition Simulator Tests
+
+on:
+  push:
+    paths:
+      - "composition/**"
+      - ".github/workflows/rfc3-composition-tests.yml"
+  pull_request:
+    paths:
+      - "composition/**"
+      - ".github/workflows/rfc3-composition-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  composition-tests:
+    name: Run RFC-3 §6 simulator unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run published composition tests
+        id: tests
+        shell: bash
+        run: |
+          set +e
+          python -m unittest discover -s composition -p 'tests.py' -v 2>&1 | tee composition-test-results.txt
+          test_status=${PIPESTATUS[0]}
+          echo "exit_code=$test_status" >> "$GITHUB_OUTPUT"
+          exit "$test_status"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rfc3-composition-test-results
+          path: composition-test-results.txt
+          if-no-files-found: ignore
+          retention-days: 30
