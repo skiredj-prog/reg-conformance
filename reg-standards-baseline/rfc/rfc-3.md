@@ -200,6 +200,10 @@ If $\tau_K^{comp}$ expires on an unresolved conflict, the membrane applies Fail-
 
 Manifests MUST declare a priority convention (e.g., lower integer = higher priority). Priority informs resolution strategies but does not override or rewrite local Standing evaluations.
 
+### 6.6 Reference Implementation
+
+A readable, local reference implementation of the strategy-dispatch and conflict-resolution logic is published at [`reg-conformance/composition/simulator.py`](../../../composition/simulator.py). Its scope and limitations are documented in [`composition/README.md`](../../../composition/README.md). It is not a conformance suite and does not constitute an empirical validation of RFC-3.
+
 ---
 
 ## 7. Authority Recovery Semantics
