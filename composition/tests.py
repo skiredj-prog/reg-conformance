@@ -103,5 +103,78 @@ class CompositionSimulatorTests(unittest.TestCase):
             self.evaluate([], ConflictType.NONE, 0.0)
 
 
+    def test_tau_k_exact_boundary_fails_closed(self):
+        taus = list(tau_pair())
+        result = self.evaluate(taus, ConflictType.NONE, 1200.0)
+        self.assertEqual(result["decision"], "FAIL_CLOSED_COLLECTIF")
+        self.assertTrue(all(tau.status == "FAIL_CLOSED" for tau in taus))
+
+    def test_c1_exact_threshold_is_nominal(self):
+        result = self.evaluate(
+            list(tau_pair(l1=110.0, l2=110.0)),
+            ConflictType.C1_VERTICAL,
+            100.0,
+        )
+        self.assertEqual(result["decision"], "NOMINAL_PASS")
+
+    def test_c2_exact_shared_limit_is_nominal(self):
+        result = self.evaluate(
+            list(tau_pair(n1=60.0, n2=40.0)),
+            ConflictType.C2_HORIZONTAL,
+            100.0,
+        )
+        self.assertEqual(result["decision"], "NOMINAL_PASS")
+
+    def test_serialize_is_independent_of_input_order(self):
+        first = list(tau_pair())
+        second = list(reversed(tau_pair()))
+        result_first = self.evaluate(first, ConflictType.C2_HORIZONTAL, 100.0)
+        result_second = self.evaluate(second, ConflictType.C2_HORIZONTAL, 100.0)
+        self.assertEqual(result_first["decision"], "SERIALIZED")
+        self.assertEqual(result_second["decision"], "SERIALIZED")
+        self.assertEqual(
+            {tau.agent_id: tau.status for tau in first},
+            {tau.agent_id: tau.status for tau in second},
+        )
+        self.assertEqual(
+            {tau.agent_id: tau.status for tau in first},
+            {"hedge-alpha-01": "PASS", "hedge-beta-01": "HOLD"},
+        )
+
+    def test_pareto_restore_escalates_when_no_subset_can_meet_threshold(self):
+        taus = [
+            TAU("hedge-alpha-01", 1, 60.0, 90.0),
+            TAU("hedge-beta-01", 2, 50.0, 95.0),
+        ]
+        result = self.evaluate(
+            taus,
+            ConflictType.C1_VERTICAL,
+            300.0,
+            custom_strategy=Strategy.PARETO_RESTORE,
+        )
+        self.assertEqual(result["decision"], "ESCALATED_HOLD")
+        self.assertTrue(all(tau.status == "HOLD" for tau in taus))
+
+    def test_status_is_reset_between_scenario_evaluations(self):
+        taus = list(tau_pair())
+        self.evaluate(taus, ConflictType.C2_HORIZONTAL, 100.0)
+        self.assertEqual(
+            [tau.status for tau in taus],
+            ["PASS", "HOLD"],
+        )
+        result = self.evaluate(taus, ConflictType.NONE, 100.0)
+        self.assertEqual(result["decision"], "NOMINAL_PASS")
+        self.assertTrue(all(tau.status == "PASS" for tau in taus))
+
+    def test_strategy_not_applicable_to_c1_raises_value_error(self):
+        with self.assertRaises(ValueError):
+            self.evaluate(
+                list(tau_pair()),
+                ConflictType.C1_VERTICAL,
+                100.0,
+                custom_strategy=Strategy.ESCALATE,
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
