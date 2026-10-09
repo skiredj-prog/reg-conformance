@@ -155,16 +155,23 @@ class CompositionSimulatorTests(unittest.TestCase):
         self.assertEqual(result["decision"], "ESCALATED_HOLD")
         self.assertTrue(all(tau.status == "HOLD" for tau in taus))
 
-    def test_status_is_reset_between_scenario_evaluations(self):
+    def test_status_is_reset_before_strategy_validation_raises(self):
         taus = list(tau_pair())
-        self.evaluate(taus, ConflictType.C2_HORIZONTAL, 100.0)
+        self.evaluate(taus, ConflictType.C2_HORIZONTAL, 150.0)
         self.assertEqual(
             [tau.status for tau in taus],
             ["PASS", "HOLD"],
         )
-        result = self.evaluate(taus, ConflictType.NONE, 100.0)
-        self.assertEqual(result["decision"], "NOMINAL_PASS")
-        self.assertTrue(all(tau.status == "PASS" for tau in taus))
+        for tau in taus:
+            tau.status = "STALE"
+        with self.assertRaises(ValueError):
+            self.evaluate(
+                taus,
+                ConflictType.C2_HORIZONTAL,
+                150.0,
+                custom_strategy=Strategy.PARETO_RESTORE,
+            )
+        self.assertTrue(all(tau.status == "NOMINAL" for tau in taus))
 
     def test_strategy_not_applicable_to_c2_raises_value_error(self):
         with self.assertRaises(ValueError):
