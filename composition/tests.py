@@ -166,13 +166,13 @@ class CompositionSimulatorTests(unittest.TestCase):
         self.assertEqual(result["decision"], "NOMINAL_PASS")
         self.assertTrue(all(tau.status == "PASS" for tau in taus))
 
-    def test_strategy_not_applicable_to_c1_raises_value_error(self):
+    def test_strategy_not_applicable_to_c2_raises_value_error(self):
         with self.assertRaises(ValueError):
             self.evaluate(
                 list(tau_pair()),
-                ConflictType.C1_VERTICAL,
+                ConflictType.C2_HORIZONTAL,
                 100.0,
-                custom_strategy=Strategy.ESCALATE,
+                custom_strategy=Strategy.PARETO_RESTORE,
             )
 
 
