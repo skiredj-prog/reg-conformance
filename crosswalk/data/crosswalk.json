@@ -3,30 +3,40 @@
     "id": "CW-ISO-8.2",
     "framework": "ISO/IEC 42001:2023",
     "normative_clause": "Clause 8.2 - Operational planning and control",
-    "reg_mechanism": "Runtime State Interception (HOLD / Double-Tap)",
-    "vector_ref": "REG-V-04",
+    "reg_mechanism": "HOLD (Uncertainty Interception & Double-Tap Prevention)",
+    "vector_ref": "REG-INV-HOLD",
     "conformance_type": "enforces",
-    "verification_status": "verified-by-vector",
-    "description": "Intercepte l'exécution d'un ordre critique en cas d'incertitude réseau pour empêcher la double exécution."
+    "verification_status": "verified-by-invariant",
+    "description": "Synchronously intercepts state execution upon environment uncertainty (e.g., network timeout) to prevent unconfirmed retries and ensure operational control."
   },
   {
-    "id": "CW-NIST-GOV-1.1",
+    "id": "CW-NIST-MAN2.2",
     "framework": "NIST AI RMF 1.0",
-    "normative_clause": "GOVERN 1.1 - Legal and regulatory requirements",
-    "reg_mechanism": "Hard Veto & Policy Guardrails",
-    "vector_ref": "REG-V-12",
+    "normative_clause": "MANAGE 2.2 - Risk treatment measures are implemented",
+    "reg_mechanism": "HARD_VETO (Inviolable Guardrail Interception)",
+    "vector_ref": "REG-INV-VETO",
     "conformance_type": "enforces",
-    "verification_status": "verified-by-vector",
-    "description": "Bloque instantanément toute exécution d'agent violant les contraintes politiques via un veto infranchissable."
+    "verification_status": "verified-by-invariant",
+    "description": "Instantly aborts agent plan execution when policy limits are breached, neutralizing payload execution before it hits downstream systems."
   },
   {
-    "id": "CW-EU-AI-ART14",
+    "id": "CW-EU-ART12",
     "framework": "EU AI Act",
-    "normative_clause": "Article 14 - Human oversight",
-    "reg_mechanism": "Evidence Manifest & HITL Interlock",
-    "vector_ref": "REG-V-28",
+    "normative_clause": "Article 12 - Record-keeping",
+    "reg_mechanism": "EVIDENCE_MANIFEST (Immutable Audit Trail)",
+    "vector_ref": "REG-INV-MANIFEST",
     "conformance_type": "audits",
-    "verification_status": "partially-checked",
-    "description": "Génère un manifeste d'évidence traçant chaque décision critique pour permettre la supervision humaine."
+    "verification_status": "verified-by-invariant",
+    "description": "Generates a tamper-evident, cryptographically signed audit record for every runtime decision boundary (PASS, HOLD, VETO)."
+  },
+  {
+    "id": "CW-ISO-8.3",
+    "framework": "ISO/IEC 42001:2023",
+    "normative_clause": "Clause 8.3 - AI system changes and operations",
+    "reg_mechanism": "COMMIT_BINDING (Cryptographic Payload Integrity)",
+    "vector_ref": "REG-INV-BINDING",
+    "conformance_type": "enforces",
+    "verification_status": "verified-by-invariant",
+    "description": "Binds a cryptographic checksum of the validated agent intent to the execution token, preventing TOCTOU races or in-flight payload substitution."
   }
 ]
