@@ -2,12 +2,12 @@
   {
     "id": "CW-ISO-8.2",
     "framework": "ISO/IEC 42001:2023",
-    "normative_clause": "Clause 8.2 - Operational planning and control",
+    "normative_clause": "Clause 8.2 - AI risk assessment",
     "reg_mechanism": "HOLD (Uncertainty Interception & Race Detection)",
-    "vector_ref": "CT-R4-005",
+    "vector_ref": "—",
     "conformance_type": "enforces",
-    "verification_status": "draft",
-    "description": "Interception de l'exécution sur incertitude/race condition. Mécanisme prévu, test en cours de rédaction."
+    "verification_status": "unverified",
+    "description": "Correspondence withdrawn: CT-R4-005 (race detection) is not an AI risk assessment. Re-mapping pending."
   },
   {
     "id": "CW-NIST-MAN2.2",
@@ -32,12 +32,12 @@
   {
     "id": "CW-ISO-8.3",
     "framework": "ISO/IEC 42001:2023",
-    "normative_clause": "Clause 8.3 - AI system changes and operations",
+    "normative_clause": "Clause 8.3 - AI risk treatment",
     "reg_mechanism": "COMMIT_BINDING (Cryptographic Payload Integrity)",
-    "vector_ref": "CT-R4-002",
+    "vector_ref": "—",
     "conformance_type": "enforces",
-    "verification_status": "draft",
-    "description": "Liaison d'action/payload. Mécanisme existant, test faisable mais non encore rédigé."
+    "verification_status": "unverified",
+    "description": "Correspondence withdrawn: CT-R4-002 (action binding) is not AI risk treatment. Re-mapping pending."
   },
   {
     "id": "CW-RFC0-01",
