@@ -41,6 +41,23 @@
     .metric-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
     .metric-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
     .metric-value { font-size: 1.5rem; font-weight: 700; color: var(--accent); margin-top: 4px; }
+    
+    /* Controls Bar */
+    .controls { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .search-box, .filter-select {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-box { flex: 1; min-width: 260px; }
+    .search-box:focus, .filter-select:focus { border-color: var(--accent); }
+    .filter-select { cursor: pointer; }
+
     .table-responsive { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
     th { background: rgba(15,23,42,0.6); color: var(--text-muted); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border); }
@@ -84,13 +101,23 @@
       </div>
     </div>
 
+    <div class="controls">
+      <input type="text" id="searchInput" class="search-box" placeholder="Search by framework, mechanism, vector ID, or clause...">
+      <select id="frameworkFilter" class="filter-select">
+        <option value="">All Frameworks</option>
+        <option value="ISO/IEC 42001:2023">ISO/IEC 42001:2023</option>
+        <option value="NIST AI RMF 1.0">NIST AI RMF 1.0</option>
+        <option value="EU AI Act">EU AI Act</option>
+      </select>
+    </div>
+
     <div class="table-responsive">
       <table>
         <thead>
           <tr>
             <th>Framework & Normative Clause</th>
             <th>REG Execution Mechanism</th>
-            <th>Invariant / Reference</th>
+            <th>Vector Ref</th>
             <th>Type</th>
             <th>Status</th>
           </tr>
@@ -107,31 +134,65 @@
   </div>
 
   <script>
+    let allData = [];
+
     async function init() {
       try {
         const res = await fetch('data/crosswalk.json');
-        const data = await res.json();
-        const tbody = document.getElementById('crosswalk-body');
-        
-        tbody.innerHTML = data.map(item => `
-          <tr>
-            <td>
-              <strong style="color:var(--accent);">${item.framework}</strong><br>
-              <span>${item.normative_clause}</span>
-            </td>
-            <td>
-              <strong>${item.reg_mechanism}</strong>
-              <div class="desc">${item.description}</div>
-            </td>
-            <td><code>${item.vector_ref}</code></td>
-            <td><span class="tag tag-${item.conformance_type}">${item.conformance_type}</span></td>
-            <td><span class="tag tag-verified">${item.verification_status}</span></td>
-          </tr>
-        `).join('');
+        allData = await res.json();
+        renderTable(allData);
+
+        document.getElementById('searchInput').addEventListener('input', filterData);
+        document.getElementById('frameworkFilter').addEventListener('change', filterData);
       } catch (err) {
         document.getElementById('crosswalk-body').innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ef4444; padding:30px;">Error loading crosswalk data.</td></tr>`;
       }
     }
+
+    function filterData() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const selectedFramework = document.getElementById('frameworkFilter').value;
+
+      const filtered = allData.filter(item => {
+        const matchesQuery = 
+          item.framework.toLowerCase().includes(query) ||
+          item.normative_clause.toLowerCase().includes(query) ||
+          item.reg_mechanism.toLowerCase().includes(query) ||
+          item.vector_ref.toLowerCase().includes(query) ||
+          item.description.toLowerCase().includes(query);
+
+        const matchesFramework = selectedFramework === "" || item.framework === selectedFramework;
+
+        return matchesQuery && matchesFramework;
+      });
+
+      renderTable(filtered);
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('crosswalk-body');
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">No matching conformance records found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map(item => `
+        <tr>
+          <td>
+            <strong style="color:var(--accent);">${item.framework}</strong><br>
+            <span>${item.normative_clause}</span>
+          </td>
+          <td>
+            <strong>${item.reg_mechanism}</strong>
+            <div class="desc">${item.description}</div>
+          </td>
+          <td><code>${item.vector_ref}</code></td>
+          <td><span class="tag tag-${item.conformance_type}">${item.conformance_type}</span></td>
+          <td><span class="tag tag-verified">${item.verification_status}</span></td>
+        </tr>
+      `).join('');
+    }
+
     init();
   </script>
 </body>
