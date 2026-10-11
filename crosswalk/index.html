@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>REG Crosswalk - Matrice de Correspondance</title>
+  <title>REG Crosswalk - Matrice de Conformité Normative</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -11,27 +11,20 @@
       --text: #f8fafc;
       --text-muted: #94a3b8;
       --accent: #38bdf8;
-      --accent-hover: #0284c7;
       --border: #334155;
-      --badge-unverified: #f59e0b;
-      --badge-verified: #10b981;
+      --tag-enforces: #10b981;
+      --tag-audits: #38bdf8;
+      --tag-mitigates: #f59e0b;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg);
       color: var(--text);
       line-height: 1.5;
       padding: 24px;
     }
-
-    .container {
-      max-width: 1300px;
-      margin: 0 auto;
-    }
-
+    .container { max-width: 1300px; margin: 0 auto; }
     header {
       border-bottom: 1px solid var(--border);
       padding-bottom: 20px;
@@ -42,413 +35,79 @@
       flex-wrap: wrap;
       gap: 16px;
     }
-
-    .title-area h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .title-area h1 span {
-      font-size: 0.8rem;
-      background: rgba(56, 189, 248, 0.1);
-      color: var(--accent);
-      padding: 2px 8px;
-      border-radius: 4px;
-      border: 1px solid rgba(56, 189, 248, 0.3);
-    }
-
-    .subtitle {
-      color: var(--text-muted);
-      font-size: 0.92rem;
-      margin-top: 6px;
-      max-width: 800px;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 10px;
-    }
-
-    .btn {
-      background: var(--card-bg);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #0f172a;
-      border: none;
-      font-weight: 600;
-    }
-
-    .btn-primary:hover {
-      background: var(--accent-hover);
-      color: #ffffff;
-    }
-
-    .metrics {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .metric-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px;
-    }
-
-    .metric-label {
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-    }
-
-    .metric-value {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--accent);
-      margin-top: 4px;
-    }
-
-    .toolbar {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px 8px 0 0;
-      padding: 16px;
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .search-box {
-      flex: 1;
-      min-width: 240px;
-    }
-
-    input[type="text"], select {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 0.88rem;
-      outline: none;
-    }
-
-    input[type="text"]:focus, select:focus {
-      border-color: var(--accent);
-    }
-
-    .filter-group {
-      display: flex;
-      gap: 8px;
-    }
-
-    .table-responsive {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-top: none;
-      border-radius: 0 0 8px 8px;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-      font-size: 0.88rem;
-    }
-
-    th {
-      background: rgba(15, 23, 42, 0.6);
-      color: var(--text-muted);
-      font-weight: 600;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    td {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-      vertical-align: top;
-    }
-
+    h1 { font-size: 1.6rem; color: var(--text); }
+    h1 span { font-size: 0.8rem; background: rgba(56,189,248,0.1); color: var(--accent); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.3); }
+    .subtitle { color: var(--text-muted); font-size: 0.92rem; margin-top: 6px; max-width: 800px; }
+    .btn { background: var(--card-bg); color: var(--text); border: 1px solid var(--border); padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; text-decoration: none; cursor: pointer; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .table-responsive { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
+    th { background: rgba(15,23,42,0.6); color: var(--text-muted); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
     tr:last-child td { border-bottom: none; }
-    tr:hover { background: rgba(51, 65, 85, 0.3); }
-
-    .tag {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
-    .tag-relation {
-      background: rgba(148, 163, 184, 0.15);
-      color: #cbd5e1;
-      border: 1px solid rgba(148, 163, 184, 0.3);
-    }
-
-    .tag-unverified {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fcd34d;
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-
-    .tag-verified {
-      background: rgba(16, 185, 129, 0.15);
-      color: #6ee7b7;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-
-    footer {
-      margin-top: 32px;
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    footer a { color: var(--accent); text-decoration: none; }
+    tr:hover { background: rgba(51,65,85,0.3); }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .tag-enforces { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+    .tag-audits { background: rgba(56,189,248,0.15); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.3); }
+    .desc { color: var(--text-muted); font-size: 0.82rem; margin-top: 4px; }
   </style>
 </head>
 <body>
-
   <div class="container">
-    
     <header>
-      <div class="title-area">
-        <h1>REG Crosswalk <span>v1.0-draft</span></h1>
-        <p class="subtitle">
-          Matrice de correspondance terminologique et opérationnelle entre le protocole <strong>REG (Runtime Execution Governance)</strong> et les cadres normatifs externes (NIST AI RMF, ISO 42001, EU AI Act, IAM).
-          <br><em>Note : Rapprochement sémantique à visée technique, sans équivalence juridique stricte.</em>
-        </p>
+      <div>
+        <h1>REG Conformance Crosswalk <span>v2.0-normative</span></h1>
+        <p class="subtitle">Traçabilité directe entre les exigences normatives internationales (ISO 42001, NIST AI RMF, EU AI Act) et les vecteurs d'exécution vérifiables du protocole REG.</p>
       </div>
-      <div class="header-actions">
-        <a href="README.md" class="btn" target="_blank">📄 Méthodologie</a>
-        <button id="export-csv" class="btn btn-primary">📥 Exporter CSV</button>
+      <div>
+        <a href="https://github.com/skiredj-prog/reg-conformance" class="btn" target="_blank">📂 Dépôt GitHub</a>
       </div>
     </header>
-
-    <div class="metrics">
-      <div class="metric-card">
-        <div class="metric-label">Axes REG Référencés</div>
-        <div class="metric-value" id="stat-axes">0</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Cadres Externes Mappés</div>
-        <div class="metric-value" id="stat-frameworks">0</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Alignements à Vérifier</div>
-        <div class="metric-value" id="stat-unverified" style="color:#f59e0b;">0</div>
-      </div>
-    </div>
-
-    <div class="toolbar">
-      <div class="search-box">
-        <input type="text" id="search-input" placeholder="Rechercher un axe, terme, cadre ou concept...">
-      </div>
-      <div class="filter-group">
-        <select id="filter-framework">
-          <option value="">Tous les Cadres</option>
-        </select>
-        <select id="filter-relation">
-          <option value="">Toutes Relations</option>
-          <option value="partial">Rapprochement partiel</option>
-          <option value="shared_word_different_object">Mot commun, objet différent</option>
-          <option value="not_found_in_sources">Non trouvé</option>
-        </select>
-        <select id="filter-status">
-          <option value="">Tous Statuts</option>
-          <option value="unverified">Non vérifié</option>
-          <option value="partially_checked">Partiellement vérifié</option>
-          <option value="verified">Vérifié</option>
-        </select>
-      </div>
-    </div>
 
     <div class="table-responsive">
       <table>
         <thead>
           <tr>
-            <th>Axe / Concept REG</th>
-            <th>Cadre Externe</th>
-            <th>Terme / Référence Externe</th>
-            <th>Type de Relation</th>
+            <th>Cadre & Clause Normative</th>
+            <th>Mécanisme REG</th>
+            <th>Vecteur Associé</th>
+            <th>Type</th>
             <th>Statut</th>
           </tr>
         </thead>
         <tbody id="crosswalk-body">
-          <tr>
-            <td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">
-              Chargement des données de correspondance...
-            </td>
-          </tr>
+          <tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">Chargement de la matrice normative...</td></tr>
         </tbody>
       </table>
     </div>
-
-    <footer>
-      <p>
-        Projet REG Conformance &bull; 
-        <a href="https://github.com/skiredj-prog/reg-conformance" target="_blank">Dépôt GitHub</a> &bull; 
-        <a href="https://github.com/skiredj-prog/reg-conformance/issues/new" target="_blank">Proposer un alignement</a>
-      </p>
-    </footer>
-
   </div>
 
   <script>
-    let rawData = [];
-
     async function init() {
       try {
-        const response = await fetch('data/crosswalk.json');
-        const data = await response.json();
+        const res = await fetch('data/crosswalk.json');
+        const data = await res.json();
+        const tbody = document.getElementById('crosswalk-body');
         
-        // CORRECTION CLE : supporte le tableau direct ET l'objet enveloppé
-        rawData = Array.isArray(data) ? data : (data.crosswalk || []);
-        
-        populateFrameworkFilter();
-        updateMetrics();
-        renderTable(rawData);
-
-        document.getElementById('search-input').addEventListener('input', filterData);
-        document.getElementById('filter-framework').addEventListener('change', filterData);
-        document.getElementById('filter-relation').addEventListener('change', filterData);
-        document.getElementById('filter-status').addEventListener('change', filterData);
-        document.getElementById('export-csv').addEventListener('click', exportToCSV);
-
-      } catch (err) {
-        document.getElementById('crosswalk-body').innerHTML = `
+        tbody.innerHTML = data.map(item => `
           <tr>
-            <td colspan="5" style="text-align:center; color:#ef4444; padding:30px;">
-              Erreur de chargement des données. Vérifiez la présence de <code>data/crosswalk.json</code>.
+            <td>
+              <strong style="color:var(--accent);">${item.framework}</strong><br>
+              <span>${item.normative_clause}</span>
             </td>
-          </tr>`;
-        console.error(err);
-      }
-    }
-
-    function updateMetrics() {
-      const axes = new Set(rawData.map(d => d.reg_axis || d.id)).size;
-      const frameworks = new Set(rawData.map(d => d.framework).filter(Boolean)).size;
-      const unverified = rawData.filter(d => (d.verification_status || 'unverified') === 'unverified').length;
-
-      document.getElementById('stat-axes').innerText = axes;
-      document.getElementById('stat-frameworks').innerText = frameworks;
-      document.getElementById('stat-unverified').innerText = unverified;
-    }
-
-    function populateFrameworkFilter() {
-      const select = document.getElementById('filter-framework');
-      const frameworks = [...new Set(rawData.map(d => d.framework).filter(Boolean))].sort();
-      frameworks.forEach(fw => {
-        const opt = document.createElement('option');
-        opt.value = fw;
-        opt.innerText = fw;
-        select.appendChild(opt);
-      });
-    }
-
-    function filterData() {
-      const search = document.getElementById('search-input').value.toLowerCase();
-      const fw = document.getElementById('filter-framework').value;
-      const rel = document.getElementById('filter-relation').value;
-      const status = document.getElementById('filter-status').value;
-
-      const filtered = rawData.filter(item => {
-        const matchSearch = !search || Object.values(item).some(v => String(v).toLowerCase().includes(search));
-        const matchFw = !fw || item.framework === fw;
-        const matchRel = !rel || item.relation === rel;
-        const matchStatus = !status || (item.verification_status || 'unverified') === status;
-        return matchSearch && matchFw && matchRel && matchStatus;
-      });
-
-      renderTable(filtered);
-    }
-
-    function renderTable(data) {
-      const tbody = document.getElementById('crosswalk-body');
-      if (data.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">
-              Aucun résultat ne correspond aux critères de recherche.
+            <td>
+              <strong>${item.reg_mechanism}</strong>
+              <div class="desc">${item.description}</div>
             </td>
-          </tr>`;
-        return;
-      }
-
-      tbody.innerHTML = data.map(item => {
-        const status = item.verification_status || 'unverified';
-        const statusClass = status === 'verified' ? 'tag-verified' : 'tag-unverified';
-        // CORRECTION CLE : lecture de neighbour_term (avec fallback sur external_term)
-        const term = item.neighbour_term || item.external_term || '-';
-        const axis = item.reg_axis || item.id || '-';
-
-        return `
-          <tr>
-            <td><strong>${axis}</strong></td>
-            <td><strong style="color:var(--accent);">${item.framework || '-'}</strong></td>
-            <td>${term}</td>
-            <td><span class="tag tag-relation">${item.relation || 'partiel'}</span></td>
-            <td><span class="tag ${statusClass}">${status}</span></td>
+            <td><code>${item.vector_ref}</code></td>
+            <td><span class="tag tag-${item.conformance_type}">${item.conformance_type}</span></td>
+            <td><span class="tag" style="background:rgba(245,158,11,0.15); color:#fcd34d;">${item.verification_status}</span></td>
           </tr>
-        `;
-      }).join('');
+        `).join('');
+      } catch (err) {
+        document.getElementById('crosswalk-body').innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ef4444; padding:30px;">Erreur de chargement des données.</td></tr>`;
+      }
     }
-
-    function exportToCSV() {
-      if (!rawData.length) return;
-      const headers = ["Axe_REG", "Cadre_Externe", "Terme_Externe", "Relation", "Statut_Verification"];
-      const rows = rawData.map(d => [
-        `"${d.reg_axis || d.id || ''}"`,
-        `"${d.framework || ''}"`,
-        `"${d.neighbour_term || d.external_term || ''}"`,
-        `"${d.relation || ''}"`,
-        `"${d.verification_status || 'unverified'}"`
-      ]);
-      
-      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "reg_crosswalk.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
     init();
   </script>
 </body>
