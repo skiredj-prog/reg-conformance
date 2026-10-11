@@ -6,8 +6,8 @@
     "reg_mechanism": "HOLD (Uncertainty Interception & Race Detection)",
     "vector_ref": "CT-R4-005",
     "conformance_type": "enforces",
-    "verification_status": "specified-in-rfc4",
-    "description": "Specified by CT-R4-005 (no test yet). Clause mapping to be verified against ISO/IEC 42001. Original intent: Synchronously intercepts state execution upon race conditions and environment uncertainty, mapped to vector CT-R4-005."
+    "verification_status": "draft",
+    "description": "Interception de l'exécution sur incertitude/race condition. Mécanisme prévu, test en cours de rédaction."
   },
   {
     "id": "CW-NIST-MAN2.2",
@@ -16,16 +16,8 @@
     "reg_mechanism": "HARD_VETO (Inviolable Guardrail Interception)",
     "vector_ref": "CT-R4-006",
     "conformance_type": "enforces",
-    "verification_status": "tested",
-    "description": "Enforces that non-PASS states (vetoed actions) cannot cross the commit boundary, tested by test_ct_r4_006 (see evidence).",
-    "evidence": {
-      "repo": "skiredj-prog/tenir-conformance-s1-g1",
-      "test": "tests/test_g0_s11_transition.py::test_ct_r4_006_non_pass_cannot_cross_commit_no_effect",
-      "commit": "9ce6f102e498bca3a35330bd2686af8b8e672b03",
-      "ci_run_number": 186,
-      "merged_into_main": "67253f29ce6bf965690fdf3b67f543a522e4fc7f",
-      "caveat": "Test run on the PR head commit; the merge commit was not separately re-executed by this entry. NIST 'MANAGE 2.2' wording not yet checked against the official text."
-    }
+    "verification_status": "verified-by-vector",
+    "description": "Empêche les états non-PASS de franchir la barrière de commit. Validé et fusionné (PR #27)."
   },
   {
     "id": "CW-EU-ART12",
@@ -34,8 +26,8 @@
     "reg_mechanism": "EVIDENCE_MANIFEST (Immutable Audit Trail)",
     "vector_ref": "CT-R4-008",
     "conformance_type": "audits",
-    "verification_status": "specified-in-rfc4",
-    "description": "Specified by CT-R4-008 (no test yet: requires a hash-chained manifest, not implemented). Original intent: Guarantees cryptographic integrity of runtime decision manifests, verified directly against test vector CT-R4-008."
+    "verification_status": "draft",
+    "description": "Garantie de l'intégrité du manifeste. Implémentation et tests en attente du code de hachage chaîné."
   },
   {
     "id": "CW-ISO-8.3",
@@ -44,7 +36,77 @@
     "reg_mechanism": "COMMIT_BINDING (Cryptographic Payload Integrity)",
     "vector_ref": "CT-R4-002",
     "conformance_type": "enforces",
-    "verification_status": "specified-in-rfc4",
-    "description": "Specified by CT-R4-002 (no test yet). Clause mapping to be verified against ISO/IEC 42001. Original intent: Detects and blocks payload binding violations to prevent in-flight modification, tested via vector CT-R4-002."
+    "verification_status": "draft",
+    "description": "Liaison d'action/payload. Mécanisme existant, test faisable mais non encore rédigé."
+  },
+  {
+    "id": "CW-RFC0-01",
+    "framework": "REG RFC-0 (Extended)",
+    "normative_clause": "Policy Anchor Integrity",
+    "reg_mechanism": "POLICY_ANCHOR",
+    "vector_ref": "CT-R0-001",
+    "conformance_type": "enforces",
+    "verification_status": "planned",
+    "description": "Vérification de l'intégrité de l'ancre de politique au démarrage du moteur d'exécution."
+  },
+  {
+    "id": "CW-RFC1-01",
+    "framework": "REG RFC-1 (Extended)",
+    "normative_clause": "Response Schema Compliance",
+    "reg_mechanism": "SCHEMA_SAFETY",
+    "vector_ref": "CT-R1-001",
+    "conformance_type": "enforces",
+    "verification_status": "planned",
+    "description": "Conformité stricte des schémas de réponse aux spécifications du protocole."
+  },
+  {
+    "id": "CW-RFC2-01",
+    "framework": "REG RFC-2 (Extended)",
+    "normative_clause": "S-Score Determinism",
+    "reg_mechanism": "SCORING_DETERMINISM",
+    "vector_ref": "CT-R2-002",
+    "conformance_type": "enforces",
+    "verification_status": "planned",
+    "description": "Garantie du déterminisme des calculs de scores de sécurité (S-Score)."
+  },
+  {
+    "id": "CW-RFC3-01",
+    "framework": "REG RFC-3 (Extended)",
+    "normative_clause": "Revocation Propagation",
+    "reg_mechanism": "CREDENTIAL_STANDING",
+    "vector_ref": "CT-R3-002",
+    "conformance_type": "audits",
+    "verification_status": "planned",
+    "description": "Propagation instantanée des révocations de certificats et d'identifiants."
+  },
+  {
+    "id": "CW-RFC5-01",
+    "framework": "REG RFC-5 (Extended)",
+    "normative_clause": "Manifest Export & Retention",
+    "reg_mechanism": "EVIDENCE_EXPORT",
+    "vector_ref": "CT-R5-001",
+    "conformance_type": "audits",
+    "verification_status": "planned",
+    "description": "Exportation et politique de conservation à long terme des manifestes de preuve."
+  },
+  {
+    "id": "CW-RFC6-01",
+    "framework": "REG RFC-6 (Extended)",
+    "normative_clause": "Emergency Override Audit",
+    "reg_mechanism": "EMERGENCY_OVERRIDE",
+    "vector_ref": "CT-R6-001",
+    "conformance_type": "audits",
+    "verification_status": "planned",
+    "description": "Traçabilité et audit strict de l'activation des procédures de dérogation d'urgence."
+  },
+  {
+    "id": "CW-RFC7-01",
+    "framework": "REG RFC-7 (Extended)",
+    "normative_clause": "Adapter Result Equivalence",
+    "reg_mechanism": "ADAPTER_COMPATIBILITY",
+    "vector_ref": "CT-R7-001",
+    "conformance_type": "enforces",
+    "verification_status": "planned",
+    "description": "Équivalence fonctionnelle des résultats entre différents adaptateurs d'exécution."
   }
 ]
