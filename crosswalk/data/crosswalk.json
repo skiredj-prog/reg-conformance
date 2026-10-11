@@ -3,40 +3,40 @@
     "id": "CW-ISO-8.2",
     "framework": "ISO/IEC 42001:2023",
     "normative_clause": "Clause 8.2 - Operational planning and control",
-    "reg_mechanism": "HOLD (Uncertainty Interception & Double-Tap Prevention)",
-    "vector_ref": "REG-INV-HOLD",
+    "reg_mechanism": "HOLD (Uncertainty Interception & Race Detection)",
+    "vector_ref": "CT-R4-005",
     "conformance_type": "enforces",
-    "verification_status": "verified-by-invariant",
-    "description": "Synchronously intercepts state execution upon environment uncertainty (e.g., network timeout) to prevent unconfirmed retries and ensure operational control."
+    "verification_status": "verified-by-vector",
+    "description": "Synchronously intercepts state execution upon race conditions and environment uncertainty, mapped to vector CT-R4-005."
   },
   {
     "id": "CW-NIST-MAN2.2",
     "framework": "NIST AI RMF 1.0",
     "normative_clause": "MANAGE 2.2 - Risk treatment measures are implemented",
     "reg_mechanism": "HARD_VETO (Inviolable Guardrail Interception)",
-    "vector_ref": "REG-INV-VETO",
+    "vector_ref": "CT-R4-006",
     "conformance_type": "enforces",
-    "verification_status": "verified-by-invariant",
-    "description": "Instantly aborts agent plan execution when policy limits are breached, neutralizing payload execution before it hits downstream systems."
+    "verification_status": "verified-by-vector",
+    "description": "Enforces that non-PASS states (vetoed actions) cannot cross the commit boundary, validated by vector CT-R4-006."
   },
   {
     "id": "CW-EU-ART12",
     "framework": "EU AI Act",
     "normative_clause": "Article 12 - Record-keeping",
     "reg_mechanism": "EVIDENCE_MANIFEST (Immutable Audit Trail)",
-    "vector_ref": "REG-INV-MANIFEST",
+    "vector_ref": "CT-R4-008",
     "conformance_type": "audits",
-    "verification_status": "verified-by-invariant",
-    "description": "Generates a tamper-evident, cryptographically signed audit record for every runtime decision boundary (PASS, HOLD, VETO)."
+    "verification_status": "verified-by-vector",
+    "description": "Guarantees cryptographic integrity of runtime decision manifests, verified directly against test vector CT-R4-008."
   },
   {
     "id": "CW-ISO-8.3",
     "framework": "ISO/IEC 42001:2023",
     "normative_clause": "Clause 8.3 - AI system changes and operations",
     "reg_mechanism": "COMMIT_BINDING (Cryptographic Payload Integrity)",
-    "vector_ref": "REG-INV-BINDING",
+    "vector_ref": "CT-R4-002",
     "conformance_type": "enforces",
-    "verification_status": "verified-by-invariant",
-    "description": "Binds a cryptographic checksum of the validated agent intent to the execution token, preventing TOCTOU races or in-flight payload substitution."
+    "verification_status": "verified-by-vector",
+    "description": "Detects and blocks payload binding violations to prevent in-flight modification, tested via vector CT-R4-002."
   }
 ]
