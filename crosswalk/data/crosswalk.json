@@ -7,7 +7,7 @@
     "vector_ref": "CT-R4-005",
     "conformance_type": "enforces",
     "verification_status": "specified-in-rfc4",
-    "description": "Synchronously intercepts state execution upon race conditions and environment uncertainty, mapped to vector CT-R4-005."
+    "description": "Specified by CT-R4-005 (no test yet). Clause mapping to be verified against ISO/IEC 42001. Original intent: Synchronously intercepts state execution upon race conditions and environment uncertainty, mapped to vector CT-R4-005."
   },
   {
     "id": "CW-NIST-MAN2.2",
@@ -17,7 +17,7 @@
     "vector_ref": "CT-R4-006",
     "conformance_type": "enforces",
     "verification_status": "tested",
-    "description": "Enforces that non-PASS states (vetoed actions) cannot cross the commit boundary, validated by vector CT-R4-006.",
+    "description": "Enforces that non-PASS states (vetoed actions) cannot cross the commit boundary, tested by test_ct_r4_006 (see evidence).",
     "evidence": {
       "repo": "skiredj-prog/tenir-conformance-s1-g1",
       "test": "tests/test_g0_s11_transition.py::test_ct_r4_006_non_pass_cannot_cross_commit_no_effect",
@@ -35,7 +35,7 @@
     "vector_ref": "CT-R4-008",
     "conformance_type": "audits",
     "verification_status": "specified-in-rfc4",
-    "description": "Guarantees cryptographic integrity of runtime decision manifests, verified directly against test vector CT-R4-008."
+    "description": "Specified by CT-R4-008 (no test yet: requires a hash-chained manifest, not implemented). Original intent: Guarantees cryptographic integrity of runtime decision manifests, verified directly against test vector CT-R4-008."
   },
   {
     "id": "CW-ISO-8.3",
@@ -45,6 +45,6 @@
     "vector_ref": "CT-R4-002",
     "conformance_type": "enforces",
     "verification_status": "specified-in-rfc4",
-    "description": "Detects and blocks payload binding violations to prevent in-flight modification, tested via vector CT-R4-002."
+    "description": "Specified by CT-R4-002 (no test yet). Clause mapping to be verified against ISO/IEC 42001. Original intent: Detects and blocks payload binding violations to prevent in-flight modification, tested via vector CT-R4-002."
   }
 ]
