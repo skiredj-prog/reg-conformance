@@ -34,8 +34,8 @@
     "reg_mechanism": "EVIDENCE_MANIFEST (Immutable Audit Trail)",
     "vector_ref": "CT-R4-008",
     "conformance_type": "audits",
-    "verification_status": "draft",
-    "description": "Garantie de l'intégrité du manifeste. Implémentation et tests en attente du code de hachage chaîné."
+    "verification_status": "specified-in-rfc4",
+    "description": "Spécifié par CT-R4-008. Implémentation et test en attente : le manifeste à chaîne de hachage n'est pas implémenté."
   },
   {
     "id": "CW-ISO-8.3",
