@@ -32,7 +32,6 @@
       margin: 0 auto;
     }
 
-    /* En-tête épure & percutant */
     header {
       border-bottom: 1px solid var(--border);
       padding-bottom: 20px;
@@ -107,7 +106,6 @@
       color: #ffffff;
     }
 
-    /* Statistiques synthétiques */
     .metrics {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -136,7 +134,6 @@
       margin-top: 4px;
     }
 
-    /* Barre d'outils et Filtres */
     .toolbar {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -173,7 +170,6 @@
       gap: 8px;
     }
 
-    /* Tableau interactif */
     .table-responsive {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -248,7 +244,6 @@
 
   <div class="container">
     
-    <!-- EN-TETE PRINCIPAL -->
     <header>
       <div class="title-area">
         <h1>REG Crosswalk <span>v1.0-draft</span></h1>
@@ -263,7 +258,6 @@
       </div>
     </header>
 
-    <!-- METRIQUES DE COUVERTURE -->
     <div class="metrics">
       <div class="metric-card">
         <div class="metric-label">Axes REG Référencés</div>
@@ -279,7 +273,6 @@
       </div>
     </div>
 
-    <!-- BARRE DE RECHERCHE ET FILTRES -->
     <div class="toolbar">
       <div class="search-box">
         <input type="text" id="search-input" placeholder="Rechercher un axe, terme, cadre ou concept...">
@@ -303,7 +296,6 @@
       </div>
     </div>
 
-    <!-- TABLEAU INTERACTIF -->
     <div class="table-responsive">
       <table>
         <thead>
@@ -342,13 +334,14 @@
       try {
         const response = await fetch('data/crosswalk.json');
         const data = await response.json();
-        rawData = data.crosswalk || [];
+        
+        // CORRECTION CLE : supporte le tableau direct ET l'objet enveloppé
+        rawData = Array.isArray(data) ? data : (data.crosswalk || []);
         
         populateFrameworkFilter();
         updateMetrics();
         renderTable(rawData);
 
-        // Listeners
         document.getElementById('search-input').addEventListener('input', filterData);
         document.getElementById('filter-framework').addEventListener('change', filterData);
         document.getElementById('filter-relation').addEventListener('change', filterData);
@@ -419,11 +412,15 @@
       tbody.innerHTML = data.map(item => {
         const status = item.verification_status || 'unverified';
         const statusClass = status === 'verified' ? 'tag-verified' : 'tag-unverified';
+        // CORRECTION CLE : lecture de neighbour_term (avec fallback sur external_term)
+        const term = item.neighbour_term || item.external_term || '-';
+        const axis = item.reg_axis || item.id || '-';
+
         return `
           <tr>
-            <td><strong>${item.reg_axis || item.id}</strong></td>
+            <td><strong>${axis}</strong></td>
             <td><strong style="color:var(--accent);">${item.framework || '-'}</strong></td>
-            <td>${item.external_term || '-'}</td>
+            <td>${term}</td>
             <td><span class="tag tag-relation">${item.relation || 'partiel'}</span></td>
             <td><span class="tag ${statusClass}">${status}</span></td>
           </tr>
@@ -437,7 +434,7 @@
       const rows = rawData.map(d => [
         `"${d.reg_axis || d.id || ''}"`,
         `"${d.framework || ''}"`,
-        `"${d.external_term || ''}"`,
+        `"${d.neighbour_term || d.external_term || ''}"`,
         `"${d.relation || ''}"`,
         `"${d.verification_status || 'unverified'}"`
       ]);
