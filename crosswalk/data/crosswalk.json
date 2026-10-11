@@ -16,8 +16,16 @@
     "reg_mechanism": "HARD_VETO (Inviolable Guardrail Interception)",
     "vector_ref": "CT-R4-006",
     "conformance_type": "enforces",
-    "verification_status": "verified-by-vector",
-    "description": "Empêche les états non-PASS de franchir la barrière de commit. Validé et fusionné (PR #27)."
+    "verification_status": "tested",
+    "description": "Empêche les états non-PASS de franchir la barrière de commit. Validé et fusionné (PR #27).",
+    "evidence": {
+      "repo": "skiredj-prog/tenir-conformance-s1-g1",
+      "test": "tests/test_g0_s11_transition.py::test_ct_r4_006_non_pass_cannot_cross_commit_no_effect",
+      "commit": "9ce6f102e498bca3a35330bd2686af8b8e672b03",
+      "ci_run_number": 186,
+      "merged_into_main": "67253f29ce6bf965690fdf3b67f543a522e4fc7f",
+      "caveat": "Test run on the PR head commit; the merge commit was not separately re-executed by this entry. NIST 'MANAGE 2.2' wording not yet checked against the official text."
+    }
   },
   {
     "id": "CW-EU-ART12",
