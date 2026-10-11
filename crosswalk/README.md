@@ -25,6 +25,10 @@ Ce module fournit une matrice de correspondance interactive et ouverte entre les
 * **`unverified` (Non vérifié)** : Proposition initiale dérivée de l'analyse bibliographique préliminaire.
 * **`partially_checked` (Partiellement vérifié)** : Revue par au moins un tiers ou alignée sur un texte réglementaire/normatif spécifique.
 * **`verified` (Vérifié)** : Confirmé formellement par les auteurs/experts du cadre concerné.
+* **`specified-in-rfc4` (Spécifié dans RFC-4)** : Le vecteur est décrit dans la RFC, mais aucun test exécutable du dépôt de laboratoire ne le couvre encore. Ce n'est **pas** une vérification.
+* **`tested` (Testé)** : Un test exécutable du dépôt de laboratoire couvre le vecteur. L'entrée porte alors un champ `evidence` avec le fichier de test, le SHA exécuté et le numéro du run CI.
+
+Le statut `verified-by-vector` n'est plus utilisé : il affirmait une vérification sans preuve.
 
 ---
 
