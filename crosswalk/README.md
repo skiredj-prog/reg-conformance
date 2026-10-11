@@ -28,6 +28,8 @@ Ce module fournit une matrice de correspondance interactive et ouverte entre les
 * **`specified-in-rfc4` (Spécifié dans RFC-4)** : Le vecteur est décrit dans la RFC, mais aucun test exécutable du dépôt de laboratoire ne le couvre encore. Ce n'est **pas** une vérification.
 * **`tested` (Testé)** : Un test exécutable du dépôt de laboratoire couvre le vecteur. L'entrée porte alors un champ `evidence` avec le fichier de test, le SHA exécuté et le numéro du run CI.
 
+* **`planned` (Planifié)** : Vecteur inscrit au catalogue `vectors/dist/vectors.json`, sans test exécutable à ce jour. Il n'apparaît pas dans le texte des RFC publiées.
+
 Le statut `verified-by-vector` n'est plus utilisé : il affirmait une vérification sans preuve.
 
 ---
