@@ -3,173 +3,456 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>REG Crosswalk - Correspondance Terminologique et Conformité</title>
+  <title>REG Crosswalk - Matrice de Correspondance</title>
   <style>
     :root {
-      --primary: #1a365d;
-      --secondary: #2b6cb0;
-      --bg: #f7fafc;
-      --card-bg: #ffffff;
-      --text: #2d3748;
-      --border: #e2e8f0;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --border: #334155;
+      --badge-unverified: #f59e0b;
+      --badge-verified: #10b981;
     }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      line-height: 1.6;
-      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg);
-      margin: 0;
-      padding: 20px;
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
     }
+
     .container {
-      max-width: 1200px;
+      max-width: 1300px;
       margin: 0 auto;
     }
-    .intro-card {
-      background: var(--card-bg);
-      border-left: 5px solid var(--secondary);
-      border-radius: 8px;
-      padding: 24px;
+
+    /* En-tête épure & percutant */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
       margin-bottom: 24px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
     }
-    .intro-card h1 {
-      margin-top: 0;
-      color: var(--primary);
-      font-size: 1.8rem;
+
+    .title-area h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    .intro-card p {
-      margin-bottom: 12px;
+
+    .title-area h1 span {
+      font-size: 0.8rem;
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
     }
-    .actions {
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      margin-top: 6px;
+      max-width: 800px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    /* Statistiques synthétiques */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .metric-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .metric-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-top: 4px;
+    }
+
+    /* Barre d'outils et Filtres */
+    .toolbar {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px 8px 0 0;
+      padding: 16px;
       display: flex;
       gap: 12px;
-      margin-top: 16px;
       flex-wrap: wrap;
+      align-items: center;
     }
-    .btn {
-      display: inline-block;
-      padding: 8px 16px;
-      background: var(--secondary);
-      color: white;
-      text-decoration: none;
-      border-radius: 4px;
-      font-weight: 500;
-      font-size: 0.9rem;
+
+    .search-box {
+      flex: 1;
+      min-width: 240px;
     }
-    .btn:hover {
-      background: var(--primary);
+
+    input[type="text"], select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      outline: none;
     }
-    .btn-outline {
-      background: transparent;
-      color: var(--secondary);
-      border: 1px solid var(--secondary);
+
+    input[type="text"]:focus, select:focus {
+      border-color: var(--accent);
     }
-    .btn-outline:hover {
-      background: #ebf8ff;
+
+    .filter-group {
+      display: flex;
+      gap: 8px;
     }
-    .table-container {
+
+    /* Tableau interactif */
+    .table-responsive {
       background: var(--card-bg);
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      overflow-x: auto;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 16px;
-    }
-    th, td {
-      padding: 12px;
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
     }
+
     th {
-      background-color: #edf2f7;
-      color: var(--primary);
+      background: rgba(15, 23, 42, 0.6);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
     }
-    .badge {
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover { background: rgba(51, 65, 85, 0.3); }
+
+    .tag {
       display: inline-block;
-      padding: 4px 8px;
+      padding: 2px 8px;
       border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      background: #e2e8f0;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
     }
+
+    .tag-relation {
+      background: rgba(148, 163, 184, 0.15);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .tag-unverified {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .tag-verified {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    footer {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
   </style>
 </head>
 <body>
+
   <div class="container">
     
-    <!-- BLOC DE PRESENTATION ET EXPLICATION -->
-    <div class="intro-card">
-      <h1>REG : Correspondance Terminologique et Conformité (Crosswalk)</h1>
-      <p>
-        Bienvenue sur la matrice interactive de correspondance du protocole <strong>REG (Runtime Execution Governance)</strong>.
-        Cet outil cartographie les mécanismes d'exécution autonome et de gouvernance à chaud avec les cadres réglementaires, normatifs et standards du marché (NIST AI RMF, ISO/IEC 42001, EU AI Act, IAM, etc.).
-      </p>
-      <p>
-        <strong>Note méthodologique :</strong> Cette matrice établit des <em>rapprochements sémantiques et conceptuels</em>. Elle ne constitue pas une preuve de conformité juridique automatique. Chaque point de correspondance est soumis à la validation continue de la communauté et des experts du secteur.
-      </p>
-      <div class="actions">
-        <a href="https://github.com/skiredj-prog/reg-conformance/blob/main/crosswalk/README.md" class="btn" target="_blank">📖 Guide & Méthodologie</a>
-        <a href="data/crosswalk.json" class="btn btn-outline" target="_blank">📄 Données Brutes (JSON)</a>
-        <a href="https://github.com/skiredj-prog/reg-conformance/issues/new" class="btn btn-outline" target="_blank">💬 Proposer une révision</a>
+    <!-- EN-TETE PRINCIPAL -->
+    <header>
+      <div class="title-area">
+        <h1>REG Crosswalk <span>v1.0-draft</span></h1>
+        <p class="subtitle">
+          Matrice de correspondance terminologique et opérationnelle entre le protocole <strong>REG (Runtime Execution Governance)</strong> et les cadres normatifs externes (NIST AI RMF, ISO 42001, EU AI Act, IAM).
+          <br><em>Note : Rapprochement sémantique à visée technique, sans équivalence juridique stricte.</em>
+        </p>
+      </div>
+      <div class="header-actions">
+        <a href="README.md" class="btn" target="_blank">📄 Méthodologie</a>
+        <button id="export-csv" class="btn btn-primary">📥 Exporter CSV</button>
+      </div>
+    </header>
+
+    <!-- METRIQUES DE COUVERTURE -->
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-label">Axes REG Référencés</div>
+        <div class="metric-value" id="stat-axes">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Cadres Externes Mappés</div>
+        <div class="metric-value" id="stat-frameworks">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Alignements à Vérifier</div>
+        <div class="metric-value" id="stat-unverified" style="color:#f59e0b;">0</div>
+      </div>
+    </div>
+
+    <!-- BARRE DE RECHERCHE ET FILTRES -->
+    <div class="toolbar">
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Rechercher un axe, terme, cadre ou concept...">
+      </div>
+      <div class="filter-group">
+        <select id="filter-framework">
+          <option value="">Tous les Cadres</option>
+        </select>
+        <select id="filter-relation">
+          <option value="">Toutes Relations</option>
+          <option value="partial">Rapprochement partiel</option>
+          <option value="shared_word_different_object">Mot commun, objet différent</option>
+          <option value="not_found_in_sources">Non trouvé</option>
+        </select>
+        <select id="filter-status">
+          <option value="">Tous Statuts</option>
+          <option value="unverified">Non vérifié</option>
+          <option value="partially_checked">Partiellement vérifié</option>
+          <option value="verified">Vérifié</option>
+        </select>
       </div>
     </div>
 
     <!-- TABLEAU INTERACTIF -->
-    <div class="table-container">
-      <h2>Matrice de Correspondance Interactive</h2>
-      <p>Utilisez les options ci-dessous pour explorer les axes de conformité et exporter les résultats.</p>
-      
-      <div id="loading">Chargement des données de correspondance...</div>
-      <div id="content" style="display:none;">
-        <table id="crosswalk-table">
-          <thead>
-            <tr>
-              <th>Axe REG</th>
-              <th>Cadre Externe</th>
-              <th>Terme / Référence</th>
-              <th>Type de Relation</th>
-              <th>Statut</th>
-            </tr>
-          </thead>
-          <tbody id="table-body"></tbody>
-        </table>
-      </div>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Axe / Concept REG</th>
+            <th>Cadre Externe</th>
+            <th>Terme / Référence Externe</th>
+            <th>Type de Relation</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody id="crosswalk-body">
+          <tr>
+            <td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">
+              Chargement des données de correspondance...
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+
+    <footer>
+      <p>
+        Projet REG Conformance &bull; 
+        <a href="https://github.com/skiredj-prog/reg-conformance" target="_blank">Dépôt GitHub</a> &bull; 
+        <a href="https://github.com/skiredj-prog/reg-conformance/issues/new" target="_blank">Proposer un alignement</a>
+      </p>
+    </footer>
 
   </div>
 
   <script>
-    async function loadData() {
+    let rawData = [];
+
+    async function init() {
       try {
         const response = await fetch('data/crosswalk.json');
         const data = await response.json();
-        const tbody = document.getElementById('table-body');
+        rawData = data.crosswalk || [];
         
-        tbody.innerHTML = '';
-        data.crosswalk.forEach(item => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td><strong>${item.reg_axis || item.id}</strong></td>
-            <td>${item.framework || '-'}</td>
-            <td>${item.external_term || '-'}</td>
-            <td><span class="badge">${item.relation || 'partiel'}</span></td>
-            <td><span class="badge" style="background:#feebc8; color:#7b341e;">${item.verification_status || 'unverified'}</span></td>
-          `;
-          tbody.appendChild(tr);
-        });
+        populateFrameworkFilter();
+        updateMetrics();
+        renderTable(rawData);
 
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('content').style.display = 'block';
+        // Listeners
+        document.getElementById('search-input').addEventListener('input', filterData);
+        document.getElementById('filter-framework').addEventListener('change', filterData);
+        document.getElementById('filter-relation').addEventListener('change', filterData);
+        document.getElementById('filter-status').addEventListener('change', filterData);
+        document.getElementById('export-csv').addEventListener('click', exportToCSV);
+
       } catch (err) {
-        document.getElementById('loading').innerText = 'Erreur lors du chargement des données.';
+        document.getElementById('crosswalk-body').innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align:center; color:#ef4444; padding:30px;">
+              Erreur de chargement des données. Vérifiez la présence de <code>data/crosswalk.json</code>.
+            </td>
+          </tr>`;
         console.error(err);
       }
     }
-    loadData();
+
+    function updateMetrics() {
+      const axes = new Set(rawData.map(d => d.reg_axis || d.id)).size;
+      const frameworks = new Set(rawData.map(d => d.framework).filter(Boolean)).size;
+      const unverified = rawData.filter(d => (d.verification_status || 'unverified') === 'unverified').length;
+
+      document.getElementById('stat-axes').innerText = axes;
+      document.getElementById('stat-frameworks').innerText = frameworks;
+      document.getElementById('stat-unverified').innerText = unverified;
+    }
+
+    function populateFrameworkFilter() {
+      const select = document.getElementById('filter-framework');
+      const frameworks = [...new Set(rawData.map(d => d.framework).filter(Boolean))].sort();
+      frameworks.forEach(fw => {
+        const opt = document.createElement('option');
+        opt.value = fw;
+        opt.innerText = fw;
+        select.appendChild(opt);
+      });
+    }
+
+    function filterData() {
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const fw = document.getElementById('filter-framework').value;
+      const rel = document.getElementById('filter-relation').value;
+      const status = document.getElementById('filter-status').value;
+
+      const filtered = rawData.filter(item => {
+        const matchSearch = !search || Object.values(item).some(v => String(v).toLowerCase().includes(search));
+        const matchFw = !fw || item.framework === fw;
+        const matchRel = !rel || item.relation === rel;
+        const matchStatus = !status || (item.verification_status || 'unverified') === status;
+        return matchSearch && matchFw && matchRel && matchStatus;
+      });
+
+      renderTable(filtered);
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('crosswalk-body');
+      if (data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">
+              Aucun résultat ne correspond aux critères de recherche.
+            </td>
+          </tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map(item => {
+        const status = item.verification_status || 'unverified';
+        const statusClass = status === 'verified' ? 'tag-verified' : 'tag-unverified';
+        return `
+          <tr>
+            <td><strong>${item.reg_axis || item.id}</strong></td>
+            <td><strong style="color:var(--accent);">${item.framework || '-'}</strong></td>
+            <td>${item.external_term || '-'}</td>
+            <td><span class="tag tag-relation">${item.relation || 'partiel'}</span></td>
+            <td><span class="tag ${statusClass}">${status}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function exportToCSV() {
+      if (!rawData.length) return;
+      const headers = ["Axe_REG", "Cadre_Externe", "Terme_Externe", "Relation", "Statut_Verification"];
+      const rows = rawData.map(d => [
+        `"${d.reg_axis || d.id || ''}"`,
+        `"${d.framework || ''}"`,
+        `"${d.external_term || ''}"`,
+        `"${d.relation || ''}"`,
+        `"${d.verification_status || 'unverified'}"`
+      ]);
+      
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "reg_crosswalk.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    init();
   </script>
 </body>
 </html>
