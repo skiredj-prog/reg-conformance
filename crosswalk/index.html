@@ -1,324 +1,175 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>REG : correspondance terminologique et conformité (proposition)</title>
-<style>
-body{font-family:Arial,Helvetica,sans-serif;margin:0;color:#1a1a1a;background:#fafafa;line-height:1.45}
-header{background:#1F3A5F;color:#fff;padding:16px 20px}
-header h1{font-size:20px;margin:0 0 4px}
-header p{margin:0;font-size:14px;opacity:.9}
-.banner{background:#FFF4D6;border-bottom:2px solid #C98A00;padding:10px 20px;font-size:14px}
-.warn{background:#FDE2E2;border-bottom:2px solid #B3261E;padding:10px 20px;font-size:14px;display:none}
-.err{color:#B3261E;font-weight:bold;display:none}
-main{padding:16px 20px;max-width:1400px;margin:auto}
-section{background:#fff;border:1px solid #d9d9d9;border-radius:6px;padding:16px;margin-bottom:20px}
-h2{font-size:17px;margin:0 0 10px;color:#1F3A5F}
-.controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
-input,select,button{font:inherit;padding:6px 8px}
-button{cursor:pointer}
-.table-wrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:13px}
-th,td{border:1px solid #d9d9d9;padding:6px;vertical-align:top;text-align:left}
-th{background:#eef2f7;cursor:pointer;white-space:nowrap}
-.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:12px;border:1px solid;white-space:nowrap}
-.b-partial{background:#E8F0FB;border-color:#2F6FB3;color:#1B4F86}
-.b-shared{background:#FFF1E0;border-color:#C2661A;color:#7A3E08}
-.b-notfound{background:#F1F1F1;border-color:#777;color:#333}
-.b-unv{background:#FFF8DB;border-color:#B38600;color:#6B4F00}
-.b-ver{background:#E6F6EC;border-color:#1E7B45;color:#14532D}
-.c-PASS{background:#E6F6EC;border-color:#1E7B45;color:#14532D}
-.c-FAIL{background:#FDE2E2;border-color:#B3261E;color:#7A1510}
-.c-IMPLEMENTATION_GAP{background:#FFF8DB;border-color:#B38600;color:#6B4F00}
-.c-NOT_APPLICABLE{background:#F1F1F1;border-color:#777;color:#333}
-.counters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
-.counter{border:1px solid #ccc;border-radius:6px;padding:8px 12px;min-width:130px;background:#fbfbfb}
-.counter b{display:block;font-size:20px}
-.counter span{font-size:12px;color:#444}
-.muted{color:#555;font-size:13px}
-.doc p{margin:6px 0}
-.doc h3{font-size:15px;margin:12px 0 6px}
-.doc ul{margin:6px 0 6px 18px;padding:0}
-.doc li{margin:4px 0}
-footer{padding:16px 20px;font-size:13px;color:#333;border-top:1px solid #ddd;max-width:1400px;margin:auto}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REG Crosswalk - Correspondance Terminologique et Conformité</title>
+  <style>
+    :root {
+      --primary: #1a365d;
+      --secondary: #2b6cb0;
+      --bg: #f7fafc;
+      --card-bg: #ffffff;
+      --text: #2d3748;
+      --border: #e2e8f0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      background-color: var(--bg);
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .intro-card {
+      background: var(--card-bg);
+      border-left: 5px solid var(--secondary);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .intro-card h1 {
+      margin-top: 0;
+      color: var(--primary);
+      font-size: 1.8rem;
+    }
+    .intro-card p {
+      margin-bottom: 12px;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-block;
+      padding: 8px 16px;
+      background: var(--secondary);
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+    .btn:hover {
+      background: var(--primary);
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--secondary);
+      border: 1px solid var(--secondary);
+    }
+    .btn-outline:hover {
+      background: #ebf8ff;
+    }
+    .table-container {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background-color: #edf2f7;
+      color: var(--primary);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      background: #e2e8f0;
+    }
+  </style>
 </head>
 <body>
-<header>
-  <h1>REG : correspondance terminologique et conformité</h1>
-  <p>Proposition. Non validée par les auteurs des cadres cités.</p>
-</header>
+  <div class="container">
+    
+    <!-- BLOC DE PRESENTATION ET EXPLICATION -->
+    <div class="intro-card">
+      <h1>REG : Correspondance Terminologique et Conformité (Crosswalk)</h1>
+      <p>
+        Bienvenue sur la matrice interactive de correspondance du protocole <strong>REG (Runtime Execution Governance)</strong>.
+        Cet outil cartographie les mécanismes d'exécution autonome et de gouvernance à chaud avec les cadres réglementaires, normatifs et standards du marché (NIST AI RMF, ISO/IEC 42001, EU AI Act, IAM, etc.).
+      </p>
+      <p>
+        <strong>Note méthodologique :</strong> Cette matrice établit des <em>rapprochements sémantiques et conceptuels</em>. Elle ne constitue pas une preuve de conformité juridique automatique. Chaque point de correspondance est soumis à la validation continue de la communauté et des experts du secteur.
+      </p>
+      <div class="actions">
+        <a href="https://github.com/skiredj-prog/reg-conformance/blob/main/crosswalk/README.md" class="btn" target="_blank">📖 Guide & Méthodologie</a>
+        <a href="data/crosswalk.json" class="btn btn-outline" target="_blank">📄 Données Brutes (JSON)</a>
+        <a href="https://github.com/skiredj-prog/reg-conformance/issues/new" class="btn btn-outline" target="_blank">💬 Proposer une révision</a>
+      </div>
+    </div>
 
-<div class="banner">Proposition. Rapprochement, non équivalence. Chaque auteur applique ses propres définitions. « Non trouvé dans les sources consultées » ne signifie pas absence dans le cadre cité.</div>
-<div class="warn" id="fallback-warn">Catalogue principal indisponible : la copie de secours <code>data/vectors.json</code> est affichée. Elle peut différer du catalogue principal.</div>
+    <!-- TABLEAU INTERACTIF -->
+    <div class="table-container">
+      <h2>Matrice de Correspondance Interactive</h2>
+      <p>Utilisez les options ci-dessous pour explorer les axes de conformité et exporter les résultats.</p>
+      
+      <div id="loading">Chargement des données de correspondance...</div>
+      <div id="content" style="display:none;">
+        <table id="crosswalk-table">
+          <thead>
+            <tr>
+              <th>Axe REG</th>
+              <th>Cadre Externe</th>
+              <th>Terme / Référence</th>
+              <th>Type de Relation</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
 
-<main>
-
-<section id="sec-a">
-  <h2>A. Correspondance terminologique</h2>
-  <div class="controls">
-    <input id="a-q" type="search" placeholder="Rechercher…" aria-label="Rechercher">
-    <select id="a-fw" aria-label="Cadre"><option value="">Tous les cadres</option></select>
-    <select id="a-rel" aria-label="Relation">
-      <option value="">Toutes les relations</option>
-      <option value="partial">Rapprochement partiel</option>
-      <option value="shared_word_different_object">Mot commun, objet différent</option>
-      <option value="not_found_in_sources">Non trouvé dans les sources consultées</option>
-    </select>
-    <select id="a-ver" aria-label="Statut de vérification">
-      <option value="">Tous les statuts</option>
-      <option value="unverified">Non vérifié</option>
-      <option value="partially_checked">Partiellement vérifié</option>
-      <option value="verified">Vérifié</option>
-    </select>
-    <button id="a-csv" type="button">Exporter en CSV</button>
   </div>
-  <p class="err" id="err-a">Impossible de charger data/crosswalk.json.</p>
-  <div class="table-wrap">
-    <table>
-      <thead><tr id="a-head"></tr></thead>
-      <tbody id="a-body"></tbody>
-    </table>
-  </div>
-</section>
 
-<section id="sec-b">
-  <h2>B. Vecteurs de conformité (tous)</h2>
-  <div class="counters" id="b-counters"></div>
-  <div class="controls">
-    <input id="b-q" type="search" placeholder="Rechercher un vecteur…" aria-label="Rechercher un vecteur">
-    <select id="b-st" aria-label="Résultat natif"><option value="">Tous les résultats</option></select>
-  </div>
-  <p class="err" id="err-b">Aucun catalogue de vecteurs n'a pu être chargé.</p>
-  <div class="table-wrap">
-    <table>
-      <thead><tr>
-        <th>ID</th><th>RFC</th><th>Catégorie</th><th>Propriété</th><th>Résultat natif</th><th>Référence</th><th>Cible</th>
-      </tr></thead>
-      <tbody id="b-body"></tbody>
-    </table>
-  </div>
-</section>
-
-<section id="sec-c">
-  <h2>C. Travaux existants recensés</h2>
-  <p class="muted">Liste de référence, non exhaustive, non évaluée par les auteurs cités.</p>
-  <div class="doc" id="c-doc"></div>
-</section>
-
-<section id="sec-d">
-  <h2>D. Section RFC : mapping vers les cadres externes</h2>
-  <p class="muted"><strong>Brouillon de section RFC, en attente de relecture.</strong></p>
-  <div class="doc" id="d-doc"></div>
-</section>
-
-</main>
-
-<footer>
-  <p>Proposition ouverte. Une correspondance n'entre dans le standard qu'après validation indépendante. Pour contribuer : ouvrez une pull request sur <code>crosswalk/data/crosswalk.json</code>, ou une issue : <a href="https://github.com/skiredj-prog/reg-conformance/issues/new">https://github.com/skiredj-prog/reg-conformance/issues/new</a></p>
-  <p><a href="https://skiredj-prog.github.io/reg-conformance/">Page du dépôt</a> · <a href="https://github.com/skiredj-prog/reg-conformance">Code source</a></p>
-</footer>
-
-<script>
-(function(){
-  var REL = {partial:"Rapprochement partiel", shared_word_different_object:"Mot commun, objet différent", not_found_in_sources:"Non trouvé dans les sources consultées"};
-  var RELCLS = {partial:"b-partial", shared_word_different_object:"b-shared", not_found_in_sources:"b-notfound"};
-  var VER = {unverified:"Non vérifié", partially_checked:"Partiellement vérifié", verified:"Vérifié"};
-  var VERCLS = {unverified:"b-unv", partially_checked:"b-unv", verified:"b-ver"};
-  var A_COLS = [
-    {k:"reg_axis", l:"Axe REG"}, {k:"neighbour_term", l:"Terme voisin"}, {k:"framework", l:"Cadre"},
-    {k:"relation", l:"Relation"}, {k:"note", l:"Note"}, {k:"existing_work", l:"Travaux existants"},
-    {k:"source_to_verify", l:"Source à vérifier"}, {k:"verification_status", l:"Statut"}
-  ];
-
-  function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined) e.textContent = text; return e; }
-  function badge(text, cls){ return el("span", "badge " + cls, text); }
-  function fetchJSON(url){ return fetch(url, {cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error(url + " " + r.status); return r.json(); }); }
-  function fetchText(url){ return fetch(url, {cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error(url + " " + r.status); return r.text(); }); }
-
-  /* ---------- Markdown minimal (titres, listes, paragraphes, liens) ---------- */
-  function inline(s){
-    var e = s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    return e.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" rel="noopener">$1</a>');
-  }
-  function renderMd(src, container){
-    container.textContent = "";
-    var ul = null;
-    src.split("\n").forEach(function(raw){
-      var line = raw.replace(/\s+$/,"");
-      if(/^\s*-\s+/.test(line)){
-        if(!ul){ ul = document.createElement("ul"); container.appendChild(ul); }
-        var li = document.createElement("li"); li.innerHTML = inline(line.replace(/^\s*-\s+/, "")); ul.appendChild(li);
-        return;
-      }
-      ul = null;
-      if(/^#\s+/.test(line)){ var h1 = el("h3", "", line.replace(/^#\s+/, "")); container.appendChild(h1); return; }
-      if(line.trim() === "") return;
-      var p = document.createElement("p"); p.innerHTML = inline(line); container.appendChild(p);
-    });
-  }
-
-  /* ---------- Section A ---------- */
-  var crossRows = [], sortKey = null, sortDir = 1;
-
-  function fillFramework(rows){
-    var sel = document.getElementById("a-fw");
-    var fws = Array.from(new Set(rows.map(function(r){ return r.framework; }))).sort();
-    fws.forEach(function(f){ var o = el("option", "", f); o.value = f; sel.appendChild(o); });
-  }
-
-  function filteredA(){
-    var q = document.getElementById("a-q").value.toLowerCase();
-    var fw = document.getElementById("a-fw").value;
-    var rel = document.getElementById("a-rel").value;
-    var ver = document.getElementById("a-ver").value;
-    var rows = crossRows.filter(function(r){
-      if(fw && r.framework !== fw) return false;
-      if(rel && r.relation !== rel) return false;
-      if(ver && r.verification_status !== ver) return false;
-      if(q && JSON.stringify(r).toLowerCase().indexOf(q) === -1) return false;
-      return true;
-    });
-    if(sortKey){
-      rows = rows.slice().sort(function(a,b){
-        var x = String(a[sortKey] == null ? "" : a[sortKey]), y = String(b[sortKey] == null ? "" : b[sortKey]);
-        return x.localeCompare(y, "fr") * sortDir;
-      });
-    }
-    return rows;
-  }
-
-  function cellText(r, k){
-    if(k === "relation") return REL[r.relation] || r.relation;
-    if(k === "verification_status") return VER[r.verification_status] || r.verification_status;
-    if(k === "existing_work") return (r.existing_work || []).join(" ; ");
-    return r[k] == null ? "" : String(r[k]);
-  }
-
-  function renderA(){
-    var head = document.getElementById("a-head"), body = document.getElementById("a-body");
-    if(!head.childNodes.length){
-      A_COLS.forEach(function(c){
-        var th = el("th", "", c.l + (sortKey === c.k ? (sortDir > 0 ? " ▲" : " ▼") : ""));
-        th.addEventListener("click", function(){
-          if(sortKey === c.k) sortDir = -sortDir; else { sortKey = c.k; sortDir = 1; }
-          head.textContent = ""; renderA();
+  <script>
+    async function loadData() {
+      try {
+        const response = await fetch('data/crosswalk.json');
+        const data = await response.json();
+        const tbody = document.getElementById('table-body');
+        
+        tbody.innerHTML = '';
+        data.crosswalk.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${item.reg_axis || item.id}</strong></td>
+            <td>${item.framework || '-'}</td>
+            <td>${item.external_term || '-'}</td>
+            <td><span class="badge">${item.relation || 'partiel'}</span></td>
+            <td><span class="badge" style="background:#feebc8; color:#7b341e;">${item.verification_status || 'unverified'}</span></td>
+          `;
+          tbody.appendChild(tr);
         });
-        head.appendChild(th);
-      });
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+      } catch (err) {
+        document.getElementById('loading').innerText = 'Erreur lors du chargement des données.';
+        console.error(err);
+      }
     }
-    body.textContent = "";
-    filteredA().forEach(function(r){
-      var tr = document.createElement("tr");
-      A_COLS.forEach(function(c){
-        var td = document.createElement("td");
-        if(c.k === "relation") td.appendChild(badge(REL[r.relation] || r.relation, RELCLS[r.relation] || "b-notfound"));
-        else if(c.k === "verification_status") td.appendChild(badge(VER[r.verification_status] || r.verification_status, VERCLS[r.verification_status] || "b-unv"));
-        else td.textContent = cellText(r, c.k);
-        tr.appendChild(td);
-      });
-      body.appendChild(tr);
-    });
-  }
-
-  function csvEscape(v){ return '"' + String(v).replace(/"/g,'""') + '"'; }
-  function exportCSV(){
-    var lines = [A_COLS.map(function(c){ return csvEscape(c.l); }).join(",")];
-    filteredA().forEach(function(r){
-      lines.push(A_COLS.map(function(c){ return csvEscape(cellText(r, c.k)); }).join(","));
-    });
-    var blob = new Blob(["\ufeff" + lines.join("\r\n")], {type:"text/csv;charset=utf-8"});
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob); a.download = "reg-correspondance.csv";
-    document.body.appendChild(a); a.click(); a.remove();
-  }
-
-  /* ---------- Section B ---------- */
-  var vectors = [];
-
-  function target(ref){
-    if(!ref) return "aucune";
-    var r = String(ref).toUpperCase();
-    if(r.indexOf("NIST") !== -1) return "NIST";
-    if(r.indexOf("ISO") !== -1) return "ISO/IEC 42001";
-    if(r.indexOf("EU ") !== -1 || r.indexOf("AI ACT") !== -1 || r === "EU") return "EU AI Act";
-    if(r.indexOf("RFC") !== -1) return "RFC";
-    return "autre";
-  }
-
-  function renderCounters(){
-    var c = {total:vectors.length, ext:0, NIST:0, "ISO/IEC 42001":0, "EU AI Act":0, RFC:0, autre:0};
-    vectors.forEach(function(v){
-      var t = target(v.reference);
-      if(t === "aucune") return;
-      if(t === "RFC") c.RFC++;
-      else { c[t]++; c.ext++; }
-    });
-    var box = document.getElementById("b-counters"); box.textContent = "";
-    [["Vecteurs au total", c.total], ["Références externes (NIST, ISO, EU, autre)", c.ext], ["NIST", c.NIST], ["ISO/IEC 42001", c["ISO/IEC 42001"]], ["EU AI Act", c["EU AI Act"]], ["RFC (internes)", c.RFC], ["Autre", c.autre]].forEach(function(p){
-      var d = el("div", "counter"); d.appendChild(el("b", "", String(p[1]))); d.appendChild(el("span", "", p[0])); box.appendChild(d);
-    });
-  }
-
-  function fillStatus(){
-    var sel = document.getElementById("b-st");
-    var vals = Array.from(new Set(vectors.map(function(v){ return v.native; }))).filter(Boolean).sort();
-    vals.forEach(function(s){ var o = el("option", "", s); o.value = s; sel.appendChild(o); });
-  }
-
-  function renderB(){
-    var q = document.getElementById("b-q").value.toLowerCase();
-    var st = document.getElementById("b-st").value;
-    var body = document.getElementById("b-body"); body.textContent = "";
-    vectors.forEach(function(v){
-      if(st && v.native !== st) return;
-      if(q && JSON.stringify(v).toLowerCase().indexOf(q) === -1) return;
-      var tr = document.createElement("tr");
-      var cells = [v.id, v.rfc, v.category, v.property];
-      cells.forEach(function(x){ tr.appendChild(el("td", "", x == null ? "" : String(x))); });
-      var tdS = document.createElement("td");
-      var nat = v.native == null ? "" : String(v.native);
-      tdS.appendChild(badge(nat, "c-" + nat));
-      tr.appendChild(tdS);
-      tr.appendChild(el("td", "", v.reference == null ? "" : String(v.reference)));
-      tr.appendChild(el("td", "", target(v.reference)));
-      body.appendChild(tr);
-    });
-  }
-
-  /* ---------- Chargement ---------- */
-  function normalize(d){ return Array.isArray(d) ? d : (d && d.vectors ? d.vectors : []); }
-
-  document.getElementById("a-q").addEventListener("input", renderA);
-  document.getElementById("a-fw").addEventListener("change", renderA);
-  document.getElementById("a-rel").addEventListener("change", renderA);
-  document.getElementById("a-ver").addEventListener("change", renderA);
-  document.getElementById("a-csv").addEventListener("click", exportCSV);
-  document.getElementById("b-q").addEventListener("input", renderB);
-  document.getElementById("b-st").addEventListener("change", renderB);
-
-  fetchJSON("data/crosswalk.json").then(function(rows){
-    crossRows = rows; fillFramework(rows); renderA();
-  }).catch(function(){ document.getElementById("err-a").style.display = "block"; });
-
-  fetchJSON("../vectors/dist/vectors.json").then(function(d){
-    vectors = normalize(d);
-  }).catch(function(){
-    return fetchJSON("data/vectors.json").then(function(d){
-      vectors = normalize(d);
-      document.getElementById("fallback-warn").style.display = "block";
-    });
-  }).then(function(){
-    if(!vectors.length) throw new Error("vide");
-    fillStatus(); renderCounters(); renderB();
-  }).catch(function(){ document.getElementById("err-b").style.display = "block"; });
-
-  fetchText("data/related-work.md").then(function(t){ renderMd(t, document.getElementById("c-doc")); })
-    .catch(function(){ document.getElementById("c-doc").textContent = "Liste indisponible."; });
-  fetchText("data/rfc-mapping.md").then(function(t){ renderMd(t, document.getElementById("d-doc")); })
-    .catch(function(){ document.getElementById("d-doc").textContent = "Brouillon indisponible."; });
-})();
-</script>
+    loadData();
+  </script>
 </body>
 </html>
