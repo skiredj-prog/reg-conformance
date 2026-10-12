@@ -39,7 +39,7 @@ Examples of limits that must be stated when relevant:
 
 ## 4. Evidence
 
-- A row may be `tested` only if it has an `evidence` object naming the test file, the commit
+- A row may be `tested` only if it has a non-null `source` (section 1) and an `evidence` object naming the test file, the commit
   SHA that ran, and the CI run or pull request.
 - Test names must resolve at the cited commit. A reviewer checks this before merge.
 - Automated jobs (CI) may **propose** evidence fields. They never change `verification_status`.

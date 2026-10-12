@@ -93,8 +93,14 @@
           },
           "then": {
             "required": [
-              "evidence"
-            ]
+              "evidence",
+              "source"
+            ],
+            "properties": {
+              "source": {
+                "type": "object"
+              }
+            }
           }
         }
       ]

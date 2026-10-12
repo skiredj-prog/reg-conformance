@@ -18,7 +18,7 @@
     "vector_ref": "CT-R4-006",
     "conformance_type": "enforces",
     "verification_status": "tested",
-    "description": "Prevents non-PASS states from crossing the commit barrier. Tested: test_ct_r4_006, PR #27, run #186.",
+    "description": "Prevents non-PASS states from crossing the commit barrier. Tested: test_ct_r4_006, PR #27, run #186. Limit: this is a technical control that blocks execution. MANAGE 2.2 concerns mechanisms that sustain the value of deployed AI systems; the test shows the block, not that value is sustained. The correspondence is a proposal, not an established equivalence.",
     "evidence": {
       "repo": "skiredj-prog/tenir-conformance-s1-g1",
       "tests": [
@@ -178,7 +178,7 @@
     "vector_ref": "CT-R2-002",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Planned: deterministic results for security-score (S-Score) computations.",
+    "description": "Planned: deterministic results for security-score (S-Score) computations. Limit: a deterministic score is an assurance measure specific to REG. NIST MEASURE 2.3 covers performance or assurance criteria measured and demonstrated for conditions similar to deployment; the correspondence is partial, on the assurance side only.",
     "source": {
       "framework_version": "NIST AI 100-1, January 2023",
       "clause_id": "MEASURE 2.3",
@@ -228,7 +228,7 @@
     "vector_ref": "CT-R6-001",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Planned: traceability and strict audit of emergency-override activation.",
+    "description": "Planned: traceability and strict audit of emergency-override activation. Limit: the override audit corresponds only to the 'appeal and override' element of NIST MANAGE 4.1. It is neither an incident response plan nor the post-deployment monitoring plan the subcategory requires.",
     "source": {
       "framework_version": "NIST AI 100-1, January 2023",
       "clause_id": "MANAGE 4.1",

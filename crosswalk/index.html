@@ -78,6 +78,9 @@
     .evidence a, .evidence span { display: inline-block; padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.25); background: rgba(56,189,248,0.07); color: var(--accent); text-decoration: none; white-space: nowrap; }
     .evidence a:hover { background: rgba(56,189,248,0.18); }
     .evidence span { color: var(--text-muted); border-color: rgba(148,163,184,0.25); background: transparent; }
+    .src { margin-top: 6px; font-size: 11px; color: var(--text-muted); }
+    .src a { color: var(--accent); text-decoration: none; }
+    .src a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -177,6 +180,17 @@
       renderTable(filtered);
     }
 
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function sourceLine(item) {
+      const s = item.source;
+      if (!s || !String(s.url).startsWith('https://')) return '';
+      const w = s.official_wording.length > 120 ? s.official_wording.slice(0, 117) + '...' : s.official_wording;
+      return `<div class="src">Source: <a href="${esc(s.url)}" target="_blank" rel="noopener" title="${esc(s.official_wording)}">${esc(s.framework_version)} · ${esc(s.clause_id)}</a> <em>“${esc(w)}”</em></div>`;
+    }
+
     function evidenceLinks(item) {
       const ev = item.evidence;
       if (!ev) return '';
@@ -207,6 +221,7 @@
           <td>
             <strong>${item.reg_mechanism}</strong>
             <div class="desc">${item.description}</div>
+            ${sourceLine(item)}
           </td>
           <td><code>${item.vector_ref}</code></td>
           <td><span class="tag tag-${item.conformance_type}">${item.conformance_type}</span></td>
