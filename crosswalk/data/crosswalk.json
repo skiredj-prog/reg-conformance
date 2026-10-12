@@ -81,6 +81,40 @@
     "source": null
   },
   {
+    "id": "CW-ISO-6.1.4",
+    "framework": "ISO/IEC 42001:2023",
+    "normative_clause": "Clause 6.1.4 - AI system impact assessment",
+    "reg_mechanism": "STRUCTURE_GATE",
+    "vector_ref": "—",
+    "conformance_type": "—",
+    "verification_status": "unverified",
+    "description": "STRUCTURE_GATE is an admission condition at execution start, not an AI system impact assessment. Clause 6.1.4 requires a formal, documented process evaluating impacts on individuals and societies. The mechanism does not constitute such a process. Limit: admission control only, not an impact assessment.",
+    "source": {
+      "framework_version": "ISO/IEC 42001:2023",
+      "clause_id": "Clause 6.1.4",
+      "official_wording": "AI system impact assessment",
+      "url": "https://cdn.standards.iteh.ai/samples/81230/4c1911ebc9a641fcb6ee21aa09c28ad3/ISO-IEC-42001-2023.pdf",
+      "accessed": "2026-10-12"
+    }
+  },
+  {
+    "id": "CW-ISO-8.4",
+    "framework": "ISO/IEC 42001:2023",
+    "normative_clause": "Clause 8.4 - AI system impact assessment",
+    "reg_mechanism": "HARD_VETO (Inviolable Guardrail Interception)",
+    "vector_ref": "—",
+    "conformance_type": "—",
+    "verification_status": "unverified",
+    "description": "Correspondence withdrawn: HARD_VETO is an automated control, not an AI system impact assessment. Clause 8.4 requires a formal, documented process by which impacts on individuals, groups, or societies are identified, evaluated and addressed. An automated veto does not constitute such a process. Re-mapping pending.",
+    "source": {
+      "framework_version": "ISO/IEC 42001:2023",
+      "clause_id": "Clause 8.4",
+      "official_wording": "AI system impact assessment",
+      "url": "https://cdn.standards.iteh.ai/samples/81230/4c1911ebc9a641fcb6ee21aa09c28ad3/ISO-IEC-42001-2023.pdf",
+      "accessed": "2026-10-12"
+    }
+  },
+  {
     "id": "CW-RFC0-01",
     "framework": "REG RFC-0 (Extended)",
     "normative_clause": "Policy Anchor Integrity",
