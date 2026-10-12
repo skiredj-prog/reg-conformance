@@ -185,8 +185,8 @@
       if (ev.commit) links.push(`<a href="${base}/commit/${ev.commit}" target="_blank" title="${ev.commit}">commit ${ev.commit.slice(0, 7)}</a>`);
       if (ev.pull_request) links.push(`<a href="${base}/pull/${ev.pull_request}" target="_blank">PR #${ev.pull_request}</a>`);
       if (ev.ci_run_id) links.push(`<a href="${base}/actions/runs/${ev.ci_run_id}" target="_blank">CI run ${ev.ci_run_id}</a>`);
-      else if (ev.ci_run_number) links.push(`<span title="CI job number; run id not recorded">CI #${ev.ci_run_number}</span>`);
-      const files = ev.tests ? ev.tests : (ev.test ? [ev.test] : []);
+      else if (ev.ci_run_number) links.push(`<span title="CI run number (sequence within the workflow); run id not recorded">CI run #${ev.ci_run_number}</span>`);
+      const files = ev.tests || [];
       files.forEach(f => { const path = f.split('::')[0]; links.push(`<a href="${base}/blob/${ev.commit || 'main'}/${path}" target="_blank">${path.split('/').pop()}</a>`); });
       return `<div class="evidence">${links.join(' · ')}</div>`;
     }
