@@ -34,8 +34,20 @@
     "reg_mechanism": "EVIDENCE_MANIFEST (Immutable Audit Trail)",
     "vector_ref": "CT-R4-008",
     "conformance_type": "audits",
-    "verification_status": "specified-in-rfc4",
-    "description": "Spécifié par CT-R4-008. Implémentation et test en attente : le manifeste à chaîne de hachage n'est pas implémenté."
+    "verification_status": "tested",
+    "description": "Testé : le registre de preuves du membrane est chaîné et vérifié (ledger + contrôle croisé). Troncature de la queue : détectable seulement avec une tête ancrée à l'extérieur, non implémentée.",
+    "evidence": {
+      "repo": "skiredj-prog/tenir-conformance-s1-g1",
+      "tests": [
+        "tests/test_ct_r4_008_evidence_ledger.py",
+        "tests/test_membrane_evidence_ledger.py"
+      ],
+      "commit": "cf154077a194e7c07606f48efa35d3eaf4c81ca0",
+      "ci_run_id": 38191997909,
+      "pull_request": 33,
+      "merged_into_main": "6b9375b73460c133e6632eb8ec76b326f172418c",
+      "caveat": "Covers chain integrity and membrane registry cross-check. Tail truncation is not detected without an externally anchored head, which is not implemented."
+    }
   },
   {
     "id": "CW-ISO-8.3",
