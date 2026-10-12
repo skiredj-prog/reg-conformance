@@ -7,7 +7,8 @@
     "vector_ref": "—",
     "conformance_type": "—",
     "verification_status": "unverified",
-    "description": "Correspondence withdrawn: CT-R4-005 (race detection) is not an AI risk assessment. Re-mapping pending."
+    "description": "Correspondence withdrawn: CT-R4-005 (race detection) is not an AI risk assessment. Re-mapping pending.",
+    "source": null
   },
   {
     "id": "CW-NIST-MAN2.2",
@@ -29,7 +30,8 @@
       "pull_request": 27,
       "merged_into_main": "67253f29ce6bf965690fdf3b67f543a522e4fc7f",
       "caveat": "Test run on the PR head commit; the merge commit was not separately re-executed by this entry. NIST 'MANAGE 2.2' wording not yet checked against the official text."
-    }
+    },
+    "source": null
   },
   {
     "id": "CW-EU-ART12",
@@ -52,7 +54,8 @@
       "pull_request": 33,
       "merged_into_main": "6b9375b73460c133e6632eb8ec76b326f172418c",
       "caveat": "Covers chain integrity and membrane registry cross-check. Tail truncation is not detected without an externally anchored head, which is not implemented."
-    }
+    },
+    "source": null
   },
   {
     "id": "CW-ISO-8.3",
@@ -62,7 +65,8 @@
     "vector_ref": "—",
     "conformance_type": "—",
     "verification_status": "unverified",
-    "description": "Correspondence withdrawn: CT-R4-002 (action binding) is not AI risk treatment. Re-mapping pending."
+    "description": "Correspondence withdrawn: CT-R4-002 (action binding) is not AI risk treatment. Re-mapping pending.",
+    "source": null
   },
   {
     "id": "CW-RFC0-01",
@@ -72,7 +76,8 @@
     "vector_ref": "CT-R0-001",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Planned: integrity check of the policy anchor at execution-engine start-up."
+    "description": "Planned: integrity check of the policy anchor at execution-engine start-up.",
+    "source": null
   },
   {
     "id": "CW-RFC1-01",
@@ -82,7 +87,8 @@
     "vector_ref": "CT-R1-001",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Planned: strict conformance of response schemas to the protocol specification."
+    "description": "Planned: strict conformance of response schemas to the protocol specification.",
+    "source": null
   },
   {
     "id": "CW-RFC2-01",
@@ -92,7 +98,8 @@
     "vector_ref": "CT-R2-002",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Planned: deterministic results for security-score (S-Score) computations."
+    "description": "Planned: deterministic results for security-score (S-Score) computations.",
+    "source": null
   },
   {
     "id": "CW-RFC3-01",
@@ -102,7 +109,8 @@
     "vector_ref": "CT-R3-002",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Planned: immediate propagation of certificate and credential revocations."
+    "description": "Planned: immediate propagation of certificate and credential revocations.",
+    "source": null
   },
   {
     "id": "CW-RFC4-01",
@@ -112,7 +120,8 @@
     "vector_ref": "—",
     "conformance_type": "—",
     "verification_status": "frozen",
-    "description": "RFC-4 is frozen. Its vectors are mapped in other rows; a row-level mapping of RFC-4 is pending."
+    "description": "RFC-4 is frozen. Its vectors are mapped in other rows; a row-level mapping of RFC-4 is pending.",
+    "source": null
   },
   {
     "id": "CW-RFC5-01",
@@ -122,7 +131,8 @@
     "vector_ref": "CT-R5-001",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Planned: long-term export and retention policy for proof manifests."
+    "description": "Planned: long-term export and retention policy for proof manifests.",
+    "source": null
   },
   {
     "id": "CW-RFC6-01",
@@ -132,7 +142,8 @@
     "vector_ref": "CT-R6-001",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Planned: traceability and strict audit of emergency-override activation."
+    "description": "Planned: traceability and strict audit of emergency-override activation.",
+    "source": null
   },
   {
     "id": "CW-RFC7-01",
@@ -142,6 +153,7 @@
     "vector_ref": "CT-R7-001",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Planned: functional equivalence of results across execution adapters."
+    "description": "Planned: functional equivalence of results across execution adapters.",
+    "source": null
   }
 ]
