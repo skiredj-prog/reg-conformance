@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skiredj-prog.github.io/reg-conformance/crosswalk/schema.json",
+  "title": "REG crosswalk",
+  "description": "Array of crosswalk rows. A row is a claim; see MAPPING_POLICY.md for what each status may mean.",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/row"
+  },
+  "$defs": {
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "row": {
+      "type": "object",
+      "required": [
+        "id",
+        "framework",
+        "normative_clause",
+        "reg_mechanism",
+        "vector_ref",
+        "conformance_type",
+        "verification_status",
+        "description"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^CW-[A-Za-z0-9.-]+$"
+        },
+        "framework": {
+          "type": "string",
+          "minLength": 1
+        },
+        "normative_clause": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reg_mechanism": {
+          "type": "string",
+          "minLength": 1
+        },
+        "vector_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "conformance_type": {
+          "enum": [
+            "—",
+            "enforces",
+            "audits"
+          ]
+        },
+        "verification_status": {
+          "enum": [
+            "unverified",
+            "specified-in-rfc4",
+            "planned",
+            "tested",
+            "frozen"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "verification_status": {
+                "const": "tested"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "evidence"
+            ]
+          }
+        }
+      ]
+    },
+    "evidence": {
+      "description": "Evidence for a tested row. Every field is present; unknown values are null, never omitted.",
+      "type": "object",
+      "required": [
+        "repo",
+        "tests",
+        "commit",
+        "ci_run_id",
+        "ci_run_number",
+        "pull_request",
+        "merged_into_main",
+        "caveat"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "repo": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$"
+        },
+        "tests": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "commit": {
+          "$ref": "#/$defs/sha"
+        },
+        "ci_run_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "GitHub Actions run id (in the run URL)."
+        },
+        "ci_run_number": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Sequence number of the run within its workflow (shown as #N). Not a job number."
+        },
+        "pull_request": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "merged_into_main": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "caveat": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
