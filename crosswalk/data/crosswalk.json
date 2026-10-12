@@ -70,6 +70,40 @@
     }
   },
   {
+    "id": "CW-EU-ART15",
+    "framework": "EU AI Act",
+    "normative_clause": "Article 15 - Accuracy, robustness and cybersecurity",
+    "reg_mechanism": "COMMIT_BINDING (Cryptographic Payload Integrity) / SCHEMA_SAFETY",
+    "vector_ref": "—",
+    "conformance_type": "—",
+    "verification_status": "unverified",
+    "description": "COMMIT_BINDING and SCHEMA_SAFETY are integrity controls, not robustness measures. Article 15(4) requires resilience to errors, faults, and inconsistencies through technical redundancy and fail-safe plans; Article 15(5) requires resilience against unauthorized third-party exploitation. These mechanisms ensure payload integrity and schema conformance, not system robustness or cybersecurity against external attacks. Limit: integrity validation only, not robustness or cybersecurity as required by Art. 15.",
+    "source": {
+      "framework_version": "Regulation (EU) 2024/1689",
+      "clause_id": "Article 15(4)",
+      "official_wording": "High-risk AI systems shall be as resilient as possible regarding errors, faults or inconsistencies that may occur within the system or the environment in which the system operates.",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj/eng",
+      "accessed": "2026-10-12"
+    }
+  },
+  {
+    "id": "CW-EU-ART17",
+    "framework": "EU AI Act",
+    "normative_clause": "Article 17 - Quality management system",
+    "reg_mechanism": "POLICY_ANCHOR",
+    "vector_ref": "—",
+    "conformance_type": "—",
+    "verification_status": "unverified",
+    "description": "POLICY_ANCHOR is one element of a quality management system, not a QMS itself. Article 17(1) requires providers to put in place a complete QMS documented as written policies, procedures and instructions covering strategy, design control, data management, risk management, record-keeping, post-market monitoring, and more. A policy anchor at start-up is a single integrity check within that system. Limit: one QMS element, not the system required by Art. 17.",
+    "source": {
+      "framework_version": "Regulation (EU) 2024/1689",
+      "clause_id": "Article 17(1)",
+      "official_wording": "Providers of high-risk AI systems shall put a quality management system in place that ensures compliance with this Regulation.",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj/eng",
+      "accessed": "2026-10-12"
+    }
+  },
+  {
     "id": "CW-ISO-8.3",
     "framework": "ISO/IEC 42001:2023",
     "normative_clause": "Clause 8.3 - AI risk treatment",
