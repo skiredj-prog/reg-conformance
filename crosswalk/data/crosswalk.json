@@ -5,7 +5,7 @@
     "normative_clause": "Clause 8.2 - AI risk assessment",
     "reg_mechanism": "HOLD (Uncertainty Interception & Race Detection)",
     "vector_ref": "—",
-    "conformance_type": "enforces",
+    "conformance_type": "—",
     "verification_status": "unverified",
     "description": "Correspondence withdrawn: CT-R4-005 (race detection) is not an AI risk assessment. Re-mapping pending."
   },
@@ -17,7 +17,7 @@
     "vector_ref": "CT-R4-006",
     "conformance_type": "enforces",
     "verification_status": "tested",
-    "description": "Empêche les états non-PASS de franchir la barrière de commit. Validé et fusionné (PR #27).",
+    "description": "Empêche les états non-PASS de franchir la barrière de commit. Testé : test_ct_r4_006, PR #27, run #186.",
     "evidence": {
       "repo": "skiredj-prog/tenir-conformance-s1-g1",
       "test": "tests/test_g0_s11_transition.py::test_ct_r4_006_non_pass_cannot_cross_commit_no_effect",
@@ -43,7 +43,7 @@
     "normative_clause": "Clause 8.3 - AI risk treatment",
     "reg_mechanism": "COMMIT_BINDING (Cryptographic Payload Integrity)",
     "vector_ref": "—",
-    "conformance_type": "enforces",
+    "conformance_type": "—",
     "verification_status": "unverified",
     "description": "Correspondence withdrawn: CT-R4-002 (action binding) is not AI risk treatment. Re-mapping pending."
   },
@@ -53,9 +53,9 @@
     "normative_clause": "Policy Anchor Integrity",
     "reg_mechanism": "POLICY_ANCHOR",
     "vector_ref": "CT-R0-001",
-    "conformance_type": "enforces",
+    "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Vérification de l'intégrité de l'ancre de politique au démarrage du moteur d'exécution."
+    "description": "Prévu : Vérification de l'intégrité de l'ancre de politique au démarrage du moteur d'exécution."
   },
   {
     "id": "CW-RFC1-01",
@@ -63,9 +63,9 @@
     "normative_clause": "Response Schema Compliance",
     "reg_mechanism": "SCHEMA_SAFETY",
     "vector_ref": "CT-R1-001",
-    "conformance_type": "enforces",
+    "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Conformité stricte des schémas de réponse aux spécifications du protocole."
+    "description": "Prévu : Conformité stricte des schémas de réponse aux spécifications du protocole."
   },
   {
     "id": "CW-RFC2-01",
@@ -73,9 +73,9 @@
     "normative_clause": "S-Score Determinism",
     "reg_mechanism": "SCORING_DETERMINISM",
     "vector_ref": "CT-R2-002",
-    "conformance_type": "enforces",
+    "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Garantie du déterminisme des calculs de scores de sécurité (S-Score)."
+    "description": "Prévu : Garantie du déterminisme des calculs de scores de sécurité (S-Score)."
   },
   {
     "id": "CW-RFC3-01",
@@ -83,9 +83,9 @@
     "normative_clause": "Revocation Propagation",
     "reg_mechanism": "CREDENTIAL_STANDING",
     "vector_ref": "CT-R3-002",
-    "conformance_type": "audits",
+    "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Propagation instantanée des révocations de certificats et d'identifiants."
+    "description": "Prévu : Propagation instantanée des révocations de certificats et d'identifiants."
   },
   {
     "id": "CW-RFC5-01",
@@ -93,9 +93,9 @@
     "normative_clause": "Manifest Export & Retention",
     "reg_mechanism": "EVIDENCE_EXPORT",
     "vector_ref": "CT-R5-001",
-    "conformance_type": "audits",
+    "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Exportation et politique de conservation à long terme des manifestes de preuve."
+    "description": "Prévu : Exportation et politique de conservation à long terme des manifestes de preuve."
   },
   {
     "id": "CW-RFC6-01",
@@ -103,9 +103,9 @@
     "normative_clause": "Emergency Override Audit",
     "reg_mechanism": "EMERGENCY_OVERRIDE",
     "vector_ref": "CT-R6-001",
-    "conformance_type": "audits",
+    "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Traçabilité et audit strict de l'activation des procédures de dérogation d'urgence."
+    "description": "Prévu : Traçabilité et audit strict de l'activation des procédures de dérogation d'urgence."
   },
   {
     "id": "CW-RFC7-01",
@@ -113,8 +113,8 @@
     "normative_clause": "Adapter Result Equivalence",
     "reg_mechanism": "ADAPTER_COMPATIBILITY",
     "vector_ref": "CT-R7-001",
-    "conformance_type": "enforces",
+    "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Équivalence fonctionnelle des résultats entre différents adaptateurs d'exécution."
+    "description": "Prévu : Équivalence fonctionnelle des résultats entre différents adaptateurs d'exécution."
   }
 ]
