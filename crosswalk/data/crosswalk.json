@@ -39,7 +39,7 @@
     "vector_ref": "CT-R4-008",
     "conformance_type": "audits",
     "verification_status": "tested",
-    "description": "Tested: the membrane's evidence registry is hash-chained and verified (ledger + cross-check). Tail truncation: detectable only against a tail anchored outside the ledger, not implemented.",
+    "description": "Tested: the membrane's evidence registry is hash-chained and verified (ledger + cross-check). Tail truncation: detectable only against a tail anchored outside the ledger, not implemented. Limit: this covers the technical integrity of recorded events. It does not establish complete automatic logging over the system's lifecycle, which Article 12 requires of high-risk AI systems.",
     "evidence": {
       "repo": "skiredj-prog/tenir-conformance-s1-g1",
       "tests": [
