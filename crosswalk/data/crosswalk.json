@@ -13,7 +13,7 @@
   {
     "id": "CW-NIST-MAN2.2",
     "framework": "NIST AI RMF 1.0",
-    "normative_clause": "MANAGE 2.2 - Risk treatment measures are implemented",
+    "normative_clause": "MANAGE 2.2 - Mechanisms to sustain value of deployed AI systems",
     "reg_mechanism": "HARD_VETO (Inviolable Guardrail Interception)",
     "vector_ref": "CT-R4-006",
     "conformance_type": "enforces",
@@ -31,7 +31,13 @@
       "merged_into_main": "67253f29ce6bf965690fdf3b67f543a522e4fc7f",
       "caveat": "Test run on the PR head commit; the merge commit was not separately re-executed by this entry. NIST 'MANAGE 2.2' wording not yet checked against the official text."
     },
-    "source": null
+    "source": {
+      "framework_version": "NIST AI 100-1, January 2023",
+      "clause_id": "MANAGE 2.2",
+      "official_wording": "Mechanisms are in place and applied to sustain the value of deployed AI systems.",
+      "url": "https://nvlpubs.nist.gov/nistpubs/ai/nist.ai.100-1.pdf",
+      "accessed": "2026-10-12"
+    }
   },
   {
     "id": "CW-EU-ART12",
