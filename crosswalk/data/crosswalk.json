@@ -106,7 +106,7 @@
     "reg_mechanism": "—",
     "vector_ref": "—",
     "conformance_type": "—",
-    "verification_status": "unverified",
+    "verification_status": "frozen",
     "description": "RFC-4 is frozen. Its vectors are mapped in other rows; a row-level mapping of RFC-4 is pending."
   },
   {

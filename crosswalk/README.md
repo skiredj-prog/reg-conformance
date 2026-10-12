@@ -29,6 +29,7 @@ Ce module fournit une matrice de correspondance interactive et ouverte entre les
 * **`tested` (Testé)** : Un test exécutable du dépôt de laboratoire couvre le vecteur. L'entrée porte alors un champ `evidence` avec le fichier de test, le SHA exécuté et le numéro du run CI.
 
 * **`planned` (Planifié)** : Vecteur inscrit au catalogue `vectors/dist/vectors.json`, sans test exécutable à ce jour. Il n'apparaît pas dans le texte des RFC publiées.
+* **`frozen` (Frozen)** : The source document is frozen (RFC-4, frozen version) and its vectors are covered by other rows. This status is neither a verification nor the absence of one: it only signals that a direct correspondence remains to be established.
 
 Le statut `verified-by-vector` n'est plus utilisé : il affirmait une vérification sans preuve.
 
