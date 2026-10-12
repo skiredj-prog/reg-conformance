@@ -67,8 +67,6 @@
     .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
     .tag-enforces { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
     .tag-audits { background: rgba(56,189,248,0.15); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.3); }
-    .tag-verified { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
-    .tag-draft { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
     .tag-planned { background: rgba(148,163,184,0.15); color: #cbd5e1; border: 1px solid rgba(148,163,184,0.3); }
     .desc { color: var(--text-muted); font-size: 0.82rem; margin-top: 4px; }
     code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: var(--accent); }
@@ -190,7 +188,7 @@
           </td>
           <td><code>${item.vector_ref}</code></td>
           <td><span class="tag tag-${item.conformance_type}">${item.conformance_type}</span></td>
-          <td><span class="tag tag-${item.verification_status == "verified-by-vector" ? "verified" : item.verification_status}">${item.verification_status}</span></td>
+          <td><span class="tag tag-${item.verification_status}">${item.verification_status}</span></td>
         </tr>
       `).join('');
     }
