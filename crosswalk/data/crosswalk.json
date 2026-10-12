@@ -111,7 +111,13 @@
     "conformance_type": "—",
     "verification_status": "planned",
     "description": "Planned: deterministic results for security-score (S-Score) computations.",
-    "source": null
+    "source": {
+      "framework_version": "NIST AI 100-1, January 2023",
+      "clause_id": "MEASURE 2.3",
+      "official_wording": "AI system performance or assurance criteria are measured qualitatively or quantitatively and demonstrated for conditions similar to deployment setting(s). Measures are documented.",
+      "url": "https://nvlpubs.nist.gov/nistpubs/ai/nist.ai.100-1.pdf",
+      "accessed": "2026-10-12"
+    }
   },
   {
     "id": "CW-RFC3-01",
@@ -155,7 +161,13 @@
     "conformance_type": "—",
     "verification_status": "planned",
     "description": "Planned: traceability and strict audit of emergency-override activation.",
-    "source": null
+    "source": {
+      "framework_version": "NIST AI 100-1, January 2023",
+      "clause_id": "MANAGE 4.1",
+      "official_wording": "Post-deployment AI system monitoring plans are implemented, including mechanisms for capturing and evaluating input from users and other relevant AI actors, appeal and override, decommissioning, incident response, recovery, and change management.",
+      "url": "https://nvlpubs.nist.gov/nistpubs/ai/nist.ai.100-1.pdf",
+      "accessed": "2026-10-12"
+    }
   },
   {
     "id": "CW-RFC7-01",
