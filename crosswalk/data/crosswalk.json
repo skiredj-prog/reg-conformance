@@ -17,7 +17,7 @@
     "vector_ref": "CT-R4-006",
     "conformance_type": "enforces",
     "verification_status": "tested",
-    "description": "Empêche les états non-PASS de franchir la barrière de commit. Testé : test_ct_r4_006, PR #27, run #186.",
+    "description": "Prevents non-PASS states from crossing the commit barrier. Tested: test_ct_r4_006, PR #27, run #186.",
     "evidence": {
       "repo": "skiredj-prog/tenir-conformance-s1-g1",
       "test": "tests/test_g0_s11_transition.py::test_ct_r4_006_non_pass_cannot_cross_commit_no_effect",
@@ -35,7 +35,7 @@
     "vector_ref": "CT-R4-008",
     "conformance_type": "audits",
     "verification_status": "tested",
-    "description": "Testé : le registre de preuves du membrane est chaîné et vérifié (ledger + contrôle croisé). Troncature de la queue : détectable seulement avec une tête ancrée à l'extérieur, non implémentée.",
+    "description": "Tested: the membrane's evidence registry is hash-chained and verified (ledger + cross-check). Tail truncation: detectable only against a tail anchored outside the ledger, not implemented.",
     "evidence": {
       "repo": "skiredj-prog/tenir-conformance-s1-g1",
       "tests": [
@@ -67,7 +67,7 @@
     "vector_ref": "CT-R0-001",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Prévu : Vérification de l'intégrité de l'ancre de politique au démarrage du moteur d'exécution."
+    "description": "Planned: integrity check of the policy anchor at execution-engine start-up."
   },
   {
     "id": "CW-RFC1-01",
@@ -77,7 +77,7 @@
     "vector_ref": "CT-R1-001",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Prévu : Conformité stricte des schémas de réponse aux spécifications du protocole."
+    "description": "Planned: strict conformance of response schemas to the protocol specification."
   },
   {
     "id": "CW-RFC2-01",
@@ -87,7 +87,7 @@
     "vector_ref": "CT-R2-002",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Prévu : Garantie du déterminisme des calculs de scores de sécurité (S-Score)."
+    "description": "Planned: deterministic results for security-score (S-Score) computations."
   },
   {
     "id": "CW-RFC3-01",
@@ -97,7 +97,17 @@
     "vector_ref": "CT-R3-002",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Prévu : Propagation instantanée des révocations de certificats et d'identifiants."
+    "description": "Planned: immediate propagation of certificate and credential revocations."
+  },
+  {
+    "id": "CW-RFC4-01",
+    "framework": "REG RFC-4 (frozen)",
+    "normative_clause": "Commit-Execution Proof",
+    "reg_mechanism": "—",
+    "vector_ref": "—",
+    "conformance_type": "—",
+    "verification_status": "unverified",
+    "description": "RFC-4 is frozen. Its vectors are mapped in other rows; a row-level mapping of RFC-4 is pending."
   },
   {
     "id": "CW-RFC5-01",
@@ -107,7 +117,7 @@
     "vector_ref": "CT-R5-001",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Prévu : Exportation et politique de conservation à long terme des manifestes de preuve."
+    "description": "Planned: long-term export and retention policy for proof manifests."
   },
   {
     "id": "CW-RFC6-01",
@@ -117,7 +127,7 @@
     "vector_ref": "CT-R6-001",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Prévu : Traçabilité et audit strict de l'activation des procédures de dérogation d'urgence."
+    "description": "Planned: traceability and strict audit of emergency-override activation."
   },
   {
     "id": "CW-RFC7-01",
@@ -127,6 +137,6 @@
     "vector_ref": "CT-R7-001",
     "conformance_type": "—",
     "verification_status": "planned",
-    "description": "Prévu : Équivalence fonctionnelle des résultats entre différents adaptateurs d'exécution."
+    "description": "Planned: functional equivalence of results across execution adapters."
   }
 ]

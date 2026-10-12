@@ -97,7 +97,7 @@
       </div>
       <div class="metric-card">
         <div class="metric-label">Verification Level</div>
-        <div class="metric-value" style="color:#10b981;">1 / 4 tested</div>
+        <div class="metric-value" id="stat-tested" style="color:#10b981;">—</div>
       </div>
     </div>
 
@@ -141,6 +141,8 @@
         const res = await fetch('data/crosswalk.json');
         allData = await res.json();
         renderTable(allData);
+        const testedCount = allData.filter(x => x.verification_status === 'tested').length;
+        document.getElementById('stat-tested').textContent = `${testedCount} / ${allData.length} rows tested`;
 
         document.getElementById('searchInput').addEventListener('input', filterData);
         document.getElementById('frameworkFilter').addEventListener('change', filterData);
@@ -169,6 +171,20 @@
       renderTable(filtered);
     }
 
+    function evidenceLinks(item) {
+      const ev = item.evidence;
+      if (!ev) return '';
+      const base = `https://github.com/${ev.repo}`;
+      const links = [];
+      if (ev.commit) links.push(`<a href="${base}/commit/${ev.commit}" target="_blank">commit</a>`);
+      if (ev.pull_request) links.push(`<a href="${base}/pull/${ev.pull_request}" target="_blank">PR #${ev.pull_request}</a>`);
+      if (ev.ci_run_id) links.push(`<a href="${base}/actions/runs/${ev.ci_run_id}" target="_blank">CI run</a>`);
+      else if (ev.ci_run_number) links.push(`<span title="CI job number; run id not recorded">CI #${ev.ci_run_number}</span>`);
+      const files = ev.tests ? ev.tests : (ev.test ? [ev.test] : []);
+      files.forEach(f => { const path = f.split('::')[0]; links.push(`<a href="${base}/blob/${ev.commit || 'main'}/${path}" target="_blank">${path.split('/').pop()}</a>`); });
+      return `<div class="evidence">${links.join(' · ')}</div>`;
+    }
+
     function renderTable(data) {
       const tbody = document.getElementById('crosswalk-body');
       if (data.length === 0) {
@@ -188,7 +204,7 @@
           </td>
           <td><code>${item.vector_ref}</code></td>
           <td><span class="tag tag-${item.conformance_type}">${item.conformance_type}</span></td>
-          <td><span class="tag tag-${item.verification_status}">${item.verification_status}</span></td>
+          <td><span class="tag tag-${item.verification_status}">${item.verification_status}</span>${evidenceLinks(item)}</td>
         </tr>
       `).join('');
     }
