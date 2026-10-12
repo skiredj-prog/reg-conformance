@@ -55,7 +55,13 @@
       "merged_into_main": "6b9375b73460c133e6632eb8ec76b326f172418c",
       "caveat": "Covers chain integrity and membrane registry cross-check. Tail truncation is not detected without an externally anchored head, which is not implemented."
     },
-    "source": null
+    "source": {
+      "framework_version": "Regulation (EU) 2024/1689",
+      "clause_id": "Article 12(1)",
+      "official_wording": "High-risk AI systems shall technically allow for the automatic recording of events (logs) over the lifetime of the system.",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj/eng",
+      "accessed": "2026-10-12"
+    }
   },
   {
     "id": "CW-ISO-8.3",
