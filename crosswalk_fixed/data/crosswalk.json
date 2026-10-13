@@ -88,8 +88,8 @@
     "id": "REG-XW-008",
     "reg_axis": "CLOSED ≠ COMMITTED",
     "candidate_reg_evidence": "RFC-0 describes Closure & Proof; RFC-4 describes a Commit Gate.",
-    "relation_type": "partial",
-    "assessment": "The concepts are distinguishable in the public material, but no normative pair of status values named CLOSED and COMMITTED was identified.",
+    "relation_type": "not_found_in_sources",
+    "assessment": "Closure & Proof and the Commit Gate are distinguishable concepts in the public material, but no equivalent status pair named CLOSED and COMMITTED was identified. This row records the absence of the proposed labels, not the absence of the underlying concepts.",
     "verification_status": "unverified",
     "note": "Retain as a conceptual distinction only; do not present the uppercase labels as an existing normative enum.",
     "sources": [
