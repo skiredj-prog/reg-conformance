@@ -1,0 +1,99 @@
+[
+  {
+    "id": "REG-XW-001",
+    "reg_axis": "AdmissionDecision",
+    "candidate_reg_evidence": "RFC-0 §4: dispositions PASS / FLAG / HOLD / HARD_VETO.",
+    "relation_type": "partial",
+    "assessment": "Conceptual mapping only. PASS may be interpreted as bounded ALLOW and HARD_VETO as BLOCK; HOLD corresponds broadly to suspension. FLAG has no direct equivalent in the proposed ALLOW / DENY / HOLD enum. No normative enum named AdmissionDecision was found in the examined public sources.",
+    "verification_status": "unverified",
+    "note": "Do not treat the proposed labels as normative REG status names or as a validated cross-framework equivalence.",
+    "sources": [
+      "REG public corpus: RFC-0 §4 (frozen RFCs in reg-standards-baseline/rfc/)"
+    ]
+  },
+  {
+    "id": "REG-XW-002",
+    "reg_axis": "PermitStatus",
+    "candidate_reg_evidence": "RFC-0 and manuscript references to a single-use permit / Execution Grant Envelope (EGE) and valid_until.",
+    "relation_type": "partial",
+    "assessment": "A permit bound to an execution attempt is described, but no state axis or enum named PermitStatus was identified in the examined public sources.",
+    "verification_status": "unverified",
+    "note": "Existence of a permit object does not establish a normative lifecycle-status vocabulary.",
+    "sources": [
+      "REG public corpus: RFC-0; manuscript v7.0 (as identified in the documentary review)"
+    ]
+  },
+  {
+    "id": "REG-XW-003",
+    "reg_axis": "PassageLifecycleStatus",
+    "candidate_reg_evidence": "RFC-0 §5 describes lifecycle phases including Conditional Authorization, Supervised Execution, and Closure & Proof.",
+    "relation_type": "not_found_in_sources",
+    "assessment": "A lifecycle is described, but no equivalent state axis or enum named PassageLifecycleStatus was identified.",
+    "verification_status": "unverified",
+    "note": "This is a bounded search result, not proof that no other unpublished or unexamined artifact defines such an axis.",
+    "sources": [
+      "REG public corpus: RFC-0 §5"
+    ]
+  },
+  {
+    "id": "REG-XW-004",
+    "reg_axis": "ExecutionStatus",
+    "candidate_reg_evidence": "The manuscript describes attempt outcomes such as RESOLVED and FAILED.",
+    "relation_type": "not_found_in_sources",
+    "assessment": "Attempt outcomes are mentioned, but no status axis with the proposed ExecutionStatus name and the specific meaning 'effect attempted' was identified in the public RFC corpus.",
+    "verification_status": "unverified",
+    "note": "Do not infer an execution-effect state model from outcome labels alone.",
+    "sources": [
+      "REG public corpus: manuscript v7.0 (as identified in the documentary review); RFCs 0–7"
+    ]
+  },
+  {
+    "id": "REG-XW-005",
+    "reg_axis": "ReconciliationStatus",
+    "candidate_reg_evidence": "The manuscript v7.0 describes reconciliation and evidence-bound reconciliation.",
+    "relation_type": "partial",
+    "assessment": "The reconciliation operation is present conceptually, but no normative state axis or enum named ReconciliationStatus was identified in the examined public RFCs.",
+    "verification_status": "unverified",
+    "note": "Operation existence and status-vocabulary definition are separate claims.",
+    "sources": [
+      "REG public corpus: manuscript v7.0 (as identified in the documentary review); RFCs 0–7"
+    ]
+  },
+  {
+    "id": "REG-XW-006",
+    "reg_axis": "EvidenceStatus",
+    "candidate_reg_evidence": "RFC-4 references Decision Receipts and an Evidence Manifest / tamper-evident evidence mechanisms.",
+    "relation_type": "shared_word_different_object",
+    "assessment": "The presence of evidence artifacts does not establish a runtime state axis for evidence-write outcomes. The reviewed public RFCs do not establish that pending or failed writes are represented by a normative EvidenceStatus axis. NIST AI RMF uses documentation, reporting, and empirical evidence in a risk-management context; the reviewed usage does not establish an equivalent runtime execution state. The ISO/IEC 42001 comparison is based on secondary sources only.",
+    "verification_status": "unverified",
+    "note": "OP-1 remains unresolved. Do not claim that the core already covers pending/failed evidence writes. If no authoritative normative definition is found, propose an explicit core amendment.",
+    "sources": [
+      "REG public corpus: RFC-4; NIST AI RMF 1.0, NIST AI 100-1 (official PDF: https://nvlpubs.nist.gov/nistpubs/ai/nist.ai.100-1.pdf)",
+      "ISO/IEC 42001:2023 — secondary sources only; full official text not reviewed"
+    ]
+  },
+  {
+    "id": "REG-XW-007",
+    "reg_axis": "EvidenceVerificationStatus",
+    "candidate_reg_evidence": "RFC-4 references Evidence Manifest integrity and independent evidence verification (CT-R4-008 / CT-R4-009 in the conformance suite).",
+    "relation_type": "partial",
+    "assessment": "The distinction between an evidence artifact and verification of that artifact has a strong conceptual counterpart in the public material, but the exact state-axis label EvidenceVerificationStatus was not identified as normative.",
+    "verification_status": "unverified",
+    "note": "A conformance-test identifier is evidence that a test requirement is tracked; it does not by itself prove that a named normative state axis exists.",
+    "sources": [
+      "REG public corpus: RFC-4; REG Conformance Suite README / CT-R4-008 and CT-R4-009"
+    ]
+  },
+  {
+    "id": "REG-XW-008",
+    "reg_axis": "CLOSED ≠ COMMITTED",
+    "candidate_reg_evidence": "RFC-0 describes Closure & Proof; RFC-4 describes a Commit Gate.",
+    "relation_type": "partial",
+    "assessment": "The concepts are distinguishable in the public material, but no normative pair of status values named CLOSED and COMMITTED was identified.",
+    "verification_status": "unverified",
+    "note": "Retain as a conceptual distinction only; do not present the uppercase labels as an existing normative enum.",
+    "sources": [
+      "REG public corpus: RFC-0 (Closure & Proof); RFC-4 (Commit Gate)"
+    ]
+  }
+]
