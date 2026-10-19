@@ -66,9 +66,9 @@ quorum: q           # nœuds nécessaires pour décider
 total_nodes: n      # nombre total de nœuds
 ```
 
-Bornes de résilience vérifiées par le vérificateur de profil :
-- Crash-only : `n ≥ 2f + 1`, `quorum = f + 1` (Raft, Paxos)
-- Byzantin : `n ≥ 3m + 1`, `quorum = 2m + 1` (PBFT, Tendermint)
+Bornes de résilience vérifiées par le validateur pour le profil Raft crash-stop (les fautes byzantines et d'omission ne sont pas attestées) :
+- Crash-stop / Raft : `quorum = floor(n / 2) + 1`; disponibilité sous `f` crashs si `n - f >= quorum`
+- Byzantin : `n ≥ 3m + 1`, `quorum = 2m + 1` (PBFT, Tendermint) ; non pris en charge par le profil Raft actuel
 
 ## Interface de conformance (v1.0.0)
 
