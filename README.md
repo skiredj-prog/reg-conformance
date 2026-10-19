@@ -115,7 +115,7 @@ pytest -q tenir-governance/tests/test_raft_backend.py
 
 The CI run is the authoritative source for exact collected, passed, failed, and skipped counts. Do not combine counts from different suites without reporting each suite and its denominator. `admissible_structural` means structural coherence only; it must never be used to infer `effective_guarantee_demonstrated`.
 
-Recorded pinned run: [GitHub Actions #39205591644](https://github.com/skiredj-prog/reg-conformance/actions/runs/39205591644) checked out TENIR-Gov commit `82037052556c5bfd731bd59fe958cf4df61d21b6`. Results: 4 target-metadata tests passed; the profile validator accepted all 4 repository profiles and its adversarial profile script passed; the pinned Raft suite collected 46 tests and passed all 46 (0 failed, 0 skipped) in 139.74 s. These are empirical localhost-lab results, not physical multi-host or production certification.
+Recorded pinned run: [GitHub Actions #39206045440](https://github.com/skiredj-prog/reg-conformance/actions/runs/39206045440) checked out TENIR-Gov commit `82037052556c5bfd731bd59fe958cf4df61d21b6`. Results: 5 target-metadata tests passed, including a guard against marking effective guarantees in the structural catalog; the profile validator accepted all 4 repository profiles and its adversarial profile script passed; the pinned Raft suite collected 46 tests and passed all 46 (0 failed, 0 skipped) in 142.12 s. These are empirical localhost-lab results, not physical multi-host or production certification.
 ## Build
 
 1. `python3 tools/enumerate_configs.py` — régénère `valid-configurations-v1.json`
