@@ -6,7 +6,7 @@
     "distribution": "tenir-governance",
     "version": "5.6.1",
     "repository": "https://github.com/skiredj-prog/tenir_governance",
-    "source_commit": "ded4a50f1aff884026996dcaaf53fabdaf66e668"
+    "source_commit": "5c72d93bfe8e34a0a9217f2252f1afef13c06d4a"
   },
   "catalog_version": "1.0.0",
   "rules_version": "1.0.0",
