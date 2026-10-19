@@ -90,6 +90,30 @@ Le standard ne prescrit ni Raft, ni Paxos, ni etcd, ni PostgreSQL. Il prescrit c
 - Admissibles (structurel) : **42** — mono-process 9, mono-host 18, multi-host 15
 - Rejetées : **102**
 
+## Test perimeter and pinned implementation
+
+The `conformance-target.json` manifest pins the TENIR-Gov source commit and package version, plus `catalog_version` and `rules_version`. The `pinned-tenir-gov-conformance` workflow checks out that exact source commit, verifies package/catalog/rules metadata, validates profile assumptions, and runs the pinned Raft integration suite.
+
+### Reproduction
+
+```bash
+python tools/validate_profiles.py
+python tests/test_profile_admissibility.py
+pytest -q tests/test_conformance_target.py
+pytest -q tenir-governance/tests/test_raft_backend.py
+```
+
+### Included
+- Structural profile validation and crash-stop/quorum consistency checks.
+- Exact implementation, catalog, and rules version checks.
+- Local Raft integration, I8 regression, idempotent replay, amount validation, logical-clock replication, and resource re-registration tests.
+
+### Excluded / not established
+- Physical multi-host network or partition testing (the current Raft suite uses `localhost` and separate ports).
+- Byzantine fault tolerance, hardened transport/authentication, third-party attestation, or exactly-once external effects.
+- Formal proof of linearizability or production certification.
+
+The CI run is the authoritative source for exact collected, passed, failed, and skipped counts. Do not combine counts from different suites without reporting each suite and its denominator. `admissible_structural` means structural coherence only; it must never be used to infer `effective_guarantee_demonstrated`.
 ## Build
 
 1. `python3 tools/enumerate_configs.py` — régénère `valid-configurations-v1.json`
