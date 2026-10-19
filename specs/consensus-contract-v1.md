@@ -96,12 +96,15 @@ Le profil déclare le modèle de faute supporté :
 
 ```yaml
 fault_model:
-  crash: f          # nombre de nœuds qui peuvent crasher (crash-stop)
-  byzantine: m      # nombre de nœuds byzantins (réponses arbitraires)
-  omission: o       # nombre de nœuds en omission (perte de messages)
-quorum: q           # nombre de nœuds nécessaires pour décider
-total_nodes: n      # nombre total de nœuds dans le déploiement
+  crash: f          # nombre maximal de crash-stop déclarés
+  byzantine: m      # fautes byzantines déclarées
+  omission: o       # fautes d'omission déclarées
+  quorum: q         # quorum de décision
+  total_nodes: n    # nombre total de nœuds
 ```
+
+Le profil Raft actuellement pris en charge est **crash-stop uniquement** :
+`byzantine = 0` et `omission = 0`. Toute autre tolérance doit être implémentée et démontrée séparément ; elle ne découle pas de ce contrat générique.
 
 ### 4.2 Bornes de résilience
 
@@ -109,8 +112,8 @@ Le profil doit satisfaire les bornes théoriques :
 
 | Modèle de faute | Condition nécessaire | Référence |
 |---|---|---|
-| Crash-stop uniquement | `n ≥ 2f + 1`, `quorum = f + 1` | Raft, Paxos |
-| Crash-stop + omission | `n ≥ 2f + 1`, `quorum = f + 1` | Paxos |
+| Crash-stop uniquement | `quorum = floor(n / 2) + 1`, `n - f ≥ quorum` pour la disponibilité déclarée | Raft, Paxos |
+| Crash-stop + omission | `quorum = floor(n / 2) + 1`, disponibilité conditionnée aux nœuds et liens encore opérationnels | Paxos |
 | Byzantin | `n ≥ 3m + 1`, `quorum = 2m + 1` | PBFT, Tendermint |
 
 Le vérificateur de profil rejette toute configuration violant ces bornes.
