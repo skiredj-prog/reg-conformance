@@ -31,5 +31,7 @@ jobs:
         run: python tools/validate_profiles.py
       - name: Test profile validator and quorum fault cases
         run: python tests/test_profile_admissibility.py
+      - name: Test target and catalog version guards
+        run: pytest -q tests/test_conformance_target.py
       - name: Exercise exact pinned Raft backend
         run: pytest -q tenir-governance/tests/test_raft_backend.py
