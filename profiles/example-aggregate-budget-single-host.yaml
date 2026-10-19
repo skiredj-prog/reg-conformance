@@ -1,0 +1,48 @@
+# Profil mono-hôte (file-lock + registre local). Configuration limitée à ce qui
+# est implémenté et testé dans tenir_governance (registre durable fcntl.flock).
+# Les preuves ci-dessous sont des sorties réelles de tests (voir evidence/).
+# Une capacité reste NON attestée : cap.host.single-host exige un deployment.manifest
+# décrivant un déploiement réel, que ce dépôt ne peut pas produire.
+
+profile_id: "aggregate-budget-single-host"
+profile_version: "1.0.0"
+description: >
+  Agrégation de budget sur un seul hôte, plusieurs processus. Déduplication par
+  registre local (fichier), réservations sérialisées par fcntl.flock.
+  UNKNOWN : fail-closed.
+
+config:
+  HOST_SCOPE: "mono-host"
+  DEDUP_LAYER: "local-registry"
+  CONCURRENCY: "file-lock"
+  UNCERTAINTY: "fail-closed"
+
+invariants:
+  - "commit-binding"
+  - "budget-ceiling-aggregate"
+  - "single-dispatch-per-reservation"
+
+attestations:
+  - capability_ids: ["cap.concurrency.file-lock"]
+    evidence_type: "test.lock.cross-process"
+    evidence_ref: "evidence/cross-process-run.log"
+    evidence_sha256: "94a73d5c9901ef7daec5fc1bfe6a11e8e3d84ca51ca2143dd8115ed57272377f"
+    verified: true
+    verifier: "sandbox-run tenir_governance@0df9a96 (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+
+  - capability_ids: ["cap.dedup.local-registry"]
+    evidence_type: "test.idempotency.local"
+    evidence_ref: "evidence/cross-process-run.log"
+    evidence_sha256: "94a73d5c9901ef7daec5fc1bfe6a11e8e3d84ca51ca2143dd8115ed57272377f"
+    verified: true
+    verifier: "sandbox-run tenir_governance@0df9a96 (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+
+  - capability_ids: ["cap.uncertainty.fail-closed"]
+    evidence_type: "test.unknown-outcome.blocks"
+    evidence_ref: "evidence/unknown-outcome-run.log"
+    evidence_sha256: "eb35ed156a1eebeb2670256a25a6d3f9fdbd5b51ea174d27504a26e8d2890bf0"
+    verified: true
+    verifier: "sandbox-run tenir_governance@0df9a96 (auteur, non indépendant)"
+    verified_at: "2026-10-19"

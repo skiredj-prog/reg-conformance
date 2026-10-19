@@ -1,0 +1,358 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reg-conformance.dev/specs/consensus-interface-v1.json",
+  "title": "ConsensusBackend Interface v1",
+  "description": "Interface de conformance pour tout backend de consensus distribué. Le standard définit les propriétés (consensus-contract-v1.md), pas le mécanisme. Tout backend qui implémente cette interface et satisfait les propriétés C1/C2/C3/I8 est conforme.",
+  "type": "object",
+  "required": ["interface_version", "operations", "types"],
+  "properties": {
+    "interface_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Version de l'interface. Incrémentée pour toute rupture de compatibilité."
+    },
+    "operations": {
+      "type": "object",
+      "required": ["reserve", "commit", "release", "reconcile", "get_state"],
+      "properties": {
+        "reserve": {
+          "type": "object",
+          "description": "Réserver un montant budgétaire pour une clé d'idempotence.",
+          "required": ["input", "output"],
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": ["key", "amount", "resource_id"],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "Clé d'idempotence (LEI ou équivalent). Unique par opération."
+                },
+                "amount": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Montant à réserver. Strictement positif."
+                },
+                "resource_id": {
+                  "type": "string",
+                  "description": "Identifiant de la ressource budgétaire. I8 s'applique par resource_id."
+                }
+              }
+            },
+            "output": {
+              "type": "object",
+              "required": ["status", "reservation_id"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["RESERVED", "INSUFFICIENT_BUDGET", "DUPLICATE_KEY", "ERROR"]
+                },
+                "reservation_id": {
+                  "type": ["string", "null"],
+                  "description": "Identifiant unique de la réservation si RESERVED, sinon null."
+                },
+                "amount_reserved": {
+                  "type": ["integer", "null"],
+                  "minimum": 0
+                }
+              }
+            },
+            "sequential_spec": {
+              "type": "string",
+              "description": "Spécification séquentielle : si available >= amount, crée reservation_id unique, reserved += amount, available -= amount. Si available < amount, retourne INSUFFICIENT_BUDGET sans effet. Si key déjà réservée avec même montant, retourne la réservation existante (idempotence). Si key déjà réservée avec montant différent, retourne DUPLICATE_KEY."
+            }
+          }
+        },
+        "commit": {
+          "type": "object",
+          "description": "Commiter une réservation : transfère le montant de reserved à committed.",
+          "required": ["input", "output"],
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": ["reservation_id"],
+              "properties": {
+                "reservation_id": {
+                  "type": "string",
+                  "description": "Identifiant de la réservation à commiter."
+                }
+              }
+            },
+            "output": {
+              "type": "object",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["COMMITTED", "NOT_FOUND", "ALREADY_COMMITTED", "ERROR"]
+                }
+              }
+            },
+            "sequential_spec": {
+              "type": "string",
+              "description": "Si reservation_id existe et est non commitée : reserved -= amount, committed += amount, retourne COMMITTED. Si n'existe pas : NOT_FOUND sans effet. Si déjà commitée : ALREADY_COMMITTED sans effet."
+            }
+          }
+        },
+        "release": {
+          "type": "object",
+          "description": "Libérer une réservation non commitée : remet le montant dans available.",
+          "required": ["input", "output"],
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": ["reservation_id"],
+              "properties": {
+                "reservation_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "output": {
+              "type": "object",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["RELEASED", "NOT_FOUND", "ALREADY_COMMITTED", "ERROR"]
+                }
+              }
+            },
+            "sequential_spec": {
+              "type": "string",
+              "description": "Si reservation_id existe et est non commitée : reserved -= amount, available += amount, retourne RELEASED. Si déjà commitée : ALREADY_COMMITTED sans effet. Si n'existe pas : NOT_FOUND sans effet."
+            }
+          }
+        },
+        "reconcile": {
+          "type": "object",
+          "description": "Réconcilier une opération en état UNKNOWN : interroger le provider pour déterminer l'issue réelle.",
+          "required": ["input", "output"],
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": ["key"],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "Clé d'idempotence de l'opération à réconcilier."
+                }
+              }
+            },
+            "output": {
+              "type": "object",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["CONFIRMED", "FAILED", "UNRESOLVED", "NOT_FOUND", "ERROR"]
+                },
+                "effect_observed": {
+                  "type": ["boolean", "null"],
+                  "description": "true si l'effet a eu lieu (CONFIRMED), false sinon (FAILED), null si indéterminé (UNRESOLVED)."
+                }
+              }
+            },
+            "sequential_spec": {
+              "type": "string",
+              "description": "Si key a une opération UNKNOWN : interroge le provider. CONFIRMED → committed += amount si pas déjà commité. FAILED → reserved -= amount, available += amount. UNRESOLVED → pas d'effet, reste UNKNOWN. Si pas d'opération UNKNOWN pour key : NOT_FOUND."
+            }
+          }
+        },
+        "get_state": {
+          "type": "object",
+          "description": "Retourner l'état courant du backend. Opération pure : ne modifie aucun état.",
+          "required": ["input", "output"],
+          "properties": {
+            "input": {
+              "type": "object",
+              "required": ["resource_id"],
+              "properties": {
+                "resource_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "output": {
+              "type": "object",
+              "required": ["available", "reserved", "committed", "capacity", "reservations"],
+              "properties": {
+                "available": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "capacity - reserved - committed."
+                },
+                "reserved": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "committed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "capacity": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Plafond budgétaire déclaré dans le profil."
+                },
+                "reservations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["reservation_id", "key", "amount", "state"],
+                    "properties": {
+                      "reservation_id": { "type": "string" },
+                      "key": { "type": "string" },
+                      "amount": { "type": "integer", "minimum": 1 },
+                      "state": {
+                        "type": "string",
+                        "enum": ["RESERVED", "COMMITTED", "RELEASED", "UNKNOWN"]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "sequential_spec": {
+              "type": "string",
+              "description": "Retourne l'état courant sans effet. available = capacity - reserved - committed. I8 : reserved + committed <= capacity (toujours)."
+            }
+          }
+        }
+      }
+    },
+    "types": {
+      "type": "object",
+      "description": "Types partagés utilisés par les opérations.",
+      "required": ["ReservationResult", "CommitResult", "ReleaseResult", "ReconciliationResult", "ConsensusState"],
+      "properties": {
+        "ReservationResult": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": { "type": "string", "enum": ["RESERVED", "INSUFFICIENT_BUDGET", "DUPLICATE_KEY", "ERROR"] },
+            "reservation_id": { "type": ["string", "null"] },
+            "amount_reserved": { "type": ["integer", "null"], "minimum": 0 }
+          }
+        },
+        "CommitResult": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": { "type": "string", "enum": ["COMMITTED", "NOT_FOUND", "ALREADY_COMMITTED", "ERROR"] }
+          }
+        },
+        "ReleaseResult": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": { "type": "string", "enum": ["RELEASED", "NOT_FOUND", "ALREADY_COMMITTED", "ERROR"] }
+          }
+        },
+        "ReconciliationResult": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": { "type": "string", "enum": ["CONFIRMED", "FAILED", "UNRESOLVED", "NOT_FOUND", "ERROR"] },
+            "effect_observed": { "type": ["boolean", "null"] }
+          }
+        },
+        "ConsensusState": {
+          "type": "object",
+          "required": ["available", "reserved", "committed", "capacity", "reservations"],
+          "properties": {
+            "available": { "type": "integer", "minimum": 0 },
+            "reserved": { "type": "integer", "minimum": 0 },
+            "committed": { "type": "integer", "minimum": 0 },
+            "capacity": { "type": "integer", "minimum": 0 },
+            "reservations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["reservation_id", "key", "amount", "state"],
+                "properties": {
+                  "reservation_id": { "type": "string" },
+                  "key": { "type": "string" },
+                  "amount": { "type": "integer", "minimum": 1 },
+                  "state": { "type": "string", "enum": ["RESERVED", "COMMITTED", "RELEASED", "UNKNOWN"] }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "invariants": {
+      "type": "object",
+      "description": "Invariants que le backend doit maintenir à tout instant.",
+      "required": ["I8", "linearizability", "agreement", "validity"],
+      "properties": {
+        "I8": {
+          "type": "object",
+          "description": "Conservation du budget agrégé : reserved + committed <= capacity, par resource_id, à tout instant.",
+          "required": ["property", "scope"],
+          "properties": {
+            "property": { "type": "string", "const": "reserved + committed <= capacity" },
+            "scope": { "type": "string", "const": "per resource_id" }
+          }
+        },
+        "linearizability": {
+          "type": "object",
+          "description": "Chaque opération prend effet à un point unique entre invocation et réponse. Vérifié par linearizability checker.",
+          "required": ["property", "verification"],
+          "properties": {
+            "property": { "type": "string", "const": "linearizable history exists" },
+            "verification": { "type": "string", "const": "Wing-Gong or equivalent" }
+          }
+        },
+        "agreement": {
+          "type": "object",
+          "description": "Au plus un nœud peut commiter une réservation donnée.",
+          "required": ["property"],
+          "properties": {
+            "property": { "type": "string", "const": "at most one commit per reservation" }
+          }
+        },
+        "validity": {
+          "type": "object",
+          "description": "Toute réservation/commit/libération correspond à une opération antérieure valide.",
+          "required": ["property"],
+          "properties": {
+            "property": { "type": "string", "const": "no phantom operations" }
+          }
+        }
+      }
+    },
+    "fault_model": {
+      "type": "object",
+      "description": "Modèle de faute paramétrique déclaré dans le profil. Le backend doit maintenir safety sous ces fautes.",
+      "properties": {
+        "crash": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Nombre de nœuds qui peuvent crasher (crash-stop)."
+        },
+        "byzantine": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Nombre de nœuds byzantins (réponses arbitraires)."
+        },
+        "omission": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Nombre de nœuds en omission (perte de messages)."
+        },
+        "quorum": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nombre de nœuds nécessaires pour décider."
+        },
+        "total_nodes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nombre total de nœuds dans le déploiement."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,129 @@
+# Profil mono-hôte avec backend de consensus de référence. Ce profil atteste
+# que l'interface ConsensusBackend (consensus-interface-v1.json) est implémentée
+# et testée sur un seul hôte avec fcntl.flock. Les propriétés C1 (safety,
+# linearizability), C2 (liveness, terminaison) et I8 (conservation budget) sont
+# démontrées par des tests réels. C3 (cross-host fault tolerance) n'est PAS
+# réclamée — ce profil est explicitement mono-hôte.
+#
+# Les preuves ci-dessous sont des sorties réelles de tests exécutés dans le
+# harnais tenir-conformance-s1-g1 contre FileLockConsensusBackend de
+# tenir_governance 5.5.0. Les hashes SHA-256 garantissent l'intégrité des
+# fichiers ; ils ne garantissent pas l'exécution correcte des tests (preuve
+# auto-attestée, non indépendante).
+#
+# Une capacité reste NON attestée : cap.host.single-host exige un
+# deployment.manifest décrivant un déploiement réel, que ce dépôt ne peut pas
+# produire.
+
+profile_id: "consensus-reference-single-host"
+profile_version: "1.0.0"
+description: >
+  Backend de consensus de référence (single-host, fcntl.flock). Implémente
+  l'interface ConsensusBackend et satisfait C1 (safety/linearizability),
+  C2 (liveness/termination) et I8 (budget conservation) sur un seul hôte.
+  Ne satisfait PAS C3 (cross-host fault tolerance). Sert de référence pour
+  valider l'interface et le harnais de test avant un déploiement multi-hôte.
+
+config:
+  HOST_SCOPE: "mono-host"
+  DEDUP_LAYER: "local-registry"
+  CONCURRENCY: "consensus-reference"
+  UNCERTAINTY: "fail-closed"
+
+# Modèle de faute : crash-only, single-host. Le backend survit aux crashes de
+# processus (état durable via fichiers JSON) mais pas aux crashes d'hôte.
+fault_model:
+  crash: 1              # tolère 1 crash de processus (état durable persiste)
+  byzantine: 0          # pas de tolérance byzantine
+  omission: 0           # pas de tolérance d'omission
+  quorum: 1             # single-host : 1 nœud suffit
+  total_nodes: 1
+
+# Vérification des bornes de résilience (crash-only, single-host) :
+#   total_nodes (1) >= 2 * crash + 1 (3) ✗ — mais crash=1 ici signifie
+#   crash de *processus* (récupération via état durable), pas crash d'hôte.
+#   La borne strict n s'applique aux déploiements multi-hôtes. Ce profil
+#   déclare explicitement HOST_SCOPE=mono-host.
+
+invariants:
+  - "commit-binding"
+  - "budget-ceiling-aggregate"    # I8 : reserved + committed <= capacity
+  - "single-dispatch-per-reservation"
+  - "linearizability"              # LIN : ordre linéarisable
+  - "agreement"                   # AGR : au plus un commit par réservation
+
+# Backend de référence : FileLockConsensusBackend (tenir_governance 5.5.0).
+# Implémente ConsensusBackend via fcntl.flock + état durable JSON.
+adapter:
+  required: false                  # backend de référence fourni, pas d'adapter externe
+  interface_version: "1.0.0"
+  backend_type: "FileLockConsensusBackend"
+  backend_version: "5.5.0"
+  backend_ref: "tenir_governance/operations/consensus_backend.py"
+
+attestations:
+  # C1 — Safety : linearizability + I8 + agreement
+  - capability_ids: ["cap.concurrency.consensus-reference"]
+    evidence_type: "test.consensus.safety"
+    evidence_ref: "evidence/fault-harness-linearizability-run.log"
+    evidence_sha256: "3b32b106e10fd0f1bea757a64f60565bc8d5a612e8229e208430f5fd2c14bd3c"
+    verified: true
+    verifier: "sandbox-run tenir-conformance-s1-g1 / tenir_governance@5.5.0 (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+    description: >
+      30 tests de linearizability (Wing-Gong) + 12 tests fault harness
+      (crash-stop, I8 après crash, byzantine rejection, no re-commit).
+      Vérifie LIN, I8, AGR sur histories séquentielles et concurrentes.
+
+  # C2 — Liveness : terminaison sous quorum sain
+  - capability_ids: ["cap.concurrency.consensus-reference"]
+    evidence_type: "test.consensus.liveness"
+    evidence_ref: "evidence/consensus-multi-process-run.log"
+    evidence_sha256: "22ae1b05a84585dedf648fa6238529145e06aede41a2c85ef139b576bcd94632"
+    verified: true
+    verifier: "sandbox-run tenir-conformance-s1-g1 / tenir_governance@5.5.0 (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+    description: >
+      7 tests de liveness : terminaison dans T_max, concurrents terminent,
+      reconciliation termine, budget insuffisant retour immédiat, latence
+      max sous charge, release termine, clé dupliquée termine.
+
+  # C3 — Fault tolerance : crash-stop recovery (single-host)
+  - capability_ids: ["cap.concurrency.consensus-reference"]
+    evidence_type: "test.fault-tolerance"
+    evidence_ref: "evidence/fault-harness-linearizability-run.log"
+    evidence_sha256: "3b32b106e10fd0f1bea757a64f60565bc8d5a612e8229e208430f5fd2c14bd3c"
+    verified: true
+    verifier: "sandbox-run tenir-conformance-s1-g1 / tenir_governance@5.5.0 (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+    description: >
+      12 tests Jepsen-style : crash-stop recovery, I8 après crash, état durable
+      visible après restart, simulation partition (lock contention), rejet
+      byzantin, pas de re-commit après crash. Note : single-host seulement.
+
+  # Déduplication : idempotency locale (même preuve que multi-process)
+  - capability_ids: ["cap.dedup.local-registry"]
+    evidence_type: "test.idempotency.local"
+    evidence_ref: "evidence/consensus-multi-process-run.log"
+    evidence_sha256: "22ae1b05a84585dedf648fa6238529145e06aede41a2c85ef139b576bcd94632"
+    verified: true
+    verifier: "sandbox-run tenir-conformance-s1-g1 / tenir_governance@5.5.0 (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+    description: >
+      5 tests multi-processus : deux processus réservant la même clé → un
+      seul gagnant (idempotency cross-process).
+
+  # UNKNOWN : fail-closed
+  - capability_ids: ["cap.uncertainty.fail-closed"]
+    evidence_type: "test.unknown-outcome.blocks"
+    evidence_ref: "evidence/unknown-outcome-run.log"
+    evidence_sha256: "eb35ed156a1eebeb2670256a25a6d3f9fdbd5b51ea174d27504a26e8d2890bf0"
+    verified: true
+    verifier: "sandbox-run tenir_governance@0df9a96 (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+    description: >
+      Résultat UNKNOWN passe en human_review, reprise bloquée.
+
+# Capacité manquante : cap.host.single-host exige deployment.manifest.
+# Le vérificateur durci échoue (fail-closed) sur cette preuve manquante.
+# Seul l'opérateur peut fournir un manifeste de déploiement réel.

@@ -1,0 +1,189 @@
+version: "1.1.0"
+description: >
+  Registre des capacités réclamées par chaque valeur d'axe, et des preuves
+  requises pour que la réclamation soit considérée comme DÉMONTRÉE.
+  L'admissibilité STRUCTURELLE (compatibility-rules) est nécessaire mais pas
+  suffisante : une configuration réclame des capacités, et chaque capacité
+  doit être attestée. Politique par défaut : fail-closed — une capacité
+  réclamée sans preuve fait échouer le build.
+
+policy:
+  default: "fail-closed"   # capacité réclamée sans attestation valide → échec
+  on_extra_attestation: "warn"  # attestation superflue → avertissement, pas échec
+
+# Invariants normatifs — tout backend conforme doit maintenir ces invariants.
+# Voir consensus-contract-v1.md pour les définitions formelles.
+normative_invariants:
+  - id: "I8"
+    name: "budget-ceiling-aggregate"
+    property: "reserved + committed <= capacity"
+    scope: "per resource_id"
+    description: >
+      Conservation du budget agrégé. À tout instant, pour chaque ressource,
+      la somme des montants réservés (non commités, non libérés) et des
+      montants commités (non libérés) ne dépasse pas le plafond déclaré.
+      Cet invariant doit tenir à chaque état intermédiaire, pas seulement
+      à l'état final. Sous concurrence, deux reserve() simultanées ne doivent
+      pas faire dépasser le plafond.
+    applies_to: ["cap.concurrency.thread-lock", "cap.concurrency.file-lock",
+                  "cap.concurrency.consensus-reference", "cap.concurrency.distributed-transaction",
+                  "cap.concurrency.consensus"]
+    verification: "test.consensus.safety (budget conservation check)"
+    contract_ref: "consensus-contract-v1.md §2.4"
+
+  - id: "LIN"
+    name: "linearizability"
+    property: "linearizable history exists"
+    scope: "all operations"
+    description: >
+      Chaque opération prend effet à un point unique entre invocation et
+      réponse. L'ordre des opérations est un ordre linéarisable respectant
+      la précédence réelle des opérations non-chevauchantes.
+    applies_to: ["cap.concurrency.file-lock", "cap.concurrency.consensus-reference",
+                  "cap.concurrency.distributed-transaction", "cap.concurrency.consensus"]
+    verification: "test.consensus.safety (linearizability checker, Wing-Gong)"
+    contract_ref: "consensus-contract-v1.md §2.1"
+
+  - id: "AGR"
+    name: "agreement"
+    property: "at most one commit per reservation"
+    scope: "all commit operations"
+    description: >
+      Pour toute réservation, au plus un nœud peut la commiter. Deux nœuds
+      tentant le même commit ne peuvent pas tous deux réussir.
+    applies_to: ["cap.concurrency.file-lock", "cap.concurrency.consensus-reference",
+                  "cap.concurrency.distributed-transaction", "cap.concurrency.consensus"]
+    verification: "test.consensus.safety (agreement check)"
+    contract_ref: "consensus-contract-v1.md §2.2"
+
+# Modèle de faute paramétrique — le profil déclare les fautes supportées.
+# Le vérificateur de profil rejette toute configuration violant les bornes.
+# Voir consensus-contract-v1.md §4 pour les bornes théoriques.
+fault_model_schema:
+  crash:
+    type: "integer"
+    minimum: 0
+    description: "Nombre de nœuds qui peuvent crasher (crash-stop)."
+  byzantine:
+    type: "integer"
+    minimum: 0
+    description: "Nombre de nœuds byzantins (réponses arbitraires)."
+  omission:
+    type: "integer"
+    minimum: 0
+    description: "Nombre de nœuds en omission (perte de messages)."
+  quorum:
+    type: "integer"
+    minimum: 1
+    description: "Nombre de nœuds nécessaires pour décider."
+  total_nodes:
+    type: "integer"
+    minimum: 1
+    description: "Nombre total de nœuds dans le déploiement."
+
+resilience_bounds:
+  crash_only:
+    condition: "byzantine == 0 and omission == 0"
+    required: "total_nodes >= 2 * crash + 1"
+    quorum: "crash + 1"
+    reference: "Raft, Paxos"
+  crash_with_omission:
+    condition: "byzantine == 0 and omission > 0"
+    required: "total_nodes >= 2 * (crash + omission) + 1"
+    quorum: "crash + omission + 1"
+    reference: "Paxos with omission"
+  byzantine:
+    condition: "byzantine > 0"
+    required: "total_nodes >= 3 * byzantine + 1"
+    quorum: "2 * byzantine + 1"
+    reference: "PBFT, Tendermint"
+
+# Pour chaque (axe, valeur) : capability_id + liste des types de preuve requis.
+# Une attestation valide = evidence_type correspondant, verified=true,
+# evidence_ref non vide, capability_id déclaré dans ce registre.
+capabilities:
+  HOST_SCOPE:
+    mono-process:
+      capability_id: "cap.host.single-process"
+      description: "Exécution confinée à un seul processus."
+      required_evidence: ["deployment.manifest"]
+    mono-host:
+      capability_id: "cap.host.single-host"
+      description: "Exécution confinée à un seul hôte, multi-processus possible."
+      required_evidence: ["deployment.manifest"]
+    multi-host:
+      capability_id: "cap.host.multi-host"
+      description: "Exécution répartie sur plusieurs hôtes."
+      required_evidence: ["deployment.manifest", "test.cross-host.communication"]
+
+  DEDUP_LAYER:
+    none:
+      capability_id: "cap.dedup.none"
+      description: "Aucune déduplication réclamée (les effets externes ne sont pas dédupliqués)."
+      required_evidence: []
+    local-registry:
+      capability_id: "cap.dedup.local-registry"
+      description: "Registre d'idempotence local au processus/hôte."
+      required_evidence: ["test.idempotency.local"]
+    provider-idempotency-key:
+      capability_id: "cap.dedup.provider-key"
+      description: "Déduplication déléguée au fournisseur via clé d'idempotence."
+      required_evidence: ["provider.contract.reference", "test.idempotency.provider"]
+    distributed-consensus-registry:
+      capability_id: "cap.dedup.consensus-registry"
+      description: "Registre de déduplication répliqué par consensus distribué."
+      required_evidence:
+        - "test.consensus.safety"
+        - "test.consensus.liveness"
+        - "test.fault-tolerance"
+        - "test.idempotency.distributed"
+      # fault-tolerance ajouté en v1.1.0 : symmetry fix avec cap.concurrency.consensus.
+      # Les deux utilisent le consensus distribué et doivent résister aux mêmes fautes.
+
+  CONCURRENCY:
+    thread-lock:
+      capability_id: "cap.concurrency.thread-lock"
+      description: "Exclusion mutuelle par verrou de thread (processus unique)."
+      required_evidence: ["test.mutex.exclusion"]
+    file-lock:
+      capability_id: "cap.concurrency.file-lock"
+      description: "Verrou de fichier inter-processus sur système de fichiers partagé."
+      required_evidence: ["test.lock.cross-process"]
+    distributed-transaction:
+      capability_id: "cap.concurrency.distributed-transaction"
+      description: "Transactions distribuées (2PC/XA) pour les réservations."
+      required_evidence: ["test.2pc.commit", "test.2pc.abort"]
+    consensus-reference:
+      capability_id: "cap.concurrency.consensus-reference"
+      description: >
+        Backend de consensus de référence (single-host, fcntl.flock). Implémente
+        l'interface ConsensusBackend (consensus-interface-v1.json) et satisfait
+        C1 (safety/linearizability), C2 (liveness/termination), I8 (budget
+        conservation) sur un seul hôte. Ne satisfait PAS C3 (cross-host fault
+        tolerance). Sert de référence pour valider l'interface et le harnais
+        de test avant un déploiement multi-hôte.
+      required_evidence:
+        - "test.consensus.safety"
+        - "test.consensus.liveness"
+        - "test.fault-tolerance"
+    distributed-consensus:
+      capability_id: "cap.concurrency.consensus"
+      description: "Atomicité des réservations par consensus distribué."
+      required_evidence:
+        - "test.consensus.safety"
+        - "test.consensus.liveness"
+        - "test.fault-tolerance"
+
+  UNCERTAINTY:
+    fail-closed:
+      capability_id: "cap.uncertainty.fail-closed"
+      description: "Résultat UNKNOWN bloque la transition."
+      required_evidence: ["test.unknown-outcome.blocks"]
+    fail-open:
+      capability_id: "cap.uncertainty.fail-open"
+      description: "Résultat UNKNOWN laisse passer la transition."
+      required_evidence: ["test.unknown-outcome.proceeds"]
+    human-escalation:
+      capability_id: "cap.uncertainty.human-escalation"
+      description: "Résultat UNKNOWN déclenche une escalade humaine."
+      required_evidence: ["test.unknown-outcome.escalates"]

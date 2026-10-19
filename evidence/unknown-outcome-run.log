@@ -1,0 +1,14 @@
+# Evidence: test.unknown-outcome.blocks
+# repo: skiredj-prog/tenir_governance
+# commit: 0df9a960e5a56d81f56176c2b6fc97cb6af9dfc0
+# test file sha256: bf5f40d57b6ca7e38e92074d2fe7e69fa8e307a435311efaea918ed000d62272
+# command: python -m pytest tests/test_fault_injection.py -v -k test_reconciliation_uncertain_marks_unknown
+# executed: 2026-10-19T00:57:29Z
+# executed by: sandbox (author's environment), NOT an independent verifier
+----
+============================= test session starts ==============================
+collecting ... collected 13 items / 12 deselected / 1 selected
+
+tests/test_fault_injection.py::TestCrashAfterExternalAcceptance::test_reconciliation_uncertain_marks_unknown PASSED [100%]
+
+======================= 1 passed, 12 deselected in 0.06s =======================

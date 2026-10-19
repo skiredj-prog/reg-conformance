@@ -1,0 +1,89 @@
+version: "1.0.0"
+description: >
+  Règles de compatibilité STRUCTURELLE pour les configurations REG+.
+  Une configuration admissible ici est uniquement structurellement cohérente ;
+  cela ne démontre pas que l'implémentation fournit effectivement la capacité
+  annoncée (ex. distributed-consensus). La garantie effective est vérifiée
+  séparément au build, contre des capacités démontrées.
+
+# Sémantique des identifiants :
+#   rule_id   = famille de règle (libellé répétable). Plusieurs clauses peuvent
+#               partager le même rule_id ; elles sont alors rapportées sous la
+#               même famille mais évaluées indépendamment.
+#   clause_id = identifiant UNIQUE de chaque implication. Toute violation est
+#               rapportée avec son clause_id.
+# Chaque clause est une implication indépendante :
+#   SI config[condition.field] == condition.value
+#   ALORS config[requires.field] ∈ requires.allowed_values
+# Toutes les clauses applicables sont évaluées ; TOUTES les violations sont
+# retournées (on ne s'arrête pas à la première).
+constraints:
+  - rule_id: "R1_HOST_CONCURRENCY"
+    clause_id: "R1a"
+    description: "mono-process n'autorise que le verrou de thread."
+    condition:
+      field: "HOST_SCOPE"
+      value: "mono-process"
+    requires:
+      field: "CONCURRENCY"
+      allowed_values: ["thread-lock"]
+
+  - rule_id: "R1_HOST_CONCURRENCY"
+    clause_id: "R1b"
+    description: "mono-host autorise file-lock ou distributed-transaction."
+    condition:
+      field: "HOST_SCOPE"
+      value: "mono-host"
+    requires:
+      field: "CONCURRENCY"
+      allowed_values: ["file-lock", "distributed-transaction"]
+
+  - rule_id: "R1_HOST_CONCURRENCY"
+    clause_id: "R1c"
+    description: "multi-host autorise distributed-transaction ou distributed-consensus."
+    condition:
+      field: "HOST_SCOPE"
+      value: "multi-host"
+    requires:
+      field: "CONCURRENCY"
+      allowed_values: ["distributed-transaction", "distributed-consensus"]
+
+  - rule_id: "R2_CONSENSUS_SCOPE"
+    clause_id: "R2a"
+    description: "Le consensus distribué exige une topologie multi-host."
+    condition:
+      field: "CONCURRENCY"
+      value: "distributed-consensus"
+    requires:
+      field: "HOST_SCOPE"
+      allowed_values: ["multi-host"]
+
+  - rule_id: "R2_CONSENSUS_DEDUP"
+    clause_id: "R2b"
+    description: "Le registre de déduplication distribué exige multi-host."
+    condition:
+      field: "DEDUP_LAYER"
+      value: "distributed-consensus-registry"
+    requires:
+      field: "HOST_SCOPE"
+      allowed_values: ["multi-host"]
+
+  - rule_id: "R2_CONSENSUS_DEDUP"
+    clause_id: "R2c"
+    description: "Le registre de déduplication distribué exige le consensus distribué."
+    condition:
+      field: "DEDUP_LAYER"
+      value: "distributed-consensus-registry"
+    requires:
+      field: "CONCURRENCY"
+      allowed_values: ["distributed-consensus"]
+
+  - rule_id: "R3_LOCAL_DEDUP"
+    clause_id: "R3a"
+    description: "Un registre local ne peut pas coordonner plusieurs hôtes."
+    condition:
+      field: "DEDUP_LAYER"
+      value: "local-registry"
+    requires:
+      field: "HOST_SCOPE"
+      allowed_values: ["mono-process", "mono-host"]

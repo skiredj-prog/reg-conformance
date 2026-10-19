@@ -1,0 +1,18 @@
+# Evidence: test.lock.cross-process + test.idempotency.local
+# repo: skiredj-prog/tenir_governance
+# commit: 0df9a960e5a56d81f56176c2b6fc97cb6af9dfc0
+# test file sha256: a05281749c11be4015522638f3e5c9ff836a9af95960be49b5005e9b05981a23
+# command: python -m pytest tests/test_cross_process.py -v
+# executed: 2026-10-19T00:57:26Z
+# executed by: sandbox (author's environment), NOT an independent verifier
+----
+============================= test session starts ==============================
+collecting ... collected 5 items
+
+tests/test_cross_process.py::TestCrossProcessRegistry::test_two_processes_register_same_key_one_wins PASSED [ 20%]
+tests/test_cross_process.py::TestCrossProcessRegistry::test_registry_state_survives_restart_in_new_process PASSED [ 40%]
+tests/test_cross_process.py::TestCrossProcessRegistry::test_two_processes_adjudicate_same_key_one_pass PASSED [ 60%]
+tests/test_cross_process.py::TestCrossProcessRegistry::test_two_processes_dispatch_same_key_one_wins PASSED [ 80%]
+tests/test_cross_process.py::TestCrossProcessBudgetConservation::test_cross_process_duplicate_dispatch_blocked PASSED [100%]
+
+============================== 5 passed in 2.63s ===============================

@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reg-conformance.org/schemas/evidence-record-v1.json",
+  "title": "EvidenceRecord",
+  "description": "REG+ Evidence Contract v1 (révision : correctifs chaîne cryptographique et sémantique commit). Enregistrement d'évidence runtime souverain. P2 reconstructibilité, P5 séparation intégrité/authenticité, P1 commit. Indépendant d'AIREP/AgentHook. Produit APRÈS Commit. Correctifs : (1) previous_hash déplacé hors de integrity, donc COUVERT par current_hash et la signature ; (2) distinction evaluation_verdict (pur Evaluate) vs effective_outcome (résultat opérationnel après commit) ; (3) commit_trace strict avec état post-échec explicite ; (4) evaluation_time explicite (t_eval) pour une fraîcheur déterministe.",
+  "type": "object",
+  "required": [
+    "reg_schema_version",
+    "artifact_type",
+    "record_id",
+    "timestamp",
+    "chain",
+    "evaluation_context",
+    "inputs",
+    "results",
+    "commit_trace",
+    "effective_outcome",
+    "integrity"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "reg_schema_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Version souveraine du schéma REG+. Remplace airep_version."
+    },
+    "artifact_type": {
+      "type": "string",
+      "const": "reg.evidence-record/v1",
+      "description": "Discriminateur fixe. Valeur souveraine REG+."
+    },
+    "record_id": {
+      "type": "string",
+      "oneOf": [
+        { "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$", "description": "ULID (Crockford base32, 26 caractères). Préféré." },
+        { "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", "description": "UUID v7." }
+      ],
+      "description": "Identifiant unique et monotone. Remplace sequence (spécifique blockchain)."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Horodatage UTC de PRODUCTION de l'enregistrement (post-commit). Distinct de evaluation_time (instant de la lecture par Evaluate). RFC 3339."
+    },
+    "chain": {
+      "type": "object",
+      "description": "Lien vers l'enregistrement précédent dans la hash-chain locale (fichier JSONL chaîné). IMPORTANT : cet objet est HORS de integrity, donc previous_hash est COUVERT par current_hash et par la signature. Plus de faille de modification du lien de chaîne. Pas de chain_id, pas de sequence : hash-chain locale uniquement.",
+      "required": ["previous_hash"],
+      "additionalProperties": false,
+      "properties": {
+        "previous_hash": {
+          "oneOf": [
+            { "$ref": "#/$defs/Sha256Hash" },
+            { "type": "null" }
+          ],
+          "description": "current_hash de l'EvidenceRecord précédent. null pour l'enregistrement de genèse. Couvert par current_hash (pré-image inclut chain)."
+        }
+      }
+    },
+    "evaluation_context": {
+      "type": "object",
+      "description": "Environnement statique de l'évaluation. Rend le verdict reproductible (P2).",
+      "required": ["catalog_version", "profile_id", "profile_version", "evaluator_version", "evaluation_time"],
+      "additionalProperties": false,
+      "properties": {
+        "catalog_version": { "type": "string", "description": "Version du catalogue complet V." },
+        "profile_id": { "type": "string", "description": "Identifiant du profil σ." },
+        "profile_version": { "type": "string" },
+        "evaluator_version": { "type": "string", "description": "Version exacte de la fonction Evaluate." },
+        "evaluation_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Instant t_eval explicite passé à Evaluate(σ, I*, s, τ, t_eval). La fraîcheur des signaux est calculée relativement à t_eval, jamais à l'horloge système. Garantit le déterminisme : mêmes entrées + même t_eval = même verdict. Enregistré ici pour la reproductibilité."
+        },
+        "signal_ttl_resolution": {
+          "type": "object",
+          "description": "Résolution déterministe des TTL par défaut appliquée quand expires_at est absent. Clé = signal_type, valeur = durée en secondes. Doit correspondre à la déclaration dans σ ou au registre des types de signal référencé par catalog_version. Évite que deux évaluateurs appliquent silencieusement des durées différentes.",
+          "additionalProperties": { "type": "integer", "minimum": 1 }
+        },
+        "hypotheses": {
+          "type": "object",
+          "description": "Configuration d'hypothèses h active. Objet arbitraire capturé verbatim."
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "description": "Données dynamiques lues par Evaluate au moment t_eval.",
+      "required": ["state_snapshot", "transition_proposal"],
+      "additionalProperties": false,
+      "properties": {
+        "state_snapshot": {
+          "type": "object",
+          "description": "État s exact lu par Evaluate, incluant s.infrastructure_signals (signaux acceptés à l'injection). Structure arbitraire."
+        },
+        "transition_proposal": {
+          "type": "object",
+          "description": "Transition τ proposée. Structure arbitraire."
+        },
+        "signals": {
+          "type": "array",
+          "description": "Sous-ensemble dénormalisé des signaux acceptés ayant matériellement influencé le verdict. Chaque élément est un AssuranceSignal signé (schéma dans $defs).",
+          "items": { "$ref": "#/$defs/AssuranceSignal" }
+        }
+      }
+    },
+    "results": {
+      "type": "object",
+      "description": "Résultats dérivés de l'évaluation pure.",
+      "required": ["evaluation_verdict", "invariant_details"],
+      "additionalProperties": false,
+      "properties": {
+        "evaluation_verdict": {
+          "type": "string",
+          "enum": ["PASS", "FLAG", "HOLD", "HARD_VETO"],
+          "description": "Verdict PUR de Evaluate(σ, I*, s, τ, t_eval), avant toute tentative de commit. Jamais réécrit a posteriori. Le résultat opérationnel est dans effective_outcome."
+        },
+        "invariant_details": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Trace par invariant (P2 granularité).",
+          "items": { "$ref": "#/$defs/InvariantResult" }
+        }
+      }
+    },
+    "commit_trace": {
+      "type": "object",
+      "description": "Trace de la phase Commit (mutation réelle de s). L'EvidenceRecord est produit après Commit. Règles : COMMITTED → commit_attempted=true + pre/post hash + effective_outcome=EXECUTED ; SKIPPED → commit_attempted=false ; FAILED_* → commit_attempted=true + commit_error + post_failure_state explicite + effective_outcome=COMMIT_FAILED.",
+      "required": ["commit_attempted", "commit_result"],
+      "additionalProperties": false,
+      "properties": {
+        "commit_attempted": {
+          "type": "boolean",
+          "description": "false si et seulement si le verdict interdisait le commit (HARD_VETO, HOLD non levé) et aucune mutation n'a été tentée."
+        },
+        "commit_result": {
+          "type": "string",
+          "enum": ["COMMITTED", "FAILED_RACE", "FAILED_CONSTRAINT", "SKIPPED", "ERROR"],
+          "description": "Issue de la mutation."
+        },
+        "pre_commit_state_hash": {
+          "$ref": "#/$defs/Sha256Hash",
+          "description": "Empreinte de s avant mutation. Requis si commit_attempted=true."
+        },
+        "post_commit_state_hash": {
+          "$ref": "#/$defs/Sha256Hash",
+          "description": "Empreinte de s après mutation réussie. Requis si et seulement si commit_result=COMMITTED."
+        },
+        "post_failure_state": {
+          "type": "string",
+          "enum": ["ROLLED_BACK_ATOMIC", "PARTIAL_STATE_PERSISTS", "UNKNOWN"],
+          "description": "État de s après un échec de commit. ROLLED_BACK_ATOMIC = mutation annulée atomiquement. PARTIAL_STATE_PERSISTS = état partiel subsiste (le contrat doit alors décrire la récupération). UNKNOWN = non déterminé. Requis si commit_result ∈ {FAILED_RACE, FAILED_CONSTRAINT, ERROR}."
+        },
+        "commit_error": {
+          "type": "string",
+          "description": "Détail de l'erreur. Requis si commit_result ∈ {FAILED_RACE, FAILED_CONSTRAINT, ERROR}."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "commit_result": { "const": "COMMITTED" } }, "required": ["commit_result"] },
+          "then": { "properties": { "commit_attempted": { "const": true } }, "required": ["pre_commit_state_hash", "post_commit_state_hash"] }
+        },
+        {
+          "if": { "properties": { "commit_result": { "const": "SKIPPED" } }, "required": ["commit_result"] },
+          "then": { "properties": { "commit_attempted": { "const": false } } }
+        },
+        {
+          "if": { "properties": { "commit_result": { "enum": ["FAILED_RACE", "FAILED_CONSTRAINT", "ERROR"] } }, "required": ["commit_result"] },
+          "then": { "properties": { "commit_attempted": { "const": true } }, "required": ["commit_error", "post_failure_state", "pre_commit_state_hash"] }
+        }
+      ]
+    },
+    "effective_outcome": {
+      "type": "string",
+      "enum": ["EXECUTED", "HELD", "VETOED", "COMMIT_FAILED"],
+      "description": "Résultat OPÉRATIONNEL après tentative de commit. Distinct de evaluation_verdict (pur). EXECUTED = commit réussi. HELD = HOLD maintenu (pas de commit). VETOED = HARD_VETO maintenu. COMMIT_FAILED = l'évaluation autorisait le commit mais la mutation a échoué. C'est la valeur qu'un auditeur doit lire en premier."
+    },
+    "integrity": {
+      "type": "object",
+      "description": "Garanties cryptographiques. P5 : current_hash = intégrité, signature = authenticité. previous_hash N'EST PLUS ici (voir chain) : il est couvert par current_hash.",
+      "required": ["current_hash", "signature", "producer_key_id"],
+      "additionalProperties": false,
+      "properties": {
+        "current_hash": {
+          "$ref": "#/$defs/Sha256Hash",
+          "description": "SHA-256 de l'enregistrement canonicalisé (RFC 8785 JCS) avec l'objet integrity retiré. La pré-image INCLUT donc : chain (previous_hash), evaluation_context (dont evaluation_time), inputs, results, commit_trace, effective_outcome, et les métadonnées racine. Le lien de chaîne est ainsi couvert par le hash et la signature."
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{128}$",
+          "description": "Signature Ed25519 (RFC 8032) de current_hash, hex (64 octets). Authenticité. Vérifiée via la clé publique résolue depuis producer_key_id."
+        },
+        "producer_key_id": {
+          "type": "string",
+          "description": "Identifiant de la clé de signature du producteur. Résout vers une clé publique Ed25519 via le registre de clés REG+."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "description": "Cohérence effective_outcome ↔ commit_result.",
+      "if": { "properties": { "commit_trace": { "properties": { "commit_result": { "const": "COMMITTED" } }, "required": ["commit_result"] } }, "required": ["commit_trace"] },
+      "then": { "properties": { "effective_outcome": { "const": "EXECUTED" } } }
+    },
+    {
+      "if": { "properties": { "commit_trace": { "properties": { "commit_result": { "enum": ["FAILED_RACE", "FAILED_CONSTRAINT", "ERROR"] } }, "required": ["commit_result"] } }, "required": ["commit_trace"] },
+      "then": { "properties": { "effective_outcome": { "const": "COMMIT_FAILED" } } }
+    },
+    {
+      "if": { "properties": { "results": { "properties": { "evaluation_verdict": { "const": "HARD_VETO" } }, "required": ["evaluation_verdict"] } }, "required": ["results"] },
+      "then": { "properties": { "effective_outcome": { "const": "VETOED" }, "commit_trace": { "properties": { "commit_result": { "const": "SKIPPED" } } } } }
+    }
+  ],
+  "$defs": {
+    "Sha256Hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Empreinte SHA-256, hex minuscules, préfixée par 'sha256:'."
+    },
+    "AssuranceSignal": {
+      "type": "object",
+      "description": "Signal d'assurance produit et signé par Assure. Vérifications STRUCTURELLES ici ; vérifications temporelles (expires_at ≥ issued_at) et cryptographiques (signature contre registre de clés) par le validateur d'exécution. Modèle théorique : assure-contract-v1.md.",
+      "required": ["signal_id", "signal_type", "severity", "issued_at", "assure_instance_id", "signature"],
+      "additionalProperties": false,
+      "properties": {
+        "signal_id": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$", "description": "ULID de cette émission. Base de l'anti-rejeu." },
+        "signal_type": { "type": "string", "description": "Taxonomie pointée, ex. 'hypothesis.weakened'." },
+        "severity": { "type": "string", "enum": ["info", "warning", "critical"] },
+        "issued_at": { "type": "string", "format": "date-time", "description": "Production+signature par Assure. Base de la fraîcheur." },
+        "expires_at": { "type": "string", "format": "date-time", "description": "Fin de validité. Si absent, TTL par défaut résolu déterministément via evaluation_context.signal_ttl_resolution. Le validateur d'exécution vérifie expires_at ≥ issued_at." },
+        "assure_instance_id": { "type": "string", "description": "Identité de l'instance Assure émettrice. Résout vers une clé publique Ed25519." },
+        "observed_value": { "description": "Valeur brute mesurée. Type variable." },
+        "threshold": { "description": "Seuil d'hypothèse violé. Type variable." },
+        "correlation_id": {
+          "type": "string",
+          "description": "Identifiant de corrélation (run/transaction observée). Périmètre : un signal est accepté à l'injection seulement si correlation_id correspond à une transition en vol ou à une fenêtre d'observation déclarée ouverte ; sinon rejeté au stade injection-validation (avant Evaluate)."
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{128}$",
+          "description": "Signature Ed25519 de la charge utile canonicalisée (JCS) sans le champ signature. Signée par l'instance Assure. Empêche l'injection de faux signaux."
+        }
+      }
+    },
+    "InvariantResult": {
+      "type": "object",
+      "required": ["invariant_id", "result"],
+      "additionalProperties": false,
+      "properties": {
+        "invariant_id": { "type": "string" },
+        "result": { "type": "string", "enum": ["PASS", "FLAG", "HOLD", "HARD_VETO"], "description": "Verdict par invariant. Énumération complète." },
+        "reason": { "type": "string", "description": "Justification auditable. Requise si result ≠ PASS." }
+      },
+      "if": { "properties": { "result": { "enum": ["FLAG", "HOLD", "HARD_VETO"] } }, "required": ["result"] },
+      "then": { "required": ["reason"] }
+    }
+  }
+}

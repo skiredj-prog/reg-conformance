@@ -1,0 +1,35 @@
+version: "1.0.0"
+description: "Catalogue fermé des hypothèses architecturales pour REG+ (axes et valeurs autorisées)."
+
+# Chaque axe est fermé : toute valeur non listée ici rend une configuration invalide.
+# La compatibilité entre axes est déclarée dans compatibility-rules-v1.yaml.
+axes:
+  HOST_SCOPE:
+    description: "Portée de l'isolation de l'état partagé."
+    values:
+      - mono-process
+      - mono-host
+      - multi-host
+
+  DEDUP_LAYER:
+    description: "Où la déduplication des effets externes est garantie."
+    values:
+      - none
+      - local-registry
+      - provider-idempotency-key
+      - distributed-consensus-registry
+
+  CONCURRENCY:
+    description: "Mécanisme d'atomicité des réservations."
+    values:
+      - thread-lock
+      - file-lock
+      - distributed-transaction
+      - distributed-consensus
+
+  UNCERTAINTY:
+    description: "Comportement par défaut sur un résultat UNKNOWN."
+    values:
+      - fail-closed
+      - fail-open
+      - human-escalation

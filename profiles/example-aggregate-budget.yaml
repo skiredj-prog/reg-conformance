@@ -1,0 +1,48 @@
+# Profil σ exemple : agrégation de budget multi-hôte avec consensus.
+# Référence OBLIGATOIREMENT une configuration structurellement admissible
+# du catalogue (validée par tools/validate_profiles.py au build).
+
+profile_id: "aggregate-budget-multi-host"
+profile_version: "1.0.0"
+description: >
+  Mandat de trésorerie agrégé sur plusieurs hôtes. Déduplication par registre
+  de consensus distribué, atomicité des réservations par consensus distribué.
+  Comportement UNKNOWN : fail-closed.
+
+# Configuration architecturale référencée (admissible : 42 du catalogue).
+config:
+  HOST_SCOPE: "multi-host"
+  DEDUP_LAYER: "distributed-consensus-registry"
+  CONCURRENCY: "distributed-consensus"
+  UNCERTAINTY: "fail-closed"
+
+# Invariants applicables (référence le catalogue d'invariants, hors de ce fichier).
+invariants:
+  - "commit-binding"
+  - "budget-ceiling-aggregate"
+  - "single-dispatch-per-reservation"
+
+# Règles de réaction aux signaux d'assurance (traduction σ).
+# Fraîcheur : stratégie déclarée par signal_type ; défaut STRICT.
+signal_reactions:
+  hypothesis.weakened:
+    freshness_strategy: "STRICT"
+    ttl_seconds: 30
+    on_valid: "HARD_VETO"            # signal valide de dégradation → veto
+    on_expired_critical: "HOLD"      # critique expiré sans règle → fail-closed
+  hypothesis.verified:
+    freshness_strategy: "STRICT"
+    ttl_seconds: 30
+    on_valid: "PASS"
+  performance.degradation.network_latency:
+    freshness_strategy: "STALE_FLAG"
+    ttl_seconds: 60
+    on_valid: "FLAG"
+
+# Attestations de garantie EFFECTIVE (catalog/capabilities-v1.yaml).
+# État actuel : AUCUNE preuve n'est fournie. Ce profil est structurellement
+# admissible, mais ses capacités réclamées ne sont pas démontrées. Le build
+# tools/verify_effective_guarantees.py échoue ici par conception (fail-closed).
+# Pour attester : fournir chaque preuve sous evidence_ref (chemin relatif au
+# dépôt), calculer son SHA-256 et le renseigner dans evidence_sha256.
+attestations: []
