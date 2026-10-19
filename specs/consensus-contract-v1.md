@@ -116,7 +116,7 @@ Le profil doit satisfaire les bornes théoriques :
 | Crash-stop + omission | `quorum = floor(n / 2) + 1`, disponibilité conditionnée aux nœuds et liens encore opérationnels | Paxos |
 | Byzantin | `n ≥ 3m + 1`, `quorum = 2m + 1` | PBFT, Tendermint |
 
-Le vérificateur de profil rejette toute configuration violant ces bornes.
+Le validateur actuel applique ces contrôles au profil Raft crash-stop uniquement. Les bornes byzantines et crash-stop + omission sont des références théoriques dans ce contrat ; elles ne sont ni validées par ce profil ni attestées comme capacités implémentées.
 
 ### 4.3 Safety sous faute
 
