@@ -1,18 +1,23 @@
-# Profil multi-hôte avec consensus répliqué. Ce profil exige un backend de
-# consensus distribué conforme à consensus-contract-v1.md. L'opérateur doit
-# fournir un adapter ConsensusBackend (voir consensus-interface-v1.json) et
-# un deployment.manifest décrivant le déploiement réel.
+# Profil multi-hôte avec consensus répliqué via Raft (pysyncobj).
+# Ce profil atteste C1 (safety), C2 (liveness), C3 (cross-host fault tolerance),
+# et I8 (budget conservation) avec RaftConsensusBackend (tenir_governance 5.6.0).
 #
-# Toutes les preuves sont manquantes : ce profil est NON attesté. Il sert de
-# modèle pour un déploiement futur. Le vérificateur durci échoue (fail-closed)
-# jusqu'à ce que toutes les preuves soient fournies avec hashes vérifiés.
+# ATTENTION : les preuves sont auto-attestées (sandbox de l'auteur, pas un
+# vérificateur indépendant). Le hash SHA-256 prouve que le fichier n'a pas
+# changé depuis l'attestation, pas que le test a été exécuté correctement.
+# Une preuve indépendante exige un exécant tiers et une signature.
+#
+# DÉPENDANCE BLOQUANTE : deployment.manifest reste manquant — seul l'opérateur
+# peut le fournir. C'est le chaînon manquant pour l'audit externe.
+# Le vérificateur durci échoue (fail-closed) sur cette dépendance.
 
 profile_id: "consensus-replicated"
-profile_version: "1.0.0"
+profile_version: "1.1.0"
 description: >
-  Consensus distribué répliqué multi-hôte. Déduplication par registre répliqué,
-  réservations atomiques par consensus, UNKNOWN fail-closed.
-  Exige un adapter ConsensusBackend conforme à consensus-contract-v1.md.
+  Consensus distribué répliqué multi-hôte via Raft (pysyncobj).
+  Déduplication par registre répliqué, réservations atomiques par consensus,
+  UNKNOWN fail-closed. Backend: RaftConsensusBackend (tenir_governance 5.6.0).
+  Satisfait C1, C2, C3 (crash-stop), I8. Ne satisfait pas byzantine.
 
 config:
   HOST_SCOPE: "multi-host"
@@ -39,30 +44,98 @@ invariants:
   - "linearizability"              # LIN : ordre linéarisable
   - "agreement"                   # AGR : au plus un commit par réservation
 
-# Adapter requis : l'opérateur doit fournir un backend qui implémente
-# ConsensusBackend (consensus-interface-v1.json) et satisfait C1/C2/C3/I8.
+# Adapter : RaftConsensusBackend (tenir_governance 5.6.0)
 adapter:
   required: true
   interface_version: "1.0.0"
-  # Exemples de backends conformes (non exclusif) :
-  #   - etcd (Raft interne, linearizable reads)
-  #   - PostgreSQL (synchronous replication, SERIALIZABLE)
-  #   - Raft natif (implémentation maison auditée)
-  backend_type: null              # à déclarer par l'opérateur
-  backend_version: null           # à déclarer par l'opérateur
+  backend_type: "RaftConsensusBackend"
+  backend_version: "5.6.0"
+  backend_library: "pysyncobj 0.3.17"
+  consensus_algorithm: "Raft"
+  replication: "state machine replication via @replicated commands"
+  determinism: "reservation IDs generated client-side (not inside @replicated)"
 
-# Profil NON attesté. Les preuves requises (toutes manquantes) :
-#   - cap.host.multi-host : deployment.manifest, test.cross-host.communication
-#   - cap.dedup.consensus-registry : test.consensus.safety, test.consensus.liveness,
-#     test.fault-tolerance, test.idempotency.distributed
-#   - cap.concurrency.consensus : test.consensus.safety, test.consensus.liveness,
-#     test.fault-tolerance
-#   - cap.uncertainty.fail-closed : test.unknown-outcome.blocks
-#
-# Étape intermédiaire : le profil consensus-reference-single-host.yaml atteste
-# C1, C2, I8 sur un seul hôte (SingleHostLockBackend, fcntl.flock). Ce profil
-# multi-hôte exige un adapter ConsensusBackend déployé sur plusieurs hôtes
-# (etcd, PostgreSQL répliqué, Raft natif) + un deployment.manifest réel.
-# Voir consensus-reference-single-host.yaml pour les preuves single-host.
+attestations:
+  # cap.concurrency.consensus — test.consensus.safety
+  - capability_ids: ["cap.concurrency.consensus", "cap.dedup.consensus-registry"]
+    evidence_type: "test.consensus.safety"
+    evidence_ref: "evidence/test-raft-consensus-safety.log"
+    evidence_sha256: "ab7dcd44028fec905218dde99fd75a99701050d6116edea4836498b0cbbeb3c6"
+    verified: true
+    verifier: "sandbox-run tenir_governance@334109f (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+    description: >
+      19 tests : multi-node reserve/commit/release (10), I8 invariant (5),
+      linearizability via Wing-Gong (4). Opérations depuis leader et followers.
+      Format conforme à evidence-type-specs-v1.md §6.
 
-attestations: []
+  # cap.concurrency.consensus — test.consensus.liveness
+  - capability_ids: ["cap.concurrency.consensus", "cap.dedup.consensus-registry"]
+    evidence_type: "test.consensus.liveness"
+    evidence_ref: "evidence/test-raft-consensus-liveness.log"
+    evidence_sha256: "c2d30460769e25416dc66051a4bf66631e3cc8f9042ef9e8c43be47a62b70f64"
+    verified: true
+    verifier: "sandbox-run tenir_governance@334109f (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+    description: >
+      4 tests : terminaison sous quorum, depuis tous les nœuds, concurrent,
+      sous défaillance minoritaire (5-nœuds, 1 crashé).
+      Format conforme à evidence-type-specs-v1.md §7.
+
+  # cap.concurrency.consensus — test.fault-tolerance
+  - capability_ids: ["cap.concurrency.consensus", "cap.dedup.consensus-registry"]
+    evidence_type: "test.fault-tolerance"
+    evidence_ref: "evidence/test-raft-fault-tolerance.log"
+    evidence_sha256: "4bbafbff6f56c41af2a743cd3d9a4cac0e4b96893ddc92046d01e687851ddddf"
+    verified: true
+    verifier: "sandbox-run tenir_governance@334109f (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+    description: >
+      5 tests : élection de leader, failover après crash (3-nœuds et 5-nœuds),
+      un seul leader, préservation d'état après failover.
+      C3 (tolérance aux pannes cross-host) attestée pour modèle crash-stop.
+      Format conforme à evidence-type-specs-v1.md §8.
+
+  # cap.dedup.consensus-registry — test.idempotency.distributed
+  - capability_ids: ["cap.dedup.consensus-registry"]
+    evidence_type: "test.idempotency.distributed"
+    evidence_ref: "evidence/test-raft-idempotency-distributed.log"
+    evidence_sha256: "aa62639e7ff316d951529f6b04eac5a152ec5629acafba2ccb3c30f220137209"
+    verified: true
+    verifier: "sandbox-run tenir_governance@334109f (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+    description: >
+      2 tests : idempotent re-reserve with same key+amount returns same
+      reservation_id across nodes; different amount returns DUPLICATE_KEY.
+      Format conforme à evidence-type-specs-v1.md §3.
+
+  # cap.host.multi-host — test.cross-host.communication
+  - capability_ids: ["cap.host.multi-host"]
+    evidence_type: "test.cross-host.communication"
+    evidence_ref: "evidence/test-raft-cross-host-communication.log"
+    evidence_sha256: "bb428af73edd4ea1b0d3890bbf0dc3c6ee7d68afb6fba9e640fd4cb8cc60ec1a"
+    verified: true
+    verifier: "sandbox-run tenir_governance@334109f (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+    description: >
+      Cross-host replication verified: state replicates to all 3 nodes after
+      reserve from leader, commit from follower, and reserve from another
+      follower. All nodes see consistent state.
+
+  # cap.uncertainty.fail-closed — test.unknown-outcome.blocks
+  - capability_ids: ["cap.uncertainty.fail-closed"]
+    evidence_type: "test.unknown-outcome.blocks"
+    evidence_ref: "evidence/unknown-outcome-run.log"
+    evidence_sha256: "eb35ed156a1eebeb2670256a25a6d3f9fdbd5b51ea174d27504a26e8d2890bf0"
+    verified: true
+    verifier: "sandbox-run tenir_governance@0df9a96 (auteur, non indépendant)"
+    verified_at: "2026-10-19"
+    description: >
+      Résultat UNKNOWN passe en human_review, reprise bloquée.
+      Mécanisme identique sur Raft (reconcile() via provider_reconcile).
+
+# DÉPENDANCE BLOQUANTE : deployment.manifest (cap.host.multi-host)
+# Sans ce manifeste, le vérificateur durci échoue (fail-closed) et l'audit
+# externe ne peut pas lier l'évidence à l'hypothèse de déploiement.
+# Seul l'opérateur peut fournir un manifeste de déploiement réel.
+# Voir evidence-type-specs-v1.md §1 pour le schéma requis.

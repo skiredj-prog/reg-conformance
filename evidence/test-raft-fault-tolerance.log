@@ -1,0 +1,21 @@
+# Evidence: test.fault-tolerance (Raft multi-host)
+# backend: RaftConsensusBackend 5.6.0 (pysyncobj 0.3.17)
+# commit: 334109f
+# nodes: 3 (and 5 for 5-node tests)
+# quorum: 2 (and 3 for 5-node tests)
+# fault_model: { crash: 1, byzantine: 0, omission: 0 }
+# fault_injection: node.destroy() (crash-stop), leader crash + re-election
+# resilience_bound: total_nodes (3) >= 2 * crash (1) + 1 = 3 ✓
+# command: python3 -m pytest tests/test_raft_backend.py::TestLeaderFailover -v
+# executed: 2026-10-19T03:26:00Z
+# executed by: sandbox (author's environment), NOT an independent verifier
+# test file sha256: 60907620313d257a4fa1199010d926cdbfe5687660727ac99107a75a2a8ab756
+# source file sha256: 8c51832160d983c5673aec0a6f4dbc682b36f60460eebc57dc35c4746952073d
+----
+tests/test_raft_backend.py::TestLeaderFailover::test_leader_exists PASSED [ 55%]
+tests/test_raft_backend.py::TestLeaderFailover::test_failover_after_leader_crash PASSED [ 58%]
+tests/test_raft_backend.py::TestLeaderFailover::test_failover_with_5_node_cluster PASSED [ 62%]
+tests/test_raft_backend.py::TestLeaderFailover::test_only_one_leader PASSED [ 65%]
+tests/test_raft_backend.py::TestLeaderFailover::test_operations_after_failover_preserve_state PASSED [ 68%]
+
+5 passed

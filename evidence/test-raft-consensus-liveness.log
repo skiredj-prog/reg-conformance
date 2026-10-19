@@ -1,0 +1,19 @@
+# Evidence: test.consensus.liveness (Raft multi-host)
+# backend: RaftConsensusBackend 5.6.0 (pysyncobj 0.3.17)
+# commit: 334109f
+# nodes: 3
+# quorum: 2
+# fault_model: { crash: 0, byzantine: 0, omission: 0 }
+# liveness_property: all operations terminate within timeout under healthy quorum
+# command: python3 -m pytest tests/test_raft_backend.py::TestLiveness -v
+# executed: 2026-10-19T03:26:00Z
+# executed by: sandbox (author's environment), NOT an independent verifier
+# test file sha256: 60907620313d257a4fa1199010d926cdbfe5687660727ac99107a75a2a8ab756
+# source file sha256: 8c51832160d983c5673aec0a6f4dbc682b36f60460eebc57dc35c4746952073d
+----
+tests/test_raft_backend.py::TestLiveness::test_operations_terminate_under_quorum PASSED [ 72%]
+tests/test_raft_backend.py::TestLiveness::test_operations_from_all_nodes_terminate PASSED [ 75%]
+tests/test_raft_backend.py::TestLiveness::test_concurrent_operations_terminate PASSED [ 79%]
+tests/test_raft_backend.py::TestLiveness::test_liveness_under_minority_failure PASSED [ 82%]
+
+4 passed
