@@ -37,6 +37,8 @@ def check_target(target, catalog, rules, installed_version, module_version=None)
             errors.append(f"CATALOG_STRUCTURAL_FLAG_MISSING:{index}")
         if "effective_guarantee_demonstrated" not in item:
             errors.append(f"CATALOG_EFFECTIVE_FLAG_MISSING:{index}")
+        elif item["effective_guarantee_demonstrated"] is True:
+            errors.append(f"EFFECTIVE_GUARANTEE_MUST_BE_VERIFIED_SEPARATELY:{index}")
     commit = target.get("implementation", {}).get("source_commit", "")
     if not re.fullmatch(r"[0-9a-f]{40}", commit):
         errors.append("IMPLEMENTATION_SOURCE_COMMIT_INVALID")
