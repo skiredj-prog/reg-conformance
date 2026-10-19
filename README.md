@@ -103,11 +103,14 @@ Le standard ne prescrit ni Raft, ni Paxos, ni etcd, ni PostgreSQL. Il prescrit c
 
 | Profil | Config | Preuves obtenues | Manquant |
 |---|---|---|---|
-| `example-aggregate-budget-single-host.yaml` | mono-host / local-registry / file-lock / fail-closed | `test.lock.cross-process`, `test.idempotency.local` (`evidence/cross-process-run.log`), `test.unknown-outcome.blocks` (`evidence/unknown-outcome-run.log`) | `deployment.manifest` (décrit un déploiement réel ; non produisible par ce dépôt) |
-| `example-aggregate-budget.yaml` | multi-host / distributed-consensus | aucune | toutes : **aucune implémentation de consensus n'existe dans tenir_governance** |
+| `consensus-reference-single-host.yaml` | mono-host / local-registry / consensus-reference / fail-closed | `test.consensus.safety` (`evidence/test-consensus-safety.log`), `test.consensus.liveness` (`evidence/test-consensus-liveness.log`), `test.fault-tolerance` (`evidence/test-fault-tolerance.log`), `test.idempotency.local` (`evidence/test-idempotency-local.log`), `test.unknown-outcome.blocks` (`evidence/unknown-outcome-run.log`) | **`deployment.manifest`** (dépendance bloquante pour l'audit externe) |
+| `example-aggregate-budget-single-host.yaml` | mono-host / local-registry / file-lock / fail-closed | `test.lock.cross-process`, `test.idempotency.local` (`evidence/cross-process-run.log`), `test.unknown-outcome.blocks` (`evidence/unknown-outcome-run.log`) | **`deployment.manifest`** (dépendance bloquante pour l'audit externe) |
+| `example-aggregate-budget.yaml` | multi-host / distributed-consensus | aucune | toutes : **aucune implémentation de consensus multi-hôte n'existe** |
 | `consensus-replicated.yaml` | multi-host / distributed-consensus / fail-closed | aucune | toutes : modèle pour déploiement futur, adapter requis |
 
-Les logs sont la sortie brute de pytest, liés au commit `0df9a96` de `skiredj-prog/tenir_governance`, avec SHA-256 dans les attestations. Ils sont produits par l'auteur (sandbox), **non par un vérificateur indépendant**.
+**`deployment.manifest` est une dépendance bloquante**, pas un détail. Sans ce manifeste, l'auditeur externe ne peut pas lier l'évidence à l'hypothèse de déploiement (`HOST_SCOPE = mono-host`). C'est le chaînon manquant pour tout audit indépendant. Seul l'opérateur peut le fournir (voir `evidence-type-specs-v1.md` §1 pour le schéma).
+
+Les logs de preuve sont conformes au format défini dans `evidence-type-specs-v1.md` (en-têtes structurées + sortie pytest brute). Ils sont liés au commit `342bc04` de `skiredj-prog/tenir_governance` (5.5.0), avec SHA-256 dans les attestations. Ils sont produits par l'auteur (sandbox), **non par un vérificateur indépendant**.
 
 ## Types de preuve (v1.0.0)
 
