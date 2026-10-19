@@ -1,0 +1,34 @@
+{
+  "manifest_version": "1.0.0",
+  "standard": "REG-Conformance",
+  "standard_version": "v0.5.1",
+  "implementation": {
+    "distribution": "tenir-governance",
+    "version": "5.6.1",
+    "repository": "https://github.com/skiredj-prog/tenir_governance",
+    "source_commit": "ded4a50f1aff884026996dcaaf53fabdaf66e668"
+  },
+  "catalog_version": "1.0.0",
+  "rules_version": "1.0.0",
+  "catalog_summary": {
+    "total": 144,
+    "admissible_structural": 42,
+    "rejected": 102
+  },
+  "backends_under_test": [
+    "RaftConsensusBackend"
+  ],
+  "test_command": "pytest -q tenir-governance/tests/test_raft_backend.py",
+  "evidence_scope": "local-host Raft cluster using localhost and separate ports; not physical multi-host validation",
+  "guarantee_semantics": {
+    "admissible_structural": "structural compatibility only",
+    "effective_guarantee_demonstrated": "independent evidence dimension; never inferred from admissible_structural"
+  },
+  "limitations": [
+    "localhost-only integration topology",
+    "Byzantine fault tolerance is not implemented",
+    "Raft transport hardening and peer authentication are not established",
+    "external effects are not proven exactly once",
+    "test evidence is not third-party certification"
+  ]
+}
