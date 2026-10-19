@@ -1,0 +1,38 @@
+# Evidence: test.fault-tolerance
+# backend: SingleHostLockBackend 5.5.0
+# commit: 342bc04
+# nodes: 1
+# quorum: 1
+# fault_model: { crash: 1, byzantine: 0, omission: 0 }
+# fault_injection: process kill (SIGKILL), tampered state files
+# command: PYTHONPATH=/workspace/tenir_governance_fixed python3 -m pytest tests/test_fault_harness.py -v
+# executed: 2026-10-19T02:32:00Z
+# executed by: sandbox (author's environment), NOT an independent verifier
+----
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3
+cachedir: .pytest_cache
+rootdir: /workspace/.tmp/tenir-conformance-s1-g1
+configfile: pyproject.toml
+plugins: anyio-4.15.1, dash-4.4.0, Faker-40.28.1, langsmith-0.14.4, platformdirs-4.12.3
+collecting ... collected 12 items
+
+tests/test_fault_harness.py::TestCrashStopRecovery::test_crash_mid_reserve_commit_then_restart_state_consistent PASSED [  8%]
+tests/test_fault_harness.py::TestCrashStopRecovery::test_crash_before_reserve_leaves_clean_state PASSED [ 16%]
+tests/test_fault_harness.py::TestI8AfterCrash::test_no_budget_leak_after_crash PASSED [ 25%]
+tests/test_fault_harness.py::TestI8AfterCrash::test_i8_holds_across_multiple_crash_cycles PASSED [ 33%]
+tests/test_fault_harness.py::TestDurableStateVisibility::test_reservation_visible_after_restart PASSED [ 41%]
+tests/test_fault_harness.py::TestDurableStateVisibility::test_multiple_processes_see_same_durable_state PASSED [ 50%]
+tests/test_fault_harness.py::TestPartitionSimulation::test_lock_contention_serializes_operations PASSED [ 58%]
+tests/test_fault_harness.py::TestPartitionSimulation::test_concurrent_reserves_do_not_exceed_capacity PASSED [ 66%]
+tests/test_fault_harness.py::TestByzantineRejection::test_invalid_operations_rejected PASSED [ 75%]
+tests/test_fault_harness.py::TestByzantineRejection::test_byzantine_input_does_not_corrupt_state PASSED [ 83%]
+tests/test_fault_harness.py::TestNoRecommitAfterCrash::test_commit_is_idempotent_after_crash PASSED [ 91%]
+tests/test_fault_harness.py::TestNoRecommitAfterCrash::test_committed_budget_not_double_counted PASSED [100%]
+
+============================= 12 passed in 11.91s ==============================
+# faults_injected: 4
+# safety_violations: 0
+# recovery_successful: true
+# linearizability_maintained: true
+# I8_maintained: true

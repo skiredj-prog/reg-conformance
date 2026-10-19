@@ -60,7 +60,7 @@ adapter:
 #   - cap.uncertainty.fail-closed : test.unknown-outcome.blocks
 #
 # Étape intermédiaire : le profil consensus-reference-single-host.yaml atteste
-# C1, C2, I8 sur un seul hôte (FileLockConsensusBackend, fcntl.flock). Ce profil
+# C1, C2, I8 sur un seul hôte (SingleHostLockBackend, fcntl.flock). Ce profil
 # multi-hôte exige un adapter ConsensusBackend déployé sur plusieurs hôtes
 # (etcd, PostgreSQL répliqué, Raft natif) + un deployment.manifest réel.
 # Voir consensus-reference-single-host.yaml pour les preuves single-host.

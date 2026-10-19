@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://reg-conformance.dev/specs/consensus-interface-v1.json",
   "title": "ConsensusBackend Interface v1",
-  "description": "Interface de conformance pour tout backend de consensus distribué. Le standard définit les propriétés (consensus-contract-v1.md), pas le mécanisme. Tout backend qui implémente cette interface et satisfait les propriétés C1/C2/C3/I8 est conforme.",
+  "description": "Interface de conformance pour tout backend de coordination d'état. Le standard définit les propriétés (consensus-contract-v1.md), pas le mécanisme. Tout backend qui implémente cette interface et satisfait les propriétés C1/C2/C3/I8 est conforme. NOTE TERMINOLOGIQUE : 'Consensus' dans le nom de cette interface désigne un point de coordination de l'état partagé, pas un algorithme de consensus distribué (Raft, Paxos, PBFT). Une implémentation single-host (ex: verrou de fichier) est conforme si elle satisfait C1/C2/I8 ; une implémentation multi-hôte (ex: Raft, etcd) est nécessaire pour satisfaire C3 (tolérance aux pannes cross-host).",
   "type": "object",
   "required": ["interface_version", "operations", "types"],
   "properties": {

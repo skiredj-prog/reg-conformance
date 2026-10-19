@@ -1,0 +1,23 @@
+# Evidence: test.idempotency.local
+# repo: skiredj-prog/tenir-conformance-s1-g1
+# commit: 342bc04
+# test file sha256: 5e4d854c75ad75c894a21c9746ed70123dda52b34a56c446866b7cce189a5e29
+# command: PYTHONPATH=/workspace/tenir_governance_fixed python3 -m pytest tests/test_consensus_multi_process.py -v
+# executed: 2026-10-19T02:32:00Z
+# executed by: sandbox (author's environment), NOT an independent verifier
+----
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3
+cachedir: .pytest_cache
+rootdir: /workspace/.tmp/tenir-conformance-s1-g1
+configfile: pyproject.toml
+plugins: anyio-4.15.1, dash-4.4.0, Faker-40.28.1, langsmith-0.14.4, platformdirs-4.12.3
+collecting ... collected 5 items
+
+tests/test_consensus_multi_process.py::test_same_key_two_processes_one_winner PASSED [ 20%]
+tests/test_consensus_multi_process.py::test_i8_invariant_holds_across_processes PASSED [ 40%]
+tests/test_consensus_multi_process.py::test_cross_process_reserve_commit_release PASSED [ 60%]
+tests/test_consensus_multi_process.py::test_concurrent_reservations_do_not_exceed_capacity PASSED [ 80%]
+tests/test_consensus_multi_process.py::test_concurrent_reserve_then_commit_i8 PASSED [100%]
+
+============================== 5 passed in 2.43s ===============================

@@ -1,24 +1,31 @@
-# Profil mono-hôte avec backend de consensus de référence. Ce profil atteste
+# Profil mono-hôte avec backend de coordination de référence. Ce profil atteste
 # que l'interface ConsensusBackend (consensus-interface-v1.json) est implémentée
 # et testée sur un seul hôte avec fcntl.flock. Les propriétés C1 (safety,
 # linearizability), C2 (liveness, terminaison) et I8 (conservation budget) sont
 # démontrées par des tests réels. C3 (cross-host fault tolerance) n'est PAS
 # réclamée — ce profil est explicitement mono-hôte.
 #
-# Les preuves ci-dessous sont des sorties réelles de tests exécutés dans le
-# harnais tenir-conformance-s1-g1 contre FileLockConsensusBackend de
-# tenir_governance 5.5.0. Les hashes SHA-256 garantissent l'intégrité des
-# fichiers ; ils ne garantissent pas l'exécution correcte des tests (preuve
-# auto-attestée, non indépendante).
+# NOTE TERMINOLOGIQUE : 'Consensus' dans le nom de l'interface désigne un point
+# de coordination de l'état partagé, pas un algorithme de consensus distribué
+# (Raft, Paxos, PBFT). SingleHostLockBackend est un verrou de fichier local.
 #
-# Une capacité reste NON attestée : cap.host.single-host exige un
-# deployment.manifest décrivant un déploiement réel, que ce dépôt ne peut pas
-# produire.
+# Les preuves ci-dessous sont des sorties structurées de tests exécutées dans le
+# harnais tenir-conformance-s1-g1 contre SingleHostLockBackend de
+# tenir_governance 5.5.0. Les fichiers de preuve sont conformes au format
+# défini dans evidence-type-specs-v1.md (en-têtes structurées + sortie pytest).
+# Les hashes SHA-256 garantissent l'intégrité des fichiers ; ils ne garantissent
+# pas l'exécution correcte des tests (preuve auto-attestée, non indépendante).
+#
+# DÉPENDANCE BLOQUANTE : cap.host.single-host exige un deployment.manifest
+# décrivant un déploiement réel. Sans ce manifeste, l'auditeur externe ne peut
+# pas lier l'évidence à l'hypothèse de déploiement. C'est le chaînon manquant
+# pour l'audit indépendant — ce n'est pas un détail, c'est une dépendance
+# bloquante. Seul l'opérateur peut la fournir.
 
 profile_id: "consensus-reference-single-host"
-profile_version: "1.0.0"
+profile_version: "1.1.0"
 description: >
-  Backend de consensus de référence (single-host, fcntl.flock). Implémente
+  Backend de coordination de référence (single-host, fcntl.flock). Implémente
   l'interface ConsensusBackend et satisfait C1 (safety/linearizability),
   C2 (liveness/termination) et I8 (budget conservation) sur un seul hôte.
   Ne satisfait PAS C3 (cross-host fault tolerance). Sert de référence pour
@@ -52,12 +59,13 @@ invariants:
   - "linearizability"              # LIN : ordre linéarisable
   - "agreement"                   # AGR : au plus un commit par réservation
 
-# Backend de référence : FileLockConsensusBackend (tenir_governance 5.5.0).
+# Backend de référence : SingleHostLockBackend (tenir_governance 5.5.0).
 # Implémente ConsensusBackend via fcntl.flock + état durable JSON.
+# NOTE : 'Consensus' dans l'interface = point de coordination, pas Raft/Paxos.
 adapter:
   required: false                  # backend de référence fourni, pas d'adapter externe
   interface_version: "1.0.0"
-  backend_type: "FileLockConsensusBackend"
+  backend_type: "SingleHostLockBackend"
   backend_version: "5.5.0"
   backend_ref: "tenir_governance/operations/consensus_backend.py"
 
@@ -65,34 +73,35 @@ attestations:
   # C1 — Safety : linearizability + I8 + agreement
   - capability_ids: ["cap.concurrency.consensus-reference"]
     evidence_type: "test.consensus.safety"
-    evidence_ref: "evidence/fault-harness-linearizability-run.log"
-    evidence_sha256: "3b32b106e10fd0f1bea757a64f60565bc8d5a612e8229e208430f5fd2c14bd3c"
+    evidence_ref: "evidence/test-consensus-safety.log"
+    evidence_sha256: "19330b7b00a08d26c85d64ed162644aa2957526c2d203fc378f4c293670feedf"
     verified: true
     verifier: "sandbox-run tenir-conformance-s1-g1 / tenir_governance@5.5.0 (auteur, non indépendant)"
     verified_at: "2026-10-19"
     description: >
-      30 tests de linearizability (Wing-Gong) + 12 tests fault harness
-      (crash-stop, I8 après crash, byzantine rejection, no re-commit).
-      Vérifie LIN, I8, AGR sur histories séquentielles et concurrentes.
+      30 tests de linearizability (Wing-Gong). Vérifie LIN, I8, AGR sur
+      histories séquentielles et concurrentes. Format conforme à
+      evidence-type-specs-v1.md §6 (en-têtes structurées + sortie pytest).
 
   # C2 — Liveness : terminaison sous quorum sain
   - capability_ids: ["cap.concurrency.consensus-reference"]
     evidence_type: "test.consensus.liveness"
-    evidence_ref: "evidence/consensus-multi-process-run.log"
-    evidence_sha256: "22ae1b05a84585dedf648fa6238529145e06aede41a2c85ef139b576bcd94632"
+    evidence_ref: "evidence/test-consensus-liveness.log"
+    evidence_sha256: "90686b732cde6420118b25655325bce253782c14dafde86dc869cd665a90332d"
     verified: true
     verifier: "sandbox-run tenir-conformance-s1-g1 / tenir_governance@5.5.0 (auteur, non indépendant)"
     verified_at: "2026-10-19"
     description: >
-      7 tests de liveness : terminaison dans T_max, concurrents terminent,
+      7 tests de liveness : terminaison dans T_max (5s), concurrents terminent,
       reconciliation termine, budget insuffisant retour immédiat, latence
-      max sous charge, release termine, clé dupliquée termine.
+      max sous charge, release termine, clé dupliquée termine. Format conforme
+      à evidence-type-specs-v1.md §7.
 
   # C3 — Fault tolerance : crash-stop recovery (single-host)
   - capability_ids: ["cap.concurrency.consensus-reference"]
     evidence_type: "test.fault-tolerance"
-    evidence_ref: "evidence/fault-harness-linearizability-run.log"
-    evidence_sha256: "3b32b106e10fd0f1bea757a64f60565bc8d5a612e8229e208430f5fd2c14bd3c"
+    evidence_ref: "evidence/test-fault-tolerance.log"
+    evidence_sha256: "82171f5f99267d7eec372875680a7760170204983cd092610d2e1b59266bbd06"
     verified: true
     verifier: "sandbox-run tenir-conformance-s1-g1 / tenir_governance@5.5.0 (auteur, non indépendant)"
     verified_at: "2026-10-19"
@@ -100,18 +109,20 @@ attestations:
       12 tests Jepsen-style : crash-stop recovery, I8 après crash, état durable
       visible après restart, simulation partition (lock contention), rejet
       byzantin, pas de re-commit après crash. Note : single-host seulement.
+      Format conforme à evidence-type-specs-v1.md §8.
 
-  # Déduplication : idempotency locale (même preuve que multi-process)
+  # Déduplication : idempotency locale
   - capability_ids: ["cap.dedup.local-registry"]
     evidence_type: "test.idempotency.local"
-    evidence_ref: "evidence/consensus-multi-process-run.log"
-    evidence_sha256: "22ae1b05a84585dedf648fa6238529145e06aede41a2c85ef139b576bcd94632"
+    evidence_ref: "evidence/test-idempotency-local.log"
+    evidence_sha256: "e0390f468494533525478df296a891d8fd9cf19869bc3f8a977e881da240ef5b"
     verified: true
     verifier: "sandbox-run tenir-conformance-s1-g1 / tenir_governance@5.5.0 (auteur, non indépendant)"
     verified_at: "2026-10-19"
     description: >
       5 tests multi-processus : deux processus réservant la même clé → un
-      seul gagnant (idempotency cross-process).
+      seul gagnant (idempotency cross-process). Format conforme à
+      evidence-type-specs-v1.md §3.
 
   # UNKNOWN : fail-closed
   - capability_ids: ["cap.uncertainty.fail-closed"]
@@ -124,6 +135,8 @@ attestations:
     description: >
       Résultat UNKNOWN passe en human_review, reprise bloquée.
 
-# Capacité manquante : cap.host.single-host exige deployment.manifest.
-# Le vérificateur durci échoue (fail-closed) sur cette preuve manquante.
+# DÉPENDANCE BLOQUANTE : deployment.manifest (cap.host.single-host)
+# Sans ce manifeste, le vérificateur durci échoue (fail-closed) et l'audit
+# externe ne peut pas lier l'évidence à l'hypothèse de déploiement.
 # Seul l'opérateur peut fournir un manifeste de déploiement réel.
+# Voir evidence-type-specs-v1.md §1 pour le schéma requis.

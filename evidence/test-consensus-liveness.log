@@ -1,0 +1,33 @@
+# Evidence: test.consensus.liveness
+# backend: SingleHostLockBackend 5.5.0
+# commit: 342bc04
+# nodes: 1
+# quorum: 1
+# T_max: 5
+# command: PYTHONPATH=/workspace/tenir_governance_fixed python3 -m pytest tests/test_consensus_liveness.py -v
+# executed: 2026-10-19T02:32:00Z
+# executed by: sandbox (author's environment), NOT an independent verifier
+----
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3
+cachedir: .pytest_cache
+rootdir: /workspace/.tmp/tenir-conformance-s1-g1
+configfile: pyproject.toml
+plugins: anyio-4.15.1, dash-4.4.0, Faker-40.28.1, langsmith-0.14.4, platformdirs-4.12.3
+collecting ... collected 7 items
+
+tests/test_consensus_liveness.py::test_operations_terminate_within_t_max PASSED [ 14%]
+tests/test_consensus_liveness.py::test_concurrent_operations_all_terminate PASSED [ 28%]
+tests/test_consensus_liveness.py::test_reconciliation_terminates PASSED  [ 42%]
+tests/test_consensus_liveness.py::test_insufficient_budget_returns_immediately PASSED [ 57%]
+tests/test_consensus_liveness.py::test_max_latency_under_concurrent_load PASSED [ 71%]
+tests/test_consensus_liveness.py::test_release_terminates_and_restores_budget PASSED [ 85%]
+tests/test_consensus_liveness.py::test_duplicate_key_reserve_terminates PASSED [100%]
+
+============================== 7 passed in 0.31s ===============================
+# operations_invoked: 7
+# operations_completed: 7
+# operations_blocked_hold: 0
+# operations_blocked_veto: 0
+# max_latency: <5s
+# all_completed_under_T_max: true

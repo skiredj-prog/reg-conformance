@@ -1,0 +1,55 @@
+# Evidence: test.consensus.safety
+# backend: SingleHostLockBackend 5.5.0
+# commit: 342bc04
+# nodes: 1
+# quorum: 1
+# fault_model: { crash: 0, byzantine: 0, omission: 0 }
+# linearizability_checker: Wing-Gong (LinearizabilityChecker, tenir_governance 5.5.0)
+# command: PYTHONPATH=/workspace/tenir_governance_fixed python3 -m pytest tests/test_linearizability_validation.py -v
+# executed: 2026-10-19T02:32:00Z
+# executed by: sandbox (author's environment), NOT an independent verifier
+----
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3
+cachedir: .pytest_cache
+rootdir: /workspace/.tmp/tenir-conformance-s1-g1
+configfile: pyproject.toml
+plugins: anyio-4.15.1, dash-4.4.0, Faker-40.28.1, langsmith-0.14.4, platformdirs-4.12.3
+collecting ... collected 30 items
+
+tests/test_linearizability_validation.py::TestValidSequentialHistory::test_simple_reserve_commit_sequential PASSED [  3%]
+tests/test_linearizability_validation.py::TestValidSequentialHistory::test_reserve_release_sequential PASSED [  6%]
+tests/test_linearizability_validation.py::TestValidSequentialHistory::test_multiple_reserves_within_capacity PASSED [ 10%]
+tests/test_linearizability_validation.py::TestValidSequentialHistory::test_reserve_then_insufficient PASSED [ 13%]
+tests/test_linearizability_validation.py::TestValidSequentialHistory::test_full_reserve_commit_release_cycle PASSED [ 16%]
+tests/test_linearizability_validation.py::TestValidSequentialHistory::test_idempotent_reserve_same_key PASSED [ 20%]
+tests/test_linearizability_validation.py::TestValidSequentialHistory::test_duplicate_key_different_amount PASSED [ 23%]
+tests/test_linearizability_validation.py::TestI8ViolationNotLinearizable::test_two_reserves_exceeding_capacity_both_succeed PASSED [ 26%]
+tests/test_linearizability_validation.py::TestI8ViolationNotLinearizable::test_three_reserves_all_exceeding_capacity PASSED [ 30%]
+tests/test_linearizability_validation.py::TestI8ViolationNotLinearizable::test_reserve_exceeding_capacity_returns_reserved PASSED [ 33%]
+tests/test_linearizability_validation.py::TestI8ViolationNotLinearizable::test_commit_nonexistent_returns_committed PASSED [ 36%]
+tests/test_linearizability_validation.py::TestI8ViolationNotLinearizable::test_double_commit_returns_committed_twice PASSED [ 40%]
+tests/test_linearizability_validation.py::TestConcurrentOperations::test_concurrent_reserves_within_capacity PASSED [ 43%]
+tests/test_linearizability_validation.py::TestConcurrentOperations::test_concurrent_reserve_and_commit_different_clients PASSED [ 46%]
+tests/test_linearizability_validation.py::TestConcurrentOperations::test_concurrent_reserve_commit_release PASSED [ 50%]
+tests/test_linearizability_validation.py::TestConcurrentOperations::test_concurrent_reserves_at_capacity_boundary PASSED [ 53%]
+tests/test_linearizability_validation.py::TestConcurrentOperations::test_concurrent_reserve_one_succeeds_one_fails PASSED [ 56%]
+tests/test_linearizability_validation.py::TestSequentialSpecMatchesBackend::test_spec_matches_backend_reserve PASSED [ 60%]
+tests/test_linearizability_validation.py::TestSequentialSpecMatchesBackend::test_spec_matches_backend_reserve_commit PASSED [ 63%]
+tests/test_linearizability_validation.py::TestSequentialSpecMatchesBackend::test_spec_matches_backend_reserve_release PASSED [ 66%]
+tests/test_linearizability_validation.py::TestSequentialSpecMatchesBackend::test_spec_matches_backend_insufficient_budget PASSED [ 70%]
+tests/test_linearizability_validation.py::TestSequentialSpecMatchesBackend::test_spec_matches_backend_already_committed PASSED [ 73%]
+tests/test_linearizability_validation.py::TestSequentialSpecMatchesBackend::test_spec_matches_backend_not_found PASSED [ 76%]
+tests/test_linearizability_validation.py::TestSequentialSpecMatchesBackend::test_spec_matches_backend_idempotent_reserve PASSED [ 80%]
+tests/test_linearizability_validation.py::TestSequentialSpecMatchesBackend::test_spec_matches_backend_duplicate_key PASSED [ 83%]
+tests/test_linearizability_validation.py::TestSequentialSpecMatchesBackend::test_spec_matches_backend_full_cycle PASSED [ 86%]
+tests/test_linearizability_validation.py::TestSequentialSpecMatchesBackend::test_spec_models_get_state PASSED [ 90%]
+tests/test_linearizability_validation.py::TestLinearizationOutput::test_linearization_is_valid_sequence PASSED [ 93%]
+tests/test_linearizability_validation.py::TestLinearizationOutput::test_empty_history_is_linearizable PASSED [ 96%]
+tests/test_linearizability_validation.py::TestLinearizationOutput::test_single_reserve_linearization PASSED [100%]
+
+============================== 30 passed in 0.11s ==============================
+# linearizability_check: PASS
+# I8_violations: 0
+# agreement_violations: 0
+# validity_violations: 0
