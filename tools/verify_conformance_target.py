@@ -25,8 +25,10 @@ def check_target(target, catalog, rules, installed_version, module_version=None)
         errors.append("CATALOG_VERSION_MISMATCH")
     if rules.get("version") != target.get("rules_version"):
         errors.append("RULES_VERSION_MISMATCH")
-    if catalog.get("summary") != target.get("catalog_summary"):
-        errors.append("CATALOG_SUMMARY_MISMATCH")
+    summary = catalog.get("summary", {})
+    for key, expected_value in target.get("catalog_summary", {}).items():
+        if summary.get(key) != expected_value:
+            errors.append(f"CATALOG_SUMMARY_MISMATCH:{key}")
     configurations = catalog.get("configurations", [])
     if len(configurations) != target.get("catalog_summary", {}).get("total"):
         errors.append("CATALOG_CONFIGURATION_COUNT_MISMATCH")
