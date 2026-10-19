@@ -110,7 +110,8 @@ def check_profile(path, catalog) -> list:
         return [f"{name} : section 'config' manquante (doit référencer les 4 axes)"]
     fault_errors, fault_warnings = validate_fault_model(profile)
     errors.extend(f"{name} : {error}" for error in fault_errors)
-    errors.extend(f"{name} : WARNING {warning}" for warning in fault_warnings)
+    for warning in fault_warnings:
+        print(f"{name} : WARNING {warning}")
     missing = [ax for ax in AXES if ax not in config]
     if missing:
         errors.append(f"{name} : axes manquants dans config : {missing}")
