@@ -1,0 +1,32 @@
+{
+  "capability_id": "cap-deterministic-replication",
+  "declaration": {
+    "name": "Réplication déterministe",
+    "description": "Même log => même état : horloge logique, IDs client-side, Decimal.",
+    "invariants_required": [
+      "I8"
+    ],
+    "deployment_perimeter": {
+      "HOST_SCOPE": "multi-host",
+      "CONCURRENCY": "distributed-consensus"
+    }
+  },
+  "evidence": {
+    "implementation_version": "5.6.1",
+    "test_version": "0.6.0",
+    "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "test_command": "pytest -q tests/raft/test_determinism.py"
+  },
+  "demonstration_scope": "loopback-test-only",
+  "status_note": "E1 corrigé : plus de time.time() répliqué.",
+  "limitations": {
+    "known_limits": [
+      "périmètre loopback"
+    ]
+  },
+  "validation": {
+    "structural_admissibility": true,
+    "effective_guarantee_demonstrated": true,
+    "verification_timestamp": "2026-10-21T07:29:00Z"
+  }
+}

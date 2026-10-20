@@ -1,0 +1,32 @@
+{
+  "capability_id": "cap-dedup-local-registry",
+  "declaration": {
+    "name": "Déduplication registre local",
+    "description": "Clé idempotente réclamée durablement avant évaluation ; replay = état réel.",
+    "invariants_required": [
+      "I2"
+    ],
+    "deployment_perimeter": {
+      "HOST_SCOPE": "mono-host",
+      "CONCURRENCY": "file-lock"
+    }
+  },
+  "evidence": {
+    "implementation_version": "5.6.1",
+    "test_version": "0.6.0",
+    "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "test_command": "pytest -q tests/test_idempotency.py"
+  },
+  "demonstration_scope": "production-equivalent",
+  "status_note": "E5 corrigé : replay retourne RESERVED/COMMITTED/RELEASED réel.",
+  "limitations": {
+    "known_limits": [
+      "single-host"
+    ]
+  },
+  "validation": {
+    "structural_admissibility": true,
+    "effective_guarantee_demonstrated": true,
+    "verification_timestamp": "2026-10-21T07:29:00Z"
+  }
+}

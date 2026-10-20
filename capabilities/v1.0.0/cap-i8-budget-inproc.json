@@ -1,0 +1,32 @@
+{
+  "capability_id": "cap-i8-budget-inproc",
+  "declaration": {
+    "name": "Conservation budget mono-process",
+    "description": "reserved + committed <= capacity sous concurrence threadée.",
+    "invariants_required": [
+      "I8"
+    ],
+    "deployment_perimeter": {
+      "HOST_SCOPE": "mono-process",
+      "CONCURRENCY": "thread-lock"
+    }
+  },
+  "evidence": {
+    "implementation_version": "5.6.1",
+    "test_version": "0.6.0",
+    "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "test_command": "pytest -q tests/test_budget_i8.py tests/test_hold_budget_regression.py"
+  },
+  "demonstration_scope": "production-equivalent",
+  "status_note": "Démontré : 9 chemins I8 (v5.4.2) + régressions v5.6.1.",
+  "limitations": {
+    "known_limits": [
+      "single-process only"
+    ]
+  },
+  "validation": {
+    "structural_admissibility": true,
+    "effective_guarantee_demonstrated": true,
+    "verification_timestamp": "2026-10-21T07:29:00Z"
+  }
+}

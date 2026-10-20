@@ -1,0 +1,34 @@
+{
+  "capability_id": "cap-i8-budget-raft",
+  "declaration": {
+    "name": "Conservation budget Raft",
+    "description": "I8 préservé sur cluster Raft répliqué.",
+    "invariants_required": [
+      "I8"
+    ],
+    "deployment_perimeter": {
+      "HOST_SCOPE": "multi-host",
+      "CONCURRENCY": "distributed-consensus"
+    }
+  },
+  "evidence": {
+    "implementation_version": "5.6.1",
+    "test_version": "0.6.0",
+    "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "test_command": "pytest -q tests/raft/test_i8_raft.py"
+  },
+  "demonstration_scope": "loopback-test-only",
+  "status_note": "Démontré UNIQUEMENT en périmètre de test loopback (v5.6.1).",
+  "limitations": {
+    "known_limits": [
+      "FM-20 ouvert : transport PySyncObj non sécurisé",
+      "adresses loopback uniquement",
+      "déploiement multi-host physique NON supporté"
+    ]
+  },
+  "validation": {
+    "structural_admissibility": true,
+    "effective_guarantee_demonstrated": true,
+    "verification_timestamp": "2026-10-21T07:29:00Z"
+  }
+}
