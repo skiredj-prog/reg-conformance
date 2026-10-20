@@ -28,10 +28,10 @@ def match(cfg):
 def status(refs, caps):
     sts = [caps[r]["validation"]["effective_guarantee_demonstrated"] for r in refs]
     scopes = [caps[r].get("demonstration_scope") for r in refs]
-    if any(s is False for s in sts): return False, None
-    if any(s is None for s in sts): return None, None
+    if any(s is False for s in sts): return "false", None
+    if any(s is None for s in sts): return "null", None
     if any(sc == "loopback-test-only" for sc in scopes): return "partial", "loopback-test-only"
-    return True, "production-equivalent"
+    return "true", "production-equivalent"
 
 def compute(caps):
     src = json.loads(CAT_IN.read_text())
@@ -44,8 +44,8 @@ def compute(caps):
             st, scope = status(refs, caps)
             e["capability_refs"] = refs
             e["demonstration_scope"] = scope
-            e["effective_guarantee_demonstrated"] = st
-            counts[str(st)] += 1
+            e["effective_guarantee_demonstrated"] = {"true": True, "false": False, "null": None, "partial": "partial"}[st]
+            counts[st] += 1
         out.append(e)
     return out, counts
 
