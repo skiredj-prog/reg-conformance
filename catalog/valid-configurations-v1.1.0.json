@@ -1,0 +1,2759 @@
+{
+  "catalog_version": "1.1.0",
+  "rules_version": "2.0.0",
+  "generated_from": "capabilities/v1.0.0 + valid-configurations-v1.json",
+  "guarantee_summary": {
+    "true": 12,
+    "partial": 6,
+    "null": 24,
+    "false": 0
+  },
+  "note": "true = démontré production-equivalent ; partial = démontré loopback-test-only ; null = non évalué ; false = réfuté. admissible_structural != garantie effective.",
+  "configurations": [
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": true,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-inproc"
+      ],
+      "demonstration_scope": "production-equivalent"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": true,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-inproc"
+      ],
+      "demonstration_scope": "production-equivalent"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": true,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-inproc"
+      ],
+      "demonstration_scope": "production-equivalent"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": true,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-inproc",
+        "cap-dedup-local-registry"
+      ],
+      "demonstration_scope": "production-equivalent"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": true,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-inproc",
+        "cap-dedup-local-registry"
+      ],
+      "demonstration_scope": "production-equivalent"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": true,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-inproc",
+        "cap-dedup-local-registry"
+      ],
+      "demonstration_scope": "production-equivalent"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-inproc",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-inproc",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-inproc",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='file-lock'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='file-lock'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='file-lock'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-transaction'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-transaction'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-transaction'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-process",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1a",
+          "message": "HOST_SCOPE=mono-process exige CONCURRENCY dans ['thread-lock'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-process'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": true,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-crossproc"
+      ],
+      "demonstration_scope": "production-equivalent"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": true,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-crossproc"
+      ],
+      "demonstration_scope": "production-equivalent"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": true,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-crossproc"
+      ],
+      "demonstration_scope": "production-equivalent"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": true,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-crossproc",
+        "cap-dedup-local-registry"
+      ],
+      "demonstration_scope": "production-equivalent"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": true,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-crossproc",
+        "cap-dedup-local-registry"
+      ],
+      "demonstration_scope": "production-equivalent"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": true,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-crossproc",
+        "cap-dedup-local-registry"
+      ],
+      "demonstration_scope": "production-equivalent"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx",
+        "cap-dedup-local-registry"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx",
+        "cap-dedup-local-registry"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx",
+        "cap-dedup-local-registry"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-crossproc",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-crossproc",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-crossproc",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='thread-lock'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='thread-lock'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='thread-lock'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "mono-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1b",
+          "message": "HOST_SCOPE=mono-host exige CONCURRENCY dans ['file-lock', 'distributed-transaction'], obtenu='distributed-consensus'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_SCOPE",
+          "clause_id": "R2a",
+          "message": "CONCURRENCY=distributed-consensus exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2b",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige HOST_SCOPE dans ['multi-host'], obtenu='mono-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": "partial",
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-raft",
+        "cap-deterministic-replication"
+      ],
+      "demonstration_scope": "loopback-test-only"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": "partial",
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-raft",
+        "cap-deterministic-replication"
+      ],
+      "demonstration_scope": "loopback-test-only"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "none",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": "partial",
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-raft",
+        "cap-deterministic-replication"
+      ],
+      "demonstration_scope": "loopback-test-only"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='thread-lock'"
+        },
+        {
+          "rule_id": "R3_LOCAL_DEDUP",
+          "clause_id": "R3a",
+          "message": "DEDUP_LAYER=local-registry exige HOST_SCOPE dans ['mono-process', 'mono-host'], obtenu='multi-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='thread-lock'"
+        },
+        {
+          "rule_id": "R3_LOCAL_DEDUP",
+          "clause_id": "R3a",
+          "message": "DEDUP_LAYER=local-registry exige HOST_SCOPE dans ['mono-process', 'mono-host'], obtenu='multi-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='thread-lock'"
+        },
+        {
+          "rule_id": "R3_LOCAL_DEDUP",
+          "clause_id": "R3a",
+          "message": "DEDUP_LAYER=local-registry exige HOST_SCOPE dans ['mono-process', 'mono-host'], obtenu='multi-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='file-lock'"
+        },
+        {
+          "rule_id": "R3_LOCAL_DEDUP",
+          "clause_id": "R3a",
+          "message": "DEDUP_LAYER=local-registry exige HOST_SCOPE dans ['mono-process', 'mono-host'], obtenu='multi-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='file-lock'"
+        },
+        {
+          "rule_id": "R3_LOCAL_DEDUP",
+          "clause_id": "R3a",
+          "message": "DEDUP_LAYER=local-registry exige HOST_SCOPE dans ['mono-process', 'mono-host'], obtenu='multi-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='file-lock'"
+        },
+        {
+          "rule_id": "R3_LOCAL_DEDUP",
+          "clause_id": "R3a",
+          "message": "DEDUP_LAYER=local-registry exige HOST_SCOPE dans ['mono-process', 'mono-host'], obtenu='multi-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R3_LOCAL_DEDUP",
+          "clause_id": "R3a",
+          "message": "DEDUP_LAYER=local-registry exige HOST_SCOPE dans ['mono-process', 'mono-host'], obtenu='multi-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R3_LOCAL_DEDUP",
+          "clause_id": "R3a",
+          "message": "DEDUP_LAYER=local-registry exige HOST_SCOPE dans ['mono-process', 'mono-host'], obtenu='multi-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R3_LOCAL_DEDUP",
+          "clause_id": "R3a",
+          "message": "DEDUP_LAYER=local-registry exige HOST_SCOPE dans ['mono-process', 'mono-host'], obtenu='multi-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R3_LOCAL_DEDUP",
+          "clause_id": "R3a",
+          "message": "DEDUP_LAYER=local-registry exige HOST_SCOPE dans ['mono-process', 'mono-host'], obtenu='multi-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R3_LOCAL_DEDUP",
+          "clause_id": "R3a",
+          "message": "DEDUP_LAYER=local-registry exige HOST_SCOPE dans ['mono-process', 'mono-host'], obtenu='multi-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "local-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R3_LOCAL_DEDUP",
+          "clause_id": "R3a",
+          "message": "DEDUP_LAYER=local-registry exige HOST_SCOPE dans ['mono-process', 'mono-host'], obtenu='multi-host'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-disttx",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-raft",
+        "cap-deterministic-replication",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-raft",
+        "cap-deterministic-replication",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "provider-idempotency-key",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": null,
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-raft",
+        "cap-deterministic-replication",
+        "cap-dedup-provider-key"
+      ],
+      "demonstration_scope": null
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='thread-lock'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='thread-lock'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "thread-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='thread-lock'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='thread-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='file-lock'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='file-lock'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "file-lock",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R1_HOST_CONCURRENCY",
+          "clause_id": "R1c",
+          "message": "HOST_SCOPE=multi-host exige CONCURRENCY dans ['distributed-transaction', 'distributed-consensus'], obtenu='file-lock'"
+        },
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='file-lock'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-transaction",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": false,
+      "effective_guarantee_demonstrated": null,
+      "violations": [
+        {
+          "rule_id": "R2_CONSENSUS_DEDUP",
+          "clause_id": "R2c",
+          "message": "DEDUP_LAYER=distributed-consensus-registry exige CONCURRENCY dans ['distributed-consensus'], obtenu='distributed-transaction'"
+        }
+      ]
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-closed"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": "partial",
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-raft",
+        "cap-deterministic-replication",
+        "cap-dedup-consensus-registry"
+      ],
+      "demonstration_scope": "loopback-test-only"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "fail-open"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": "partial",
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-raft",
+        "cap-deterministic-replication",
+        "cap-dedup-consensus-registry"
+      ],
+      "demonstration_scope": "loopback-test-only"
+    },
+    {
+      "config": {
+        "HOST_SCOPE": "multi-host",
+        "DEDUP_LAYER": "distributed-consensus-registry",
+        "CONCURRENCY": "distributed-consensus",
+        "UNCERTAINTY": "human-escalation"
+      },
+      "admissible_structural": true,
+      "effective_guarantee_demonstrated": "partial",
+      "violations": [],
+      "capability_refs": [
+        "cap-i8-budget-raft",
+        "cap-deterministic-replication",
+        "cap-dedup-consensus-registry"
+      ],
+      "demonstration_scope": "loopback-test-only"
+    }
+  ]
+}

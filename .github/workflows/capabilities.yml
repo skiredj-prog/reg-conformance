@@ -1,0 +1,13 @@
+name: capabilities
+on: { push: {}, pull_request: {} }
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyyaml jsonschema
+      - run: python tools/make_capabilities.py --check
+      - run: python tools/verify_capabilities.py
+      - run: python tools/fill_catalog_guarantees.py --check

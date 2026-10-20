@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Capability Evidence Contract v1.1.0",
+  "description": "Schéma pour déclarer les capacités démontrées avec leurs preuves vérifiables. effective_guarantee_demonstrated peut être true, false ou null.",
+  "type": "object",
+  "required": ["capability_id", "declaration", "evidence", "validation"],
+  "properties": {
+    "capability_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "declaration": {
+      "type": "object",
+      "required": ["name", "description", "invariants_required", "deployment_perimeter"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "invariants_required": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^I[0-9]+$" },
+          "minItems": 1
+        },
+        "deployment_perimeter": {
+          "type": "object",
+          "required": ["HOST_SCOPE"],
+          "properties": {
+            "HOST_SCOPE": { "type": "string", "enum": ["mono-process", "mono-host", "multi-host"] },
+            "DEDUP_LAYER": { "type": "string" },
+            "CONCURRENCY": { "type": "string" },
+            "UNCERTAINTY": { "type": "string" },
+            "fault_model": { "type": "string" },
+            "total_nodes": { "type": "integer" },
+            "quorum": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["implementation_version", "test_version", "test_results_hash", "test_command"],
+      "properties": {
+        "implementation_version": { "type": "string" },
+        "test_version": { "type": "string" },
+        "test_results_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "test_command": { "type": "string" },
+        "coverage_report_url": { "type": "string" }
+      }
+    },
+    "demonstration_scope": {
+      "type": ["string", "null"],
+      "enum": ["production-equivalent", "loopback-test-only", null]
+    },
+    "status_note": { "type": "string" },
+    "limitations": {
+      "type": "object",
+      "properties": {
+        "known_limits": { "type": "array", "items": { "type": "string" } },
+        "unsupported_scenarios": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": ["structural_admissibility", "effective_guarantee_demonstrated", "verification_timestamp"],
+      "properties": {
+        "structural_admissibility": { "type": "boolean" },
+        "effective_guarantee_demonstrated": { "type": ["boolean", "null"] },
+        "verification_timestamp": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

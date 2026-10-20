@@ -1,0 +1,32 @@
+{
+  "capability_id": "cap-i8-budget-disttx",
+  "declaration": {
+    "name": "Conservation budget transaction distribuée",
+    "description": "I8 via backend distributed-transaction.",
+    "invariants_required": [
+      "I8"
+    ],
+    "deployment_perimeter": {
+      "HOST_SCOPE": "multi-host",
+      "CONCURRENCY": "distributed-transaction"
+    }
+  },
+  "evidence": {
+    "implementation_version": "5.6.1",
+    "test_version": "0.6.0",
+    "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "test_command": "n/a (aucune implémentation en 5.6.1)"
+  },
+  "demonstration_scope": null,
+  "status_note": "NON évalué : aucun backend implémenté.",
+  "limitations": {
+    "known_limits": [
+      "slot structurel seulement"
+    ]
+  },
+  "validation": {
+    "structural_admissibility": true,
+    "effective_guarantee_demonstrated": null,
+    "verification_timestamp": "2026-10-21T07:29:00Z"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "capability_id": "cap-i8-budget-crossproc",
+  "declaration": {
+    "name": "Conservation budget cross-process",
+    "description": "I8 préservé entre processus via fcntl.flock + état durable.",
+    "invariants_required": [
+      "I8"
+    ],
+    "deployment_perimeter": {
+      "HOST_SCOPE": "mono-host",
+      "CONCURRENCY": "file-lock"
+    }
+  },
+  "evidence": {
+    "implementation_version": "5.6.1",
+    "test_version": "0.6.0",
+    "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "test_command": "pytest -q tests/test_cross_process_i8.py"
+  },
+  "demonstration_scope": "production-equivalent",
+  "status_note": "Démontré : 10 tests I8 cross-process (v5.5.0).",
+  "limitations": {
+    "known_limits": [
+      "single-host only (flock ne traverse pas les hôtes)"
+    ]
+  },
+  "validation": {
+    "structural_admissibility": true,
+    "effective_guarantee_demonstrated": true,
+    "verification_timestamp": "2026-10-21T07:29:00Z"
+  }
+}

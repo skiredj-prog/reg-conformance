@@ -1,0 +1,32 @@
+{
+  "capability_id": "cap-byzantine-tolerance",
+  "declaration": {
+    "name": "Tolérance byzantine",
+    "description": "Résistance aux nœuds malveillants.",
+    "invariants_required": [
+      "I8"
+    ],
+    "deployment_perimeter": {
+      "HOST_SCOPE": "multi-host",
+      "CONCURRENCY": "distributed-consensus"
+    }
+  },
+  "evidence": {
+    "implementation_version": "5.6.1",
+    "test_version": "0.6.0",
+    "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "test_command": "n/a"
+  },
+  "demonstration_scope": null,
+  "status_note": "RÉFUTÉ : hors périmètre.",
+  "limitations": {
+    "known_limits": [
+      "Raft = crash-stop uniquement"
+    ]
+  },
+  "validation": {
+    "structural_admissibility": true,
+    "effective_guarantee_demonstrated": false,
+    "verification_timestamp": "2026-10-21T07:29:00Z"
+  }
+}
