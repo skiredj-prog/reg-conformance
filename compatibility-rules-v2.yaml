@@ -1,0 +1,145 @@
+version: "2.0.0"
+description: >
+  Règles de compatibilité STRUCTURELLE pour les configurations REG+.
+  Une configuration admissible ici est uniquement structurellement cohérente ;
+  cela ne démontre pas que l'implémentation fournit effectivement la capacité
+  annoncée. La garantie effective est vérifiée séparément au build.
+  v2.0.0 : Ajout des règles de quorum et fault model (E2, E3).
+
+constraints:
+  # === RÈGLES EXISTANTES (v1.0.0) ===
+  
+  - rule_id: "R1_HOST_CONCURRENCY"
+    clause_id: "R1a"
+    description: "mono-process n'autorise que le verrou de thread."
+    condition:
+      field: "HOST_SCOPE"
+      value: "mono-process"
+    requires:
+      field: "CONCURRENCY"
+      allowed_values: ["thread-lock"]
+
+  - rule_id: "R1_HOST_CONCURRENCY"
+    clause_id: "R1b"
+    description: "mono-host autorise file-lock ou distributed-transaction."
+    condition:
+      field: "HOST_SCOPE"
+      value: "mono-host"
+    requires:
+      field: "CONCURRENCY"
+      allowed_values: ["file-lock", "distributed-transaction"]
+
+  - rule_id: "R1_HOST_CONCURRENCY"
+    clause_id: "R1c"
+    description: "multi-host autorise distributed-transaction ou distributed-consensus."
+    condition:
+      field: "HOST_SCOPE"
+      value: "multi-host"
+    requires:
+      field: "CONCURRENCY"
+      allowed_values: ["distributed-transaction", "distributed-consensus"]
+
+  - rule_id: "R2_CONSENSUS_SCOPE"
+    clause_id: "R2a"
+    description: "Le consensus distribué exige une topologie multi-host."
+    condition:
+      field: "CONCURRENCY"
+      value: "distributed-consensus"
+    requires:
+      field: "HOST_SCOPE"
+      allowed_values: ["multi-host"]
+
+  - rule_id: "R2_CONSENSUS_DEDUP"
+    clause_id: "R2b"
+    description: "Le registre de déduplication distribué exige multi-host."
+    condition:
+      field: "DEDUP_LAYER"
+      value: "distributed-consensus-registry"
+    requires:
+      field: "HOST_SCOPE"
+      allowed_values: ["multi-host"]
+
+  - rule_id: "R2_CONSENSUS_DEDUP"
+    clause_id: "R2c"
+    description: "Le registre de déduplication distribué exige le consensus distribué."
+    condition:
+      field: "DEDUP_LAYER"
+      value: "distributed-consensus-registry"
+    requires:
+      field: "CONCURRENCY"
+      allowed_values: ["distributed-consensus"]
+
+  - rule_id: "R3_LOCAL_DEDUP"
+    clause_id: "R3a"
+    description: "Un registre local ne peut pas coordonner plusieurs hôtes."
+    condition:
+      field: "DEDUP_LAYER"
+      value: "local-registry"
+    requires:
+      field: "HOST_SCOPE"
+      allowed_values: ["mono-process", "mono-host"]
+
+  # === NOUVELLES RÈGLES (v2.0.0) — QUORUM ET FAULT MODEL ===
+
+  - rule_id: "R4_QUORUM_FORMULA"
+    clause_id: "R4a"
+    description: "Le quorum doit être majoritaire : quorum >= floor(total_nodes / 2) + 1"
+    condition:
+      field: "CONCURRENCY"
+      value: "distributed-consensus"
+    requires:
+      field: "quorum"
+      formula: "floor(total_nodes / 2) + 1"
+      operator: ">="
+
+  - rule_id: "R4_QUORUM_FORMULA"
+    clause_id: "R4b"
+    description: "Le quorum ne peut pas dépasser total_nodes."
+    condition:
+      field: "CONCURRENCY"
+      value: "distributed-consensus"
+    requires:
+      field: "quorum"
+      operator: "<="
+      value_from_field: "total_nodes"
+
+  - rule_id: "R5_FAULT_TOLERANCE"
+    clause_id: "R5a"
+    description: "Pour crash-stop : total_nodes >= 2 * max_faults + 1"
+    condition:
+      field: "fault_model"
+      value: "crash-stop"
+    requires:
+      formula: "total_nodes >= 2 * max_faults + 1"
+
+  - rule_id: "R5_FAULT_TOLERANCE"
+    clause_id: "R5b"
+    description: "Le fault_model doit être dans la liste autorisée."
+    condition:
+      field: "CONCURRENCY"
+      value: "distributed-consensus"
+    requires:
+      field: "fault_model"
+      allowed_values: ["crash-stop"]
+
+  - rule_id: "R6_MINIMUM_NODES"
+    clause_id: "R6a"
+    description: "Le consensus distribué exige au moins 3 nœuds."
+    condition:
+      field: "CONCURRENCY"
+      value: "distributed-consensus"
+    requires:
+      field: "total_nodes"
+      operator: ">="
+      value: 3
+
+  - rule_id: "R6_MINIMUM_NODES"
+    clause_id: "R6b"
+    description: "Recommandation : total_nodes impair pour éviter les splits."
+    condition:
+      field: "CONCURRENCY"
+      value: "distributed-consensus"
+    recommends:
+      field: "total_nodes"
+      operator: "odd"
+      severity: "warning"
