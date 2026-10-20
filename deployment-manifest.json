@@ -1,0 +1,52 @@
+{
+  "manifest_version": "1.0.0",
+  "standard": "REG-Conformance",
+  "standard_version": "v0.5.1",
+  "implementation": "tenir-governance",
+  "implementation_version": "5.6.1",
+  "catalog_version": "2.0.0",
+  "rules_version": "2.0.0",
+  "catalog_summary": {
+    "total": 144,
+    "admissible_structural": 42,
+    "rejected": 102,
+    "breakdown_by_host_scope": {
+      "mono-process": 9,
+      "mono-host": 18,
+      "multi-host": 15
+    }
+  },
+  "backends_under_test": [
+    "SingleHostLockBackend",
+    "RaftConsensusBackend"
+  ],
+  "test_perimeter": {
+    "included": [
+      "Unit tests (amount validation, idempotency, state transitions)",
+      "Backend integration tests (single-host, file persistence)",
+      "Raft tests (localhost cluster, leader election, log replication)",
+      "Conformance tests (compatibility-rules-v2.yaml)",
+      "Property tests (I8 invariant, terminal state monotonicity)"
+    ],
+    "excluded": [
+      "Production multi-host network tests",
+      "Byzantine fault tolerance",
+      "Hardened transport/authentication for Raft",
+      "External provider exactly-once proof",
+      "Formal proof of linearizability"
+    ],
+    "command": "pytest -q tests/",
+    "known_limitations": [
+      "Raft tests are executed on localhost only",
+      "The linearizability checker is a prototype",
+      "External effects are governed by explicit states, not proven exactly-once",
+      "admissible_structural does not imply effective_guarantee_demonstrated"
+    ]
+  },
+  "limitations": [
+    "raft_tests_localhost_only",
+    "pickle_transport_not_hardened",
+    "external_effects_not_exactly_once_proven",
+    "linearizability_checker_prototype"
+  ]
+}
