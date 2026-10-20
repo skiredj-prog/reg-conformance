@@ -14,6 +14,21 @@ policy:
 # Invariants normatifs — tout backend conforme doit maintenir ces invariants.
 # Voir consensus-contract-v1.md pour les définitions formelles.
 normative_invariants:
+  - id: "I2"
+    name: "permit-single-use"
+    property: "a permit bound to an attempt and LEI authorizes at most one effect-producing dispatch"
+    scope: "per attempt"
+    description: >
+      Un permis lié à une tentative et à un LEI ne peut autoriser qu'une seule
+      dispatch produisant un effet, et ne peut pas être consommé à nouveau.
+      Définition importée du manuscrit REG/TENIR (v7.1, §2.3 et table des
+      invariants). Ne signifie pas seulement que les permis ne sont pas utilisés
+      en concurrence.
+    applies_to: ["cap.dedup.local-registry", "cap.dedup.consensus-registry",
+                 "cap.dedup.provider-key", "cap.exactly-once.external"]
+    verification: "a définir : aucun test de conformance ne l'exerce encore"
+    contract_ref: "manuscript/v7.1.md (I2 — Permit single-use)"
+
   - id: "I8"
     name: "budget-ceiling-aggregate"
     property: "reserved + committed <= capacity"

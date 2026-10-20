@@ -3,9 +3,9 @@
   "rules_version": "2.0.0",
   "generated_from": "capabilities/v1.0.0 + valid-configurations-v1.json",
   "guarantee_summary": {
-    "true": 12,
-    "partial": 6,
-    "null": 24,
+    "true": 0,
+    "partial": 0,
+    "null": 42,
     "false": 0
   },
   "note": "true = démontré production-equivalent ; partial = démontré loopback-test-only ; null = non évalué ; false = réfuté. admissible_structural != garantie effective.",
@@ -18,12 +18,12 @@
         "UNCERTAINTY": "fail-closed"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": true,
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-inproc"
       ],
-      "demonstration_scope": "production-equivalent"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -33,12 +33,12 @@
         "UNCERTAINTY": "fail-open"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": true,
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-inproc"
       ],
-      "demonstration_scope": "production-equivalent"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -48,12 +48,12 @@
         "UNCERTAINTY": "human-escalation"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": true,
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-inproc"
       ],
-      "demonstration_scope": "production-equivalent"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -231,13 +231,13 @@
         "UNCERTAINTY": "fail-closed"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": true,
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-inproc",
         "cap-dedup-local-registry"
       ],
-      "demonstration_scope": "production-equivalent"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -247,13 +247,13 @@
         "UNCERTAINTY": "fail-open"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": true,
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-inproc",
         "cap-dedup-local-registry"
       ],
-      "demonstration_scope": "production-equivalent"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -263,13 +263,13 @@
         "UNCERTAINTY": "human-escalation"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": true,
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-inproc",
         "cap-dedup-local-registry"
       ],
-      "demonstration_scope": "production-equivalent"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -1023,12 +1023,12 @@
         "UNCERTAINTY": "fail-closed"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": true,
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-crossproc"
       ],
-      "demonstration_scope": "production-equivalent"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -1038,12 +1038,12 @@
         "UNCERTAINTY": "fail-open"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": true,
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-crossproc"
       ],
-      "demonstration_scope": "production-equivalent"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -1053,12 +1053,12 @@
         "UNCERTAINTY": "human-escalation"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": true,
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-crossproc"
       ],
-      "demonstration_scope": "production-equivalent"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -1230,13 +1230,13 @@
         "UNCERTAINTY": "fail-closed"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": true,
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-crossproc",
         "cap-dedup-local-registry"
       ],
-      "demonstration_scope": "production-equivalent"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -1246,13 +1246,13 @@
         "UNCERTAINTY": "fail-open"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": true,
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-crossproc",
         "cap-dedup-local-registry"
       ],
-      "demonstration_scope": "production-equivalent"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -1262,13 +1262,13 @@
         "UNCERTAINTY": "human-escalation"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": true,
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-crossproc",
         "cap-dedup-local-registry"
       ],
-      "demonstration_scope": "production-equivalent"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -2046,13 +2046,13 @@
         "UNCERTAINTY": "fail-closed"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": "partial",
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-raft",
         "cap-deterministic-replication"
       ],
-      "demonstration_scope": "loopback-test-only"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -2062,13 +2062,13 @@
         "UNCERTAINTY": "fail-open"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": "partial",
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-raft",
         "cap-deterministic-replication"
       ],
-      "demonstration_scope": "loopback-test-only"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -2078,13 +2078,13 @@
         "UNCERTAINTY": "human-escalation"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": "partial",
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-raft",
         "cap-deterministic-replication"
       ],
-      "demonstration_scope": "loopback-test-only"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -2712,14 +2712,14 @@
         "UNCERTAINTY": "fail-closed"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": "partial",
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-raft",
         "cap-deterministic-replication",
         "cap-dedup-consensus-registry"
       ],
-      "demonstration_scope": "loopback-test-only"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -2729,14 +2729,14 @@
         "UNCERTAINTY": "fail-open"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": "partial",
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-raft",
         "cap-deterministic-replication",
         "cap-dedup-consensus-registry"
       ],
-      "demonstration_scope": "loopback-test-only"
+      "demonstration_scope": null
     },
     {
       "config": {
@@ -2746,14 +2746,14 @@
         "UNCERTAINTY": "human-escalation"
       },
       "admissible_structural": true,
-      "effective_guarantee_demonstrated": "partial",
+      "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
         "cap-i8-budget-raft",
         "cap-deterministic-replication",
         "cap-dedup-consensus-registry"
       ],
-      "demonstration_scope": "loopback-test-only"
+      "demonstration_scope": null
     }
   ]
 }

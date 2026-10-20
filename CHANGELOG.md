@@ -16,11 +16,18 @@
 - Rejet d'un `verification_timestamp` postérieur à l'instant de vérification.
 - Rejet d'un invariant cité dans `invariants_required` absent de `normative_invariants` (`catalog/capabilities-v1.yaml`).
 
+### Changed (capacités — décision de cohérence de preuve)
+
+- Six capacités passent de `effective_guarantee_demonstrated: true` à `null` : `cap-i8-budget-inproc`, `cap-i8-budget-crossproc`, `cap-i8-budget-raft`, `cap-deterministic-replication`, `cap-dedup-local-registry`, `cap-dedup-consensus-registry`. Leur `test_results_hash` est un placeholder : aucune preuve n'est liée. Elles restent déclarées, avec la mention « non démontré ».
+- Horodatage de vérification fixé à `2026-10-20T21:55:30Z` (les versions précédentes étaient dans le futur).
+- `catalog/valid-configurations-v1.1.0.json` régénéré : les 42 configurations admissibles sont à `null` tant qu'une preuve n'est pas liée.
+- `I2` (permit-single-use) ajouté à `normative_invariants` de `catalog/capabilities-v1.yaml`, définition importée du manuscrit v7.1. Sa vérification est à définir : aucun test de conformance ne l'exerce encore.
+
 ### Known issues
 
-- Les 12 fichiers de capacités ont tous `test_results_hash` à zéros (placeholder produit par `make_capabilities.py`). Ce contrôle ne vérifie pas encore un SHA-256 de fichier de preuve.
-- `I2` est cité par 4 capacités (`cap-dedup-*`, `cap-exactly-once-external`) mais n'est pas défini dans `normative_invariants`.
-- Les 6 capacités déclarées démontrées (`cap-i8-budget-inproc`, `cap-i8-budget-crossproc`, `cap-i8-budget-raft`, `cap-dedup-local-registry`, `cap-dedup-consensus-registry`, `cap-deterministic-replication`) ne passent pas tant que la preuve n'est pas liée.
+- `test_results_hash` des 12 capacités est un placeholder (zéros). `verify_capabilities.py` rejette les réclamations démontrées avec placeholder, mais ne recalcule pas encore le SHA-256 d'un fichier de preuve (rôle de `verify_effective_guarantees.py`).
+- `validate_profiles.py` signale `consensus-reference-single-host.yaml` comme configuration inconnue du catalogue. Ce problème existe déjà sur `35f28f1` ; il n'est pas traité dans cette branche.
+- `verify_effective_guarantees.py` échoue sur `example-aggregate-budget.yaml` (attendu : preuves manquantes, cf. README).
 
 ---
 

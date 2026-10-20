@@ -59,14 +59,14 @@ def check_effective_claim(cap):
     """Retourne une liste d'erreurs bloquantes pour une réclamation 'démontrée'."""
     errors = []
     v = cap["validation"]
+    ts = datetime.fromisoformat(v["verification_timestamp"].replace("Z", "+00:00"))
+    if ts > datetime.now(timezone.utc):
+        errors.append(f"verification_timestamp dans le futur ({v['verification_timestamp']})")
     if v.get("effective_guarantee_demonstrated") is not True:
         return errors
     h = cap["evidence"]["test_results_hash"]
     if h == PLACEHOLDER_HASH or not re.fullmatch(r"[a-f0-9]{64}", h):
         errors.append("effective_guarantee_demonstrated=true avec test_results_hash placeholder")
-    ts = datetime.fromisoformat(v["verification_timestamp"].replace("Z", "+00:00"))
-    if ts > datetime.now(timezone.utc):
-        errors.append(f"verification_timestamp dans le futur ({v['verification_timestamp']})")
     return errors
 
 
