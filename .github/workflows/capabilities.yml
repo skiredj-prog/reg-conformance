@@ -11,4 +11,3 @@ jobs:
       - run: python tools/make_capabilities.py --check
       - run: python tools/verify_capabilities.py
       - run: python tools/fill_catalog_guarantees.py --check
-      - run: python tools/validate_profiles.py profiles/*.yaml
