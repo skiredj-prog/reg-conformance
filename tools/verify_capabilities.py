@@ -3,8 +3,16 @@
 verify_capabilities.py
 Vérifie que chaque capacité déclarée dans capabilities/v1.0.0/*.json :
 1. Respecte le schéma capability-evidence-contract-v1.json
-2. A structural_admissibility == true (vérifié via validate_profiles.py)
-3. A effective_guarantee_demonstrated == true (vérifié via test_results_hash)
+2. A structural_admissibility == true
+3. Ses invariants_required sont définis dans catalog/capabilities-v1.yaml
+   (normative_invariants). Un invariant cité mais non défini fait échouer.
+4. Si effective_guarantee_demonstrated == true : test_results_hash doit être
+   un hash réel (pas un placeholder de zéros) et verification_timestamp ne
+   doit pas être dans le futur. Sinon la capacité échoue (fail-closed).
+
+Limite : le hash n'est pas encore recalculé contre un fichier de preuve ;
+ce contrôle rejette seulement les placeholders. Le contrôle SHA-256 fichier
+est dans verify_effective_guarantees.py.
 
 Usage:
     python verify_capabilities.py
@@ -18,7 +26,12 @@ Exit codes:
 import sys
 import json
 from pathlib import Path
+from datetime import datetime, timezone
+import re
+import yaml
 from jsonschema import validate, ValidationError
+
+PLACEHOLDER_HASH = "0" * 64
 
 
 def load_schema():
@@ -35,6 +48,28 @@ def load_capability(path):
         return json.load(f)
 
 
+def load_defined_invariants():
+    path = Path("catalog/capabilities-v1.yaml")
+    with open(path, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    return {inv["id"] for inv in data.get("normative_invariants", [])}
+
+
+def check_effective_claim(cap):
+    """Retourne une liste d'erreurs bloquantes pour une réclamation 'démontrée'."""
+    errors = []
+    v = cap["validation"]
+    if v.get("effective_guarantee_demonstrated") is not True:
+        return errors
+    h = cap["evidence"]["test_results_hash"]
+    if h == PLACEHOLDER_HASH or not re.fullmatch(r"[a-f0-9]{64}", h):
+        errors.append("effective_guarantee_demonstrated=true avec test_results_hash placeholder")
+    ts = datetime.fromisoformat(v["verification_timestamp"].replace("Z", "+00:00"))
+    if ts > datetime.now(timezone.utc):
+        errors.append(f"verification_timestamp dans le futur ({v['verification_timestamp']})")
+    return errors
+
+
 def main():
     schema = load_schema()
     capabilities_dir = Path("capabilities/v1.0.0")
@@ -44,6 +79,7 @@ def main():
         sys.exit(2)
 
     all_valid = True
+    defined = load_defined_invariants()
     capabilities = list(capabilities_dir.glob("*.json"))
 
     print(f"Vérification de {len(capabilities)} capacité(s)...")
@@ -75,10 +111,24 @@ def main():
             continue
         print("✅ structural_admissibility = true")
 
-        # 3. effective_guarantee_demonstrated (peut être true / false / null)
+        # 3. Invariants cités doivent être définis dans le catalogue
+        undefined = [i for i in cap["declaration"]["invariants_required"] if i not in defined]
+        if undefined:
+            print(f"❌ invariant(s) non définis dans catalog/capabilities-v1.yaml : {undefined}")
+            all_valid = False
+            continue
+        print("✅ invariants_required définis dans le catalogue")
+
+        # 4. effective_guarantee_demonstrated (true / false / null)
         demo = cap["validation"].get("effective_guarantee_demonstrated")
+        errs = check_effective_claim(cap)
+        if errs:
+            for e in errs:
+                print(f"❌ {e}")
+            all_valid = False
+            continue
         if demo is True:
-            print("✅ effective_guarantee_demonstrated = true")
+            print("✅ effective_guarantee_demonstrated = true (hash réel, horodatage cohérent)")
         elif demo is False:
             print("⚠️  effective_guarantee_demonstrated = false (réfuté)")
         else:
