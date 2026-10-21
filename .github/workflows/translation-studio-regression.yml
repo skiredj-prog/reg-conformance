@@ -1,0 +1,25 @@
+name: REG Translation Studio regression
+on:
+  pull_request:
+    paths:
+      - "translation_studio/**"
+      - ".github/workflows/translation-studio-regression.yml"
+  push:
+    branches:
+      - feat/reg-translation-mediation-v0
+permissions:
+  contents: read
+jobs:
+  studio-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install jsdom
+        working-directory: translation_studio
+        run: npm install --no-audit --no-fund
+      - name: Run exact mediation regression scenarios
+        working-directory: translation_studio
+        run: npm test
