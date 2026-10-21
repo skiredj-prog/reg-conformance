@@ -1,0 +1,414 @@
+{
+  "catalog_version": "discovery-v0.1.0",
+  "assumptions": [
+    {
+      "assumption_id": "H01",
+      "title": "Human response window",
+      "clarifying_question": "Can a human respond before an effect becomes irreversible?",
+      "failure_path": "If external effects commit before the human intervention window, nominal review may not prevent them.",
+      "candidate_invariants": [
+        {
+          "id": "INV-H01",
+          "condition": "When prior human approval is required, consequential effects wait for valid approval."
+        }
+      ],
+      "behavior_tags": [
+        "oversight",
+        "timing",
+        "external_effect"
+      ],
+      "source_refs": [
+        {
+          "source_id": "EU_AI_ACT_14",
+          "section": "Article 14",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "GDPR_22",
+          "section": "Article 22",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "NIST_AI_RMF",
+          "section": "MAP 2.2 / MEASURE 2.3–2.4",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "ISO_42001",
+          "section": "Official public description only",
+          "relationship": "analyst_inference"
+        }
+      ]
+    },
+    {
+      "assumption_id": "H02",
+      "title": "Technical versus business idempotence",
+      "clarifying_question": "Does retry handling cover the entire business effect and its identity?",
+      "failure_path": "A lost acknowledgement can lead to a duplicate effect if deduplication does not cover providers and concurrent retry paths.",
+      "candidate_invariants": [
+        {
+          "id": "INV-H02",
+          "condition": "One business intent cannot produce two distinct external effects within the declared boundary."
+        }
+      ],
+      "behavior_tags": [
+        "payment",
+        "retry",
+        "external_effect"
+      ],
+      "source_refs": [
+        {
+          "source_id": "NIST_AI_RMF",
+          "section": "MAP 2.2 / MEASURE 2.3–2.4",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "ISO_42001",
+          "section": "Official public description only",
+          "relationship": "analyst_inference"
+        }
+      ]
+    },
+    {
+      "assumption_id": "H03",
+      "title": "Approval bound to actual payload",
+      "clarifying_question": "Is the human approving the effect-bearing payload or merely a generated summary?",
+      "failure_path": "Approval of a summary can differ from the downstream payload that actually executes.",
+      "candidate_invariants": [
+        {
+          "id": "INV-H03",
+          "condition": "Approval binds the exact operation identity and effective payload."
+        }
+      ],
+      "behavior_tags": [
+        "oversight",
+        "authority",
+        "external_effect"
+      ],
+      "source_refs": [
+        {
+          "source_id": "EU_AI_ACT_14",
+          "section": "Article 14",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "GDPR_22",
+          "section": "Article 22",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "NIST_AI_RMF",
+          "section": "MAP 2.2 / MEASURE 2.3–2.4",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "OECD_AI",
+          "section": "Principle 1.3",
+          "relationship": "analyst_inference"
+        }
+      ]
+    },
+    {
+      "assumption_id": "H04",
+      "title": "Delegation authority boundary",
+      "clarifying_question": "Can composed tool calls exceed the original authority?",
+      "failure_path": "Individually allowed tool calls may compose into an effect outside the original principal's scope.",
+      "candidate_invariants": [
+        {
+          "id": "INV-H04",
+          "condition": "Delegated actions remain within original authority and scope."
+        }
+      ],
+      "behavior_tags": [
+        "authority",
+        "delegation",
+        "external_effect"
+      ],
+      "source_refs": [
+        {
+          "source_id": "NIST_AI_RMF",
+          "section": "MAP 2.2 / MEASURE 2.3–2.4",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "ISO_42001",
+          "section": "Official public description only",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "OECD_AI",
+          "section": "Principle 1.3",
+          "relationship": "analyst_inference"
+        }
+      ]
+    },
+    {
+      "assumption_id": "H05",
+      "title": "Atomicity at the effect boundary",
+      "clarifying_question": "Do reservations and external commits share the required concurrency guarantees?",
+      "failure_path": "A local budget check and external effect are not normally an atomic transaction; concurrency can violate a global ceiling.",
+      "candidate_invariants": [
+        {
+          "id": "INV-H05",
+          "condition": "Aggregate committed plus reserved never exceeds the declared limit."
+        }
+      ],
+      "behavior_tags": [
+        "payment",
+        "budget",
+        "concurrency",
+        "external_effect"
+      ],
+      "source_refs": [
+        {
+          "source_id": "NIST_AI_RMF",
+          "section": "MAP 2.2 / MEASURE 2.3–2.4",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "ISO_42001",
+          "section": "Official public description only",
+          "relationship": "analyst_inference"
+        }
+      ]
+    },
+    {
+      "assumption_id": "H06",
+      "title": "Context freshness",
+      "clarifying_question": "Is the state still valid at effect time?",
+      "failure_path": "Balances, inventory, permissions and other preconditions can change between read and execution.",
+      "candidate_invariants": [
+        {
+          "id": "INV-H06",
+          "condition": "Consequential transitions use an appropriately current or version-bound state."
+        }
+      ],
+      "behavior_tags": [
+        "stale_state",
+        "timing",
+        "external_effect"
+      ],
+      "source_refs": [
+        {
+          "source_id": "NIST_AI_RMF",
+          "section": "MAP 2.2 / MEASURE 2.3–2.4",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "ISO_42001",
+          "section": "Official public description only",
+          "relationship": "analyst_inference"
+        }
+      ]
+    },
+    {
+      "assumption_id": "H07",
+      "title": "Nonlinear response load",
+      "clarifying_question": "Can recovery and oversight capacity absorb a correlated burst?",
+      "failure_path": "Nominal error rates may conceal a nonlinear overload of responders and queues.",
+      "candidate_invariants": [
+        {
+          "id": "INV-H07",
+          "condition": "Critical response capacity remains within a declared operating envelope."
+        }
+      ],
+      "behavior_tags": [
+        "scale",
+        "oversight",
+        "timing"
+      ],
+      "source_refs": [
+        {
+          "source_id": "EU_AI_ACT_14",
+          "section": "Article 14",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "NIST_AI_RMF",
+          "section": "MAP 2.2 / MEASURE 2.3–2.4",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "ISO_42001",
+          "section": "Official public description only",
+          "relationship": "analyst_inference"
+        }
+      ]
+    },
+    {
+      "assumption_id": "H08",
+      "title": "Semantic drift across inputs",
+      "clarifying_question": "Do authority boundaries survive paraphrase and hostile formats?",
+      "failure_path": "Input variations or malicious content may redirect a model or parser beyond tested constraints.",
+      "candidate_invariants": [
+        {
+          "id": "INV-H08",
+          "condition": "The declared validation and authority limits hold for the relevant input/adversary model."
+        }
+      ],
+      "behavior_tags": [
+        "prompt",
+        "semantic",
+        "authority"
+      ],
+      "source_refs": [
+        {
+          "source_id": "NIST_AI_RMF",
+          "section": "MAP 2.2 / MEASURE 2.3–2.4",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "ISO_42001",
+          "section": "Official public description only",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "OECD_AI",
+          "section": "Principle 1.3",
+          "relationship": "analyst_inference"
+        }
+      ]
+    },
+    {
+      "assumption_id": "H09",
+      "title": "Fallback fail-closed continuity",
+      "clarifying_question": "Does a recovery path bypass the primary execution restriction?",
+      "failure_path": "On guard unavailability, fallback logic can allow an effect the normal admission path would reject.",
+      "candidate_invariants": [
+        {
+          "id": "INV-H09",
+          "condition": "Unavailability of a critical guard does not silently open protected effects."
+        }
+      ],
+      "behavior_tags": [
+        "fallback",
+        "oversight",
+        "external_effect"
+      ],
+      "source_refs": [
+        {
+          "source_id": "EU_AI_ACT_14",
+          "section": "Article 14",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "NIST_AI_RMF",
+          "section": "MAP 2.2 / MEASURE 2.3–2.4",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "ISO_42001",
+          "section": "Official public description only",
+          "relationship": "analyst_inference"
+        }
+      ]
+    },
+    {
+      "assumption_id": "H10",
+      "title": "Logs versus verifiable outcomes",
+      "clarifying_question": "Can recorded evidence substantiate an effect rather than merely report intent?",
+      "failure_path": "An integrity-protected record may still contain unverified outcome claims; intent and confirmation differ.",
+      "candidate_invariants": [
+        {
+          "id": "INV-H10",
+          "condition": "Evaluation, dispatch, unknown and confirmed outcomes remain distinguishable and traceable."
+        }
+      ],
+      "behavior_tags": [
+        "evidence",
+        "audit",
+        "external_effect"
+      ],
+      "source_refs": [
+        {
+          "source_id": "NIST_AI_RMF",
+          "section": "MAP 2.2 / MEASURE 2.3–2.4",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "ISO_42001",
+          "section": "Official public description only",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "OECD_AI",
+          "section": "Principle 1.3",
+          "relationship": "analyst_inference"
+        }
+      ]
+    },
+    {
+      "assumption_id": "H11",
+      "title": "Meaningful human review",
+      "clarifying_question": "Is approval substantive or a rubber-stamp interaction?",
+      "failure_path": "Review throughput, missing context and habituation can make an approval nominal.",
+      "candidate_invariants": [
+        {
+          "id": "INV-H11",
+          "condition": "Approval claimed as preventive is informed and can stop effect before execution."
+        }
+      ],
+      "behavior_tags": [
+        "oversight",
+        "authority",
+        "scale"
+      ],
+      "source_refs": [
+        {
+          "source_id": "EU_AI_ACT_14",
+          "section": "Article 14",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "GDPR_22",
+          "section": "Article 22",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "NIST_AI_RMF",
+          "section": "MAP 2.2 / MEASURE 2.3–2.4",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "OECD_AI",
+          "section": "Principle 1.3",
+          "relationship": "analyst_inference"
+        }
+      ]
+    },
+    {
+      "assumption_id": "H12",
+      "title": "Optimization incentive divergence",
+      "clarifying_question": "Can throughput incentives reward bypassing protected constraints?",
+      "failure_path": "Local performance goals may favor paths that evade restrictions while improving visible metrics.",
+      "candidate_invariants": [
+        {
+          "id": "INV-H12",
+          "condition": "Optimization does not override protected execution and authority boundaries."
+        }
+      ],
+      "behavior_tags": [
+        "scale",
+        "authority",
+        "fallback"
+      ],
+      "source_refs": [
+        {
+          "source_id": "NIST_AI_RMF",
+          "section": "MAP 2.2 / MEASURE 2.3–2.4",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "ISO_42001",
+          "section": "Official public description only",
+          "relationship": "analyst_inference"
+        },
+        {
+          "source_id": "OECD_AI",
+          "section": "Principle 1.3",
+          "relationship": "analyst_inference"
+        }
+      ]
+    }
+  ]
+}
