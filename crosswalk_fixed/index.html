@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REG Documentary Crosswalk — Review Candidate</title>
+<style>
+:root{color-scheme:dark;--bg:#0f172a;--panel:#1e293b;--line:#334155;--text:#f8fafc;--muted:#cbd5e1;--accent:#7dd3fc;--warn:#fcd34d}
+*{box-sizing:border-box}body{margin:0;padding:24px;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1400px;margin:auto}header{padding:12px 0 20px;border-bottom:1px solid var(--line);margin-bottom:20px}h1{font-size:1.7rem;margin:0 0 8px}h2{font-size:1.15rem}p{color:var(--muted)}.banner{border:1px solid #a16207;background:#422006;padding:12px 14px;border-radius:8px;color:#fef3c7;margin:18px 0}.controls{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.controls input,.controls select{background:var(--panel);color:var(--text);border:1px solid var(--line);padding:10px;border-radius:6px;font:inherit}.controls input{flex:1;min-width:230px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel)}table{border-collapse:collapse;width:100%;min-width:1000px}th,td{text-align:left;vertical-align:top;padding:12px;border-bottom:1px solid var(--line)}th{color:var(--accent);background:#111c31;font-size:.85rem}tr:last-child td{border-bottom:0}.pill{display:inline-block;border:1px solid #a16207;color:var(--warn);border-radius:4px;padding:2px 7px;font-size:.78rem;font-weight:700}.type{color:var(--accent);font-family:ui-monospace,monospace;font-size:.82rem}.small{font-size:.88rem;color:var(--muted)}a{color:var(--accent)}footer{margin:22px 0;color:var(--muted);font-size:.88rem}
+</style>
+</head>
+<body><main>
+<header><h1>REG Documentary Crosswalk</h1><p>Review candidate · Documentary comparison dated 13 October 2026 · Eight rows, all unverified</p></header>
+<div class="banner"><strong>Non vérifié / Unverified.</strong> These are bounded documentary findings, not validated equivalences. No public artifact titled “REG Core Protocol v0.3.0” was found in the examined repository. OP-1 remains unresolved.</div>
+<div class="controls"><input id="q" type="search" placeholder="Search axis, source, or note"><select id="type"><option value="">All relationship types</option><option>partial</option><option>not_found_in_sources</option><option>shared_word_different_object</option></select></div>
+<div class="table-wrap"><table><thead><tr><th>REG axis / distinction</th><th>Public REG source signal</th><th>Documentary assessment</th><th>Relationship</th><th>Verification</th><th>Notes / sources</th></tr></thead><tbody id="rows"><tr><td colspan="6">Loading data…</td></tr></tbody></table></div>
+<footer>Bounded source review only. “Not found” is not a claim of universal absence. No NIST, ISO, or REG-author validation is implied. See <a href="data/rfc-mapping.md">RFC mapping</a> and <a href="data/related-work.md">related-work notes</a>.</footer>
+</main>
+<script>
+let items=[];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function init(){try{const r=await fetch("data/crosswalk.json");if(!r.ok)throw new Error("HTTP "+r.status);items=await r.json();render();document.querySelector("#q").addEventListener("input",render);document.querySelector("#type").addEventListener("change",render)}catch(e){document.querySelector("#rows").innerHTML='<tr><td colspan="6">Unable to load data/crosswalk.json. Open this page through a static web server.</td></tr>'}}
+function render(){const q=document.querySelector("#q").value.toLowerCase(),t=document.querySelector("#type").value;const rows=items.filter(x=>(!t||x.relation_type===t)&&JSON.stringify(x).toLowerCase().includes(q));document.querySelector("#rows").innerHTML=rows.length?rows.map(x=>'<tr><td><strong>'+esc(x.reg_axis)+'</strong><div class="small">'+esc(x.id)+'</div></td><td>'+esc(x.candidate_reg_evidence)+'</td><td>'+esc(x.assessment)+'</td><td><span class="type">'+esc(x.relation_type)+'</span></td><td><span class="pill">'+esc(x.verification_status)+'</span></td><td>'+esc(x.note)+'<div class="small" style="margin-top:8px">'+x.sources.map(esc).join("<br>")+'</div></td></tr>').join(""):'<tr><td colspan="6">No matching rows.</td></tr>'}
+init();
+</script></body></html>
