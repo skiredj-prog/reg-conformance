@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REG Discovery · Beyond the checklist</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#162a3b;background:#f5f7f9}
+*{box-sizing:border-box}body{margin:0}button{font:inherit;cursor:pointer}
+.shell{max-width:1140px;margin:0 auto;padding:34px 24px 76px}
+header{background:#102539;color:#f1f7fc;padding:40px 44px;border-radius:16px}
+.eyebrow{text-transform:uppercase;font-weight:750;letter-spacing:.13em;font-size:11px;color:#73b6d0}
+h1{font-size:clamp(28px,4vw,48px);line-height:1.12;margin:12px 0 8px;letter-spacing:-.035em}
+header p{color:#bacad9;max-width:750px;line-height:1.7}
+.panel{background:#fff;border:1px solid #e0e6ed;border-radius:14px;margin-top:20px;padding:27px}
+.panel h2{font-size:21px;margin:0 0 5px}.sub{font-size:13px;color:#62758a;margin:0 0 20px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:11px}
+.card{display:block;border:1px solid #dce4ec;border-radius:9px;padding:16px;cursor:pointer;min-height:108px;transition:border-color .15s}
+.card:has(input:checked){border-color:#1b6997;background:#eff8fe;box-shadow:inset 0 0 0 1px #1b6997}
+.card input{accent-color:#196b9a;margin-right:7px}
+.card .name{font-size:14px;font-weight:680;display:block;margin-top:8px}
+.card .type{font-size:11px;color:#66798b;display:block;margin-top:6px}
+.actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:20px}
+.btn{border-radius:8px;padding:11px 18px;border:1px solid #ced8e1;background:white;color:#204158;font-weight:600}
+.btn.primary{background:#126195;border-color:#126195;color:white}
+button:focus-visible,input:focus-visible{outline:3px solid #73b6d0;outline-offset:3px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.status{font-size:12px;color:#6b7481}.report{display:none}
+.report.visible{display:block}
+.report-head{background:#eaf1f7;border-radius:10px;padding:21px 24px}
+.report-head h2{margin:5px 0;font-size:25px}.report-head p{color:#51677a}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.stat{background:#f2f6f9;padding:14px;border-radius:8px;font-size:12px;color:#526578}
+.stat strong{font-size:23px;color:#1e394f;display:block}
+.finding{padding:23px 0;border-top:1px solid #dde5ed}
+.finding h3{font-size:19px;margin:7px 0}.finding p{line-height:1.6}
+.kicker{font-size:11px;letter-spacing:.09em;font-weight:700;text-transform:uppercase;color:#1b638c}
+.kicker.warn{color:#a15b13}
+blockquote{border-left:3px solid #4499c2;margin:14px 0;padding:5px 14px;color:#294d68;background:#f2f8fc}
+ul{padding-left:20px;line-height:1.6}.sources{font-size:12px;color:#607285}.sources a{color:#126195;margin-right:10px}
+.limit{background:#fff6e9;border-left:4px solid #d8a454;padding:13px 16px;font-size:12px;line-height:1.6}
+@media(max-width:620px){header{padding:28px 20px}.shell{padding:18px 12px}.panel{padding:20px 16px}.grid{grid-template-columns:1fr}}
+@media print{body{background:white}.shell{padding:0}.panel{border:0}.cards,.actions,#controls,header{display:none!important}.report{display:block!important}.finding{break-inside:avoid}a{color:#162a3b}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header>
+<div class="eyebrow">REG · READ / EVALUATE / GUARD</div>
+<h1>Beyond the checklist.</h1>
+<p>Vos textes décrivent ce qui devrait fonctionner. Quelles hypothèses invisibles rendent ce comportement possible — et que se passe-t-il lorsqu'elles ne tiennent pas ?</p>
+</header>
+<section class="panel" id="controls">
+<h2>1. Choisissez vos référentiels</h2>
+<p class="sub">Sélection multiple. Aucun texte n'est présumé applicable ; aucun accès à votre infrastructure n'est demandé.</p>
+<div class="cards" id="cards"></div>
+<div class="actions">
+<button class="btn primary" id="explore">Découvrir les hypothèses <span aria-hidden="true">→</span></button>
+<button class="btn" id="example">Voir le scénario PayFlow fictif</button>
+<span class="status" id="selection-status" aria-live="polite"></span>
+</div>
+</section>
+<section class="panel report" id="report" aria-live="polite">
+<div class="report-head">
+<div class="eyebrow">REG DISCOVERY REPORT · V0.1 · EXPLORATOIRE</div>
+<h2 id="report-title">Hypothèses adjacentes</h2>
+<p id="claim"></p>
+<div class="grid">
+<div class="stat"><strong id="count-findings">0</strong>hypothèses affichées</div>
+<div class="stat"><strong id="count-conflicts">0</strong>contradictions entre prémisses déclarées</div>
+<div class="stat"><strong id="count-sources">0</strong>sources sélectionnées</div>
+</div>
+<p class="status" id="report-meta"></p>
+</div>
+<div class="actions">
+<button class="btn" id="export">Exporter JSON</button>
+<button class="btn" id="print">Imprimer / PDF</button>
+</div>
+<div id="findings"></div>
+<div class="limit"><strong>Limites.</strong> Les correspondances sont des inférences d'ingénierie. La sélection ne prouve ni l'applicabilité juridique, ni une défaillance réelle, ni la conformité, ni la sûreté de l'implémentation. Le scénario PayFlow repose sur des prémisses fictives délibérément contradictoires.</div>
+</section>
+</div>
+<script type="application/json" id="projection">/*REG_DISCOVERY_PROJECTION_JSON*/</script>
+<script>
+"use strict";
+const projection=JSON.parse(document.getElementById("projection").textContent);
+const cards=document.getElementById("cards");
+const available=new Set(projection.sources.map(x=>x.source_id));
+let currentReport=null;
+let demo=false;
+const el=(tag,className,text)=>{const x=document.createElement(tag);if(className)x.className=className;if(text!==undefined)x.textContent=text;return x};
+const checked=()=>[...cards.querySelectorAll("input:checked")].map(x=>x.value).sort();
+const labelFor=(s)=>({binding_law:"Loi · applicabilité à vérifier",voluntary_framework:"Cadre volontaire",management_standard:"Norme de management",recommendation:"Recommandations",draft:"Projet"}[s.source_kind]||s.source_kind);
+for(const source of projection.sources){
+ const label=el("label","card");
+ const input=el("input");input.type="checkbox";input.value=source.source_id;input.setAttribute("aria-label",source.name);
+ label.append(input,el("span","name",source.name),el("span","type",labelFor(source)));
+ cards.append(label);
+ input.addEventListener("change",()=>{demo=false;document.getElementById("selection-status").textContent=checked().length+" source(s) sélectionnée(s)"});
+}
+function draw(report){
+ currentReport=report;
+ const container=document.getElementById("findings");container.replaceChildren();
+ const isDemo=demo;
+ document.getElementById("report-title").textContent=isDemo?"PayFlow AI — scénario fictif":"Hypothèses que vos sélections invitent à examiner";
+ document.getElementById("claim").textContent=report.behavior?report.behavior.claim:"Analyse exploratoire : questions à clarifier, pas constats de non-conformité.";
+ document.getElementById("count-findings").textContent=String(report.findings.length);
+ document.getElementById("count-conflicts").textContent=String(report.findings.filter(x=>x.assessment==="structural_conflict").length);
+ document.getElementById("count-sources").textContent=String(report.selected_sources.length);
+ document.getElementById("report-meta").textContent=report.report_id+" · "+report.catalog_version+" · SHA catalogue "+projection.catalog_sha256.slice(0,12);
+ for(const f of report.findings){
+  const a=el("article","finding");
+  const status=f.assessment==="structural_conflict"?"Contradiction entre prémisses déclarées":f.assessment==="conditional"?"Conditionnel":"Question ouverte";
+  a.append(el("div","kicker"+(f.assessment==="structural_conflict"?" warn":""),f.assumption_id+" · "+status),el("h3","",f.title));
+  a.append(el("p","",f.failure_path),el("div","kicker","Question déterminante"),el("blockquote","",f.clarifying_question));
+  if(f.candidate_invariants.length){a.append(el("div","kicker","Invariants candidats — non vérifiés"));const ul=el("ul");for(const inv of f.candidate_invariants)ul.append(el("li","",inv.condition));a.append(ul);}
+  const citations=el("div","sources");citations.append(el("strong","", "Liens de contexte : "));
+  for(const ref of f.source_refs){
+   const original=report.selected_sources.find(s=>s.source_id===ref.source_id);
+   if(!original)continue;
+   const u=new URL(original.authority_uri);
+   if(u.protocol!=="https:")continue;
+   const link=el("a","",ref.source_id+" · "+ref.section);link.href=u.href;link.target="_blank";link.rel="noopener noreferrer";citations.append(link);
+  }
+  a.append(citations);container.append(a);
+ }
+ document.getElementById("report").classList.add("visible");
+ document.getElementById("report").scrollIntoView({behavior:"smooth",block:"start"});
+}
+document.getElementById("explore").addEventListener("click",()=>{
+ const ids=checked();if(!ids.length){document.getElementById("selection-status").textContent="Sélectionnez au moins une source.";return}
+ if(ids.some(id=>!available.has(id)))return;
+ const report=projection.exploratory_reports[ids.join("+")];
+ if(!report){document.getElementById("selection-status").textContent="Projection indisponible pour cette sélection.";return}
+ demo=false;draw(report);
+});
+document.getElementById("example").addEventListener("click",()=>{demo=true;draw(projection.fictional_demo.report)});
+document.getElementById("print").addEventListener("click",()=>window.print());
+document.getElementById("export").addEventListener("click",()=>{
+ if(!currentReport)return;
+ const blob=new Blob([JSON.stringify(currentReport,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob);const a=el("a");a.href=url;a.download=currentReport.report_id+".json";a.click();URL.revokeObjectURL(url);
+});
+document.getElementById("selection-status").textContent="0 source sélectionnée · version privée, non publiée";
+</script>
+</body>
+</html>
