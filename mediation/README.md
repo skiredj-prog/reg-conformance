@@ -87,3 +87,66 @@ the versioned output. Before adding real user documents, design a consent,
 retention and access boundary. Before permitting mediation approval, require
 human authority, verified source applicability, and tests backed by actual
 REG+ contracts. No automatic authority promotion.
+
+
+## Guided syntax interpretation v0.1 — narrow extension, no contract migration
+
+The **original** `mediation.engine.mediate()` PREVENT/PREPARE v0.1 output
+schema remains **unchanged**. An optional companion `mediation.guided.guide()`
+composes that validated draft with a **separate**, versioned
+`mediation.interpret.interpret()` syntax proposal:
+
+- Entire sentence must match an explicitly supported FR/EN grammar.
+- Two narrowly conditional demonstrations: **settlement duplicate-effect
+  constraint only when latency > N ms**, and **human approval on payments
+  strictly greater than X MAD/EUR/USD, prior to execution**.
+- One conjunction: **customer data residency AND access logging**. Each is a
+  separate syntax candidate. The authorized region remains unresolved.
+- No semantic fallback, inferred thresholds, unsupported qualifiers, arbitrary
+  grammar, canonical invariant IDs or executable code.
+- Unknown wording and added exceptions return `ABSTAIN_UNSUPPORTED` and zero
+  candidates. Even recognized wording remains `SYNTAX_CANDIDATES_UNVERIFIED`
+  with `meaning_verified=false` and `review_required=true`.
+- `mediation.verify_syntax.validate_syntax_result()` validates the strict
+  `contracts/syntax-v0.1.schema.json` **and replays the full source text**
+  through the deterministic grammar. Edits to a candidate's threshold, timing,
+  properties, source quote or authority status are rejected.
+
+### Reproduce the two-way customer-facing examples
+
+```sh
+python -m mediation.guided \
+  --input mediation/examples/prevent-conditional-settlement.json \
+  --output /tmp/reg-guided-settlement.json
+
+python -m mediation.guided \
+  --input mediation/examples/prevent-conditional-approval.json \
+  --output /tmp/reg-guided-approval.json
+
+python -m mediation.guided \
+  --input mediation/examples/prepare-payflow.json \
+  --output /tmp/reg-guided-prepare.json
+```
+
+`PREVENT` now has a **bounded, optional** syntax preview that shows the
+trigger, proposed property and unresolved questions without changing its
+canonical mediation status. `PREPARE` remains a **separate entry** with
+`syntax_interpretation = null`, retaining existing missing-evidence
+classification. A validated Discovery report can also be supplied to
+`PREVENT` as before; the report remains the source of the findings, and
+unrecognized behavior text simply abstains. Discovery findings are **not**
+silently translated into obligations.
+
+**Integration discipline:** this is a Python-side companion artifact. The
+standalone browser Translation Studio still uses its local illustrative parser;
+a real browser/API handoff to this contract has **not** been implemented.
+Do not claim this is a semantically complete policy compiler or a production
+REG+ / TENIR-Gov adapter.
+
+### Review gate before any further extension
+
+Before recognizing another sentence family: document the exact accepted
+syntax, show at least one adversarial formulation that must abstain, preserve
+source quotation, and add verification plus CI coverage. A broader semantic
+mediator must have an explicit human confirmation and source-applicability
+workflow rather than silently generalizing these patterns.
