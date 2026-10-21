@@ -1,0 +1,12 @@
+{
+  "schema_version": "0.1.0",
+  "entry": "PREVENT",
+  "scope": "Fictional settlement service — illustrative rule",
+  "intent": "Ne jamais exécuter deux fois un règlement si la latence système dépasse 200 ms.",
+  "source_refs": [
+    {
+      "source_id": "INTERNAL_POLICY_EXAMPLE",
+      "section": "§4.2 (fictional declaration; applicability not assessed)"
+    }
+  ]
+}
