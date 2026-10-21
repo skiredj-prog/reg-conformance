@@ -12,11 +12,14 @@ from pathlib import Path
 
 from mediation.engine import mediate
 from mediation.interpret import interpret
+from mediation.verify_syntax import validate_syntax_result
 
 
 def guide(request: dict) -> dict:
     draft = mediate(request)  # Existing strict v0.1 validation, unchanged.
     syntax = interpret(draft["intent"]) if draft["entry"] == "PREVENT" else None
+    if syntax is not None:
+        validate_syntax_result(syntax)
     questions = list(draft["open_questions"])
     if syntax is not None:
         for question in syntax["open_questions"]:
