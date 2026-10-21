@@ -1,0 +1,43 @@
+{
+  "capability_id": "raft-consensus-replication",
+  "declaration": {
+    "name": "Réplication consensus Raft (single-host / loopback)",
+    "description": "I8 + C1/C2 crash-stop sur cluster loopback via RaftConsensusBackend.",
+    "invariants_required": ["I8"],
+    "deployment_perimeter": {
+      "HOST_SCOPE": "mono-host",
+      "DEDUP_LAYER": "none",
+      "CONCURRENCY": "distributed-consensus",
+      "UNCERTAINTY": "fail-closed",
+      "network_scope": "loopback-cluster",
+      "fault_model": "crash-stop",
+      "total_nodes": 3,
+      "quorum": 2
+    }
+  },
+  "evidence": {
+    "implementation_version": "5.6.1",
+    "test_version": "0.6.0",
+    "test_results_hash": "f9f9c98b42c939acd9b953e08e1da89a94fcbb3a5d8cf11abb8e3ec60d785172",
+    "test_command": "python -m pytest -q tests/test_raft_backend.py",
+    "test_perimeter": {
+      "network_scope": "loopback-cluster"
+    }
+  },
+  "demonstration_scope": "loopback-test-only",
+  "status_note": "Validé indépendamment par Harv Banning le 2026-10-20. 46/46 PASS (131.14s). Périmètre : localhost / single-host. Pas de revendication C3, ni multi-host.",
+  "limitations": {
+    "known_limits": [
+      "FM-20 ouvert : sécurité du transport PySyncObj non établie",
+      "Raft restreint au développement/test loopback",
+      "Multi-host physique NON supporté",
+      "Attestation textuelle, pas de signature cryptographique"
+    ],
+    "unsupported_scenarios": ["déploiement multi-host physique", "fautes byzantines"]
+  },
+  "validation": {
+    "structural_admissibility": true,
+    "effective_guarantee_demonstrated": true,
+    "verification_timestamp": "2026-10-20T18:23:25-04:00"
+  }
+}
