@@ -1,0 +1,43 @@
+{
+  "schema_version": "0.1.0",
+  "entry": "PREPARE",
+  "scope": "Fictional PayFlow settlement workflow",
+  "source_refs": [
+    {
+      "source_id": "INTERNAL_POLICY_EXAMPLE",
+      "section": "§4.2 (illustrative, applicability not assessed)"
+    }
+  ],
+  "controls": [
+    {
+      "control_id": "PAY-CONTROL-01",
+      "description": "Deduplication configured for each logical operation",
+      "evidence_ids": [
+        "E-API-DESIGN",
+        "E-DEDUP-TEST"
+      ]
+    },
+    {
+      "control_id": "PAY-CONTROL-02",
+      "description": "Unknown external payment outcomes reconciled before retry",
+      "evidence_ids": []
+    },
+    {
+      "control_id": "PAY-CONTROL-03",
+      "description": "Operator sign-off documented on sensitive settlements",
+      "evidence_ids": [
+        "E-APPROVAL-PROCEDURE"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "E-API-DESIGN",
+      "description": "FICTIONAL design note; authenticity not assessed"
+    },
+    {
+      "evidence_id": "E-APPROVAL-PROCEDURE",
+      "description": "FICTIONAL review procedure; no operational evidence provided"
+    }
+  ]
+}
