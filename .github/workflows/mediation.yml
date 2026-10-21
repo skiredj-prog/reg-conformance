@@ -1,0 +1,32 @@
+name: REG mediation draft contracts
+on:
+  pull_request:
+    paths:
+      - 'mediation/**'
+      - 'discovery/**'
+      - '.github/workflows/mediation.yml'
+  push:
+    branches:
+      - feat/reg-translation-mediation-v0
+permissions:
+  contents: read
+jobs:
+  mediation-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install validation dependencies
+        run: python -m pip install 'pytest>=8,<10' 'jsonschema>=4,<5' 'PyYAML>=6,<7'
+      - name: Discovery and mediation adversarial tests
+        run: python -m pytest -q discovery/tests/ mediation/tests/
+      - name: REG+ structural regression
+        run: |
+          python -m pytest -q tests/test_catalog_enumeration.py tests/test_profile_admissibility.py
+          python tools/validate_profiles.py
+      - name: CLI examples generate only reviewable drafts
+        run: |
+          python -m mediation.engine --input mediation/examples/prevent-standalone.json --output /tmp/mediation-prevent.json
+          python -m mediation.engine --input mediation/examples/prepare-payflow.json --output /tmp/mediation-prepare.json
