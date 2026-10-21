@@ -198,3 +198,34 @@ def test_guided_rejects_tampered_discovery_report():
         guide({"schema_version": "0.1.0", "entry": "PREVENT",
                "scope": "FICTIONAL", "intent": PAYMENT_FR,
                "discovery_report": report})
+
+
+def test_syntax_validation_replays_actual_source():
+    from mediation.verify_syntax import validate_syntax_result
+    result = interpret(PAYMENT_FR)
+    validate_syntax_result(result)
+    tampered = copy.deepcopy(result)
+    tampered["proposals"][0]["trigger"]["value"] = 60000
+    with pytest.raises(ValueError, match="differs from deterministic"):
+        validate_syntax_result(tampered)
+    tampered = copy.deepcopy(result)
+    tampered["proposals"][0]["obligations"][0]["timing"] = "on_access"
+    with pytest.raises(ValueError, match="differs from deterministic"):
+        validate_syntax_result(tampered)
+
+
+def test_syntax_validation_rejects_invented_candidate_when_abstaining():
+    from mediation.verify_syntax import validate_syntax_result
+    result = interpret("Be nice to customers.")
+    validate_syntax_result(result)
+    result["proposals"] = copy.deepcopy(interpret(LATENCY_FR)["proposals"])
+    with pytest.raises(ValidationError):
+        validate_syntax_result(result)
+
+
+def test_syntax_validation_rejects_fake_verified_fields():
+    from mediation.verify_syntax import validate_syntax_result
+    result = interpret(LATENCY_FR)
+    result["effective_guarantee_demonstrated"] = True
+    with pytest.raises(ValidationError):
+        validate_syntax_result(result)
