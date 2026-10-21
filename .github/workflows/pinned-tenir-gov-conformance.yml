@@ -1,0 +1,37 @@
+name: Pinned TENIR-Gov conformance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  pinned-raft-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Read pinned source commit
+        id: target
+        run: echo "commit=$(python -c 'import json; print(json.load(open("conformance-target.json"))["implementation"]["source_commit"])')" >> "$GITHUB_OUTPUT"
+      - name: Checkout exact TENIR-Gov source
+        run: |
+          git clone https://github.com/skiredj-prog/tenir_governance.git tenir-governance
+          git -C tenir-governance checkout "${{ steps.target.outputs.commit }}"
+      - name: Install exact target and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ./tenir-governance "pytest>=8,<9" PyYAML "pysyncobj==0.3.17"
+      - name: Verify pinned package, catalog and rules
+        run: python tools/verify_conformance_target.py
+      - name: Validate structural profiles
+        run: python tools/validate_profiles.py
+      - name: Test profile validator and quorum fault cases
+        run: python tests/test_profile_admissibility.py
+      - name: Test target and catalog version guards
+        run: pytest -q tests/test_conformance_target.py
+      - name: Exercise exact pinned Raft backend
+        run: pytest -q tenir-governance/tests/test_raft_backend.py

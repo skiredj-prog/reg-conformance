@@ -66,9 +66,9 @@ quorum: q           # nœuds nécessaires pour décider
 total_nodes: n      # nombre total de nœuds
 ```
 
-Bornes de résilience vérifiées par le vérificateur de profil :
-- Crash-only : `n ≥ 2f + 1`, `quorum = f + 1` (Raft, Paxos)
-- Byzantin : `n ≥ 3m + 1`, `quorum = 2m + 1` (PBFT, Tendermint)
+Bornes de résilience vérifiées par le validateur pour le profil Raft crash-stop (les fautes byzantines et d'omission ne sont pas attestées) :
+- Crash-stop / Raft : `quorum = floor(n / 2) + 1`; disponibilité sous `f` crashs si `n - f >= quorum`
+- Byzantin : `n ≥ 3m + 1`, `quorum = 2m + 1` (PBFT, Tendermint) ; non pris en charge par le profil Raft actuel
 
 ## Interface de conformance (v1.0.0)
 
@@ -90,6 +90,32 @@ Le standard ne prescrit ni Raft, ni Paxos, ni etcd, ni PostgreSQL. Il prescrit c
 - Admissibles (structurel) : **42** — mono-process 9, mono-host 18, multi-host 15
 - Rejetées : **102**
 
+## Test perimeter and pinned implementation
+
+The `conformance-target.json` manifest pins the TENIR-Gov source commit and package version, plus `catalog_version` and `rules_version`. The `pinned-tenir-gov-conformance` workflow checks out that exact source commit, verifies package/catalog/rules metadata, validates profile assumptions, and runs the pinned Raft integration suite.
+
+### Reproduction
+
+```bash
+python tools/validate_profiles.py
+python tests/test_profile_admissibility.py
+pytest -q tests/test_conformance_target.py
+pytest -q tenir-governance/tests/test_raft_backend.py
+```
+
+### Included
+- Structural profile validation and crash-stop/quorum consistency checks.
+- Exact implementation, catalog, and rules version checks.
+- Local Raft integration, I8 regression, idempotent replay, amount validation, logical-clock replication, and resource re-registration tests.
+
+### Excluded / not established
+- Physical multi-host network or partition testing (the current Raft suite uses `localhost` and separate ports).
+- Byzantine fault tolerance, hardened transport/authentication, third-party attestation, or exactly-once external effects.
+- Formal proof of linearizability or production certification.
+
+The CI run is the authoritative source for exact collected, passed, failed, and skipped counts. Do not combine counts from different suites without reporting each suite and its denominator. `admissible_structural` means structural coherence only; it must never be used to infer `effective_guarantee_demonstrated`.
+
+Recorded pinned run: [GitHub Actions #39206045440](https://github.com/skiredj-prog/reg-conformance/actions/runs/39206045440) checked out TENIR-Gov commit `82037052556c5bfd731bd59fe958cf4df61d21b6`. Results: 5 target-metadata tests passed, including a guard against marking effective guarantees in the structural catalog; the profile validator accepted all 4 repository profiles and its adversarial profile script passed; the pinned Raft suite collected 46 tests and passed all 46 (0 failed, 0 skipped) in 142.12 s. These are empirical localhost-lab results, not physical multi-host or production certification.
 ## Build
 
 1. `python3 tools/enumerate_configs.py` — régénère `valid-configurations-v1.json`
@@ -103,7 +129,7 @@ Le standard ne prescrit ni Raft, ni Paxos, ni etcd, ni PostgreSQL. Il prescrit c
 
 | Profil | Config | Preuves obtenues | Manquant |
 |---|---|---|---|
-| `consensus-reference-single-host.yaml` | mono-host / local-registry / consensus-reference / fail-closed | `test.consensus.safety` (`evidence/test-consensus-safety.log`), `test.consensus.liveness` (`evidence/test-consensus-liveness.log`), `test.fault-tolerance` (`evidence/test-fault-tolerance.log`), `test.idempotency.local` (`evidence/test-idempotency-local.log`), `test.unknown-outcome.blocks` (`evidence/unknown-outcome-run.log`) | **`deployment.manifest`** (dépendance bloquante pour l'audit externe) |
+| `consensus-reference-single-host.yaml` | mono-host / local-registry / file-lock / fail-closed | `test.consensus.safety` (`evidence/test-consensus-safety.log`), `test.consensus.liveness` (`evidence/test-consensus-liveness.log`), `test.fault-tolerance` (`evidence/test-fault-tolerance.log`), `test.idempotency.local` (`evidence/test-idempotency-local.log`), `test.unknown-outcome.blocks` (`evidence/unknown-outcome-run.log`) | **`deployment.manifest`** (dépendance bloquante pour l'audit externe) |
 | `example-aggregate-budget-single-host.yaml` | mono-host / local-registry / file-lock / fail-closed | `test.lock.cross-process`, `test.idempotency.local` (`evidence/cross-process-run.log`), `test.unknown-outcome.blocks` (`evidence/unknown-outcome-run.log`) | **`deployment.manifest`** (dépendance bloquante pour l'audit externe) |
 | `example-aggregate-budget.yaml` | multi-host / distributed-consensus | aucune | toutes : **aucune implémentation de consensus multi-hôte n'existe** |
 | `consensus-replicated.yaml` | multi-host / distributed-consensus / fail-closed | aucune | toutes : modèle pour déploiement futur, adapter requis |

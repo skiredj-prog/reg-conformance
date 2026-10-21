@@ -34,7 +34,7 @@ description: >
 config:
   HOST_SCOPE: "mono-host"
   DEDUP_LAYER: "local-registry"
-  CONCURRENCY: "consensus-reference"
+  CONCURRENCY: "file-lock"
   UNCERTAINTY: "fail-closed"
 
 # Modèle de faute : crash-only, single-host. Le backend survit aux crashes de
