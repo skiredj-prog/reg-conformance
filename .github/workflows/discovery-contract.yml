@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/reg-discovery-report-contract-v0
+      - feat/reg-discovery-engine-v0
     paths:
       - 'discovery/**'
       - '.github/workflows/discovery-contract.yml'
@@ -24,4 +25,18 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install 'pytest>=8,<10' 'jsonschema>=4,<5'
-      - run: python -m pytest -q discovery/tests/test_discovery_report.py
+      - run: python -m pytest -q discovery/tests/
+
+      - name: Generate PayFlow demo and report (fictitious inputs)
+        run: |
+          python -m discovery.resolve --input discovery/examples/payflow-request.json --output /tmp/payflow-discovery.json
+          python -m discovery.render_report --report /tmp/payflow-discovery.json --output /tmp/payflow-discovery.html
+          test -s /tmp/payflow-discovery.json
+          test -s /tmp/payflow-discovery.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reg-discovery-payflow-preview
+          path: |
+            /tmp/payflow-discovery.json
+            /tmp/payflow-discovery.html
+          retention-days: 7

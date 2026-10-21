@@ -1,0 +1,28 @@
+{
+  "selected_sources": [
+    "EU_AI_ACT_14",
+    "GDPR_22",
+    "NIST_AI_RMF"
+  ],
+  "behavior": {
+    "claim": "Prior human approval prevents an external credit effect and retrying a timeout cannot produce a second bank transfer.",
+    "scope": "FICTIONAL PayFlow demonstration; all below premises are intentionally illustrative declarations, not measured findings."
+  },
+  "tags": [
+    "oversight",
+    "payment",
+    "retry",
+    "external_effect",
+    "authority"
+  ],
+  "premises": {
+    "prior_human_approval_required": true,
+    "auto_approve_if_timeout": true,
+    "at_most_once_effect_required": true,
+    "retry_after_unknown": true,
+    "end_to_end_dedup": false,
+    "approval_bound_to_effect_payload": false
+  },
+  "max_findings": 8,
+  "generated_at": "2026-10-21T05:09:00Z"
+}
