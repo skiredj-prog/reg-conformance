@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "REG experimental bounded syntax interpretation v0.1; no authority",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "source_text",
+    "source_kind",
+    "proposals",
+    "open_questions",
+    "review_required",
+    "meaning_verified",
+    "applicability",
+    "profile_status",
+    "code_generation"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "status": {
+      "enum": [
+        "ABSTAIN_UNSUPPORTED",
+        "SYNTAX_CANDIDATES_UNVERIFIED"
+      ]
+    },
+    "source_text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "source_kind": {
+      "const": "USER_DECLARED_INTENT"
+    },
+    "proposals": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "$ref": "#/$defs/proposal"
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 12,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "review_required": {
+      "const": true
+    },
+    "meaning_verified": {
+      "const": false
+    },
+    "applicability": {
+      "const": "NOT_ASSESSED"
+    },
+    "profile_status": {
+      "const": "NOT_ADMITTED"
+    },
+    "code_generation": {
+      "const": "NOT_GENERATED"
+    }
+  },
+  "$defs": {
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operand",
+        "operator",
+        "value",
+        "unit"
+      ],
+      "properties": {
+        "operand": {
+          "enum": [
+            "latency_ms",
+            "payment_amount"
+          ]
+        },
+        "operator": {
+          "const": ">"
+        },
+        "value": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "unit": {
+          "enum": [
+            "ms",
+            "MAD",
+            "EUR",
+            "USD"
+          ]
+        }
+      }
+    },
+    "obligation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "property",
+        "operator",
+        "value",
+        "timing"
+      ],
+      "properties": {
+        "property": {
+          "enum": [
+            "no_duplicate_settlement_effect",
+            "human_approval",
+            "customer_data_remains_in_authorized_region",
+            "each_access_recorded"
+          ]
+        },
+        "operator": {
+          "const": "=="
+        },
+        "value": {
+          "const": true
+        },
+        "timing": {
+          "enum": [
+            "external_effect",
+            "before_execution",
+            "continuous",
+            "on_access"
+          ]
+        }
+      }
+    },
+    "proposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal_id",
+        "pattern_id",
+        "source_excerpt",
+        "trigger",
+        "obligations",
+        "interpretation_status",
+        "canonical_invariant_id",
+        "open_questions"
+      ],
+      "properties": {
+        "proposal_id": {
+          "pattern": "^CAND_[A-Z_]+$",
+          "type": "string"
+        },
+        "pattern_id": {
+          "enum": [
+            "LATENCY_DEDUP_FR",
+            "LATENCY_DEDUP_EN",
+            "HUMAN_APPROVAL_FR",
+            "HUMAN_APPROVAL_EN",
+            "RESIDENCY_AUDIT_FR",
+            "RESIDENCY_AUDIT_EN"
+          ]
+        },
+        "source_excerpt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "trigger": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/trigger"
+            }
+          ]
+        },
+        "obligations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/obligation"
+          }
+        },
+        "interpretation_status": {
+          "const": "UNREVIEWED_SYNTAX_CANDIDATE"
+        },
+        "canonical_invariant_id": {
+          "type": "null"
+        },
+        "open_questions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ABSTAIN_UNSUPPORTED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "proposals": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "SYNTAX_CANDIDATES_UNVERIFIED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "proposals": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
+}
