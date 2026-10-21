@@ -1,0 +1,12 @@
+{
+  "schema_version": "0.1.0",
+  "entry": "PREVENT",
+  "scope": "Fictional settlement service",
+  "intent": "A business settlement must not produce two external effects for the same logical operation.",
+  "source_refs": [
+    {
+      "source_id": "INTERNAL_POLICY_EXAMPLE",
+      "section": "§4.2 (illustrative, applicability not assessed)"
+    }
+  ]
+}
