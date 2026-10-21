@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>REG Translation Studio</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<style>
+:root{--bg:#F6F7F9;--panel:#fff;--ink:#16202E;--mute:#5B6676;--line:#D9DEE6;--ok:#0E6B5C;--okbg:#E2F3EF;--warn:#9A4A06;--warnbg:#FCEBD6;--code:#EEF1F5;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10151D;--panel:#18202B;--ink:#E7ECF3;--mute:#9AA6B6;--line:#2B3644;--ok:#5FD0BC;--okbg:#12332D;--warn:#F0B063;--warnbg:#3A2812;--code:#0D1219}}
+:root[data-theme="dark"]{--bg:#10151D;--panel:#18202B;--ink:#E7ECF3;--mute:#9AA6B6;--line:#2B3644;--ok:#5FD0BC;--okbg:#12332D;--warn:#F0B063;--warnbg:#3A2812;--code:#0D1219}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:20px 16px 48px}
+h1{font:600 clamp(28px,7vw,40px)/1.1 Fraunces,Georgia,serif;margin:8px 0 6px;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:0 0 20px;max-width:56ch}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
+label:first-child{margin-top:0}
+textarea,input[type=text],select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px}
+textarea{min-height:92px;resize:vertical}
+:focus-visible{outline:2px solid var(--ok);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.row{grid-template-columns:1fr}}
+.chk{display:flex;gap:8px;align-items:center;font-weight:400;margin-top:12px}
+.chk input{width:18px;height:18px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.chip{font:inherit;font-size:13px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
+button.go{width:100%;margin-top:16px;font:600 16px "IBM Plex Sans",sans-serif;color:#fff;background:var(--ok);border:0;border-radius:10px;padding:14px;cursor:pointer}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) button.go{color:#0A1A17}}
+.banner{border-radius:10px;padding:12px 14px;margin-bottom:12px;font-weight:600}
+.banner small{display:block;font-weight:400;margin-top:2px}
+.ok{background:var(--okbg);color:var(--ok)}.warn{background:var(--warnbg);color:var(--warn)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto}
+.tab{font:inherit;font-size:14px;color:var(--mute);background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;white-space:nowrap}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--ok);font-weight:600}
+.lvl{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.lvl:last-child{border:0}
+.lvl b{font:400 13px "IBM Plex Mono",monospace;color:var(--ok);padding-top:2px}
+.lvl h3{margin:0;font-size:14px}
+.lvl p{margin:2px 0 0;color:var(--mute);font-size:14px;overflow-wrap:anywhere}
+pre{background:var(--code);border-radius:8px;padding:12px;margin:0;overflow-x:auto;font:13px/1.5 "IBM Plex Mono",monospace;white-space:pre}
+.cp{margin-top:8px;font:inherit;font-size:13px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+a.btn{display:inline-block;margin-top:8px;font-size:14px;color:var(--ok);font-weight:600}
+.note{color:var(--mute);font-size:13px;margin:8px 0 0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<h1>REG Translation Studio</h1>
+<p class="sub">Collez une règle métier ou un article réglementaire. Le studio la compile en profil REG+, invariants et classe d’exécution pour TENIR-Gov.</p>
+
+<section class="card">
+<div class="chips" id="chips"></div>
+<label for="l0">Règle métier (L0)</label>
+<textarea id="l0" placeholder="Ex. Ne jamais exécuter deux fois un règlement si la latence dépasse 200 ms."></textarea>
+<label for="l1">Référence réglementaire (L1)</label>
+<input type="text" id="l1" placeholder="Ex. ISO 20022 / Audit interne 4.2">
+<div class="row">
+<div><label for="dom">Domaine</label>
+<select id="dom"><option value="FINANCIAL_EXECUTION">Exécution financière</option><option value="SUPPLY_CHAIN_ROUTING">Chaîne logistique</option><option value="AUTONOMOUS_AGENTS">Agents autonomes</option><option value="DATA_SOVEREIGNTY">Souveraineté des données</option><option value="ADVISORY_ANALYTICS">Analytique conseil</option></select></div>
+<div><label for="mode">Mode de confidentialité</label>
+<select id="mode"><option value="PRIVATE_ENTERPRISE">Entreprise (privé)</option><option value="PUBLIC_COMMUNITY">Public (communauté, consentement requis)</option></select></div>
+</div>
+<label class="chk"><input type="checkbox" id="strict" checked> Demander une interprétation stricte (revue requise)</label>
+<button class="go" id="go">Traduire</button>
+</section>
+
+<section id="out" hidden>
+<div id="banner" class="banner"></div>
+<div class="card">
+<div class="tabs" role="tablist" id="tabs">
+<button class="tab" role="tab" data-t="stack">Pile L0–L4</button>
+<button class="tab" role="tab" data-t="yaml">Profil candidat (YAML)</button>
+<button class="tab" role="tab" data-t="py">Gabarit Python</button>
+<button class="tab" role="tab" data-t="api">Réponse JSON (simulation)</button>
+<button class="tab" role="tab" data-t="rfc" id="rfctab">Proposition RFC</button>
+</div>
+<div id="pane"></div>
+</div>
+</section>
+<p class="note">Prototype expérimental : correspondances indicatives et déterministes, sans conformité ni compatibilité TENIR-Gov démontrée. Traitement local dans le navigateur. Aucune donnée n’est envoyée ; toute création d’issue publique nécessite une action explicite.</p>
+</main>
+<script>
+/* REG Translation Studio — standalone, bounded mediation PREVIEW.
+ * No backend, no network transfers, no legal applicability determination,
+ * no verified conformance and no executable TENIR-Gov adapter.
+ */
+const $ = id => document.getElementById(id);
+const EX = [
+ ['Règlement financier','Ne jamais exécuter deux fois un règlement si la latence système dépasse 200 ms.','ISO 20022 / Audit interne 4.2','FINANCIAL_EXECUTION'],
+ ['Souveraineté','Les données clients ne doivent jamais quitter la région autorisée, et chaque accès doit être journalisé.','Loi 09-08 / CNDP','DATA_SOVEREIGNTY'],
+ ['Agent autonome','Tout paiement supérieur à 50 000 MAD exige une approbation humaine avant exécution.','EU AI Act Art. 14','AUTONOMOUS_AGENTS'],
+ ['Hors catalogue','Les agents doivent adopter un ton bienveillant et ne jamais mentionner Acme Corp aux clients.','Charte interne','ADVISORY_ANALYTICS']
+];
+const DOMS = {FINANCIAL_EXECUTION:'FIN',SUPPLY_CHAIN_ROUTING:'SCR',AUTONOMOUS_AGENTS:'AGT',DATA_SOVEREIGNTY:'DSV',ADVISORY_ANALYTICS:'ADV'};
+let R=null, tab='stack';
+EX.forEach(e => {const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=e[0]; b.addEventListener('click',()=>{$('l0').value=e[1];$('l1').value=e[2];$('dom').value=e[3];});$('chips').appendChild(b);});
+const mk=(tag,txt,cls)=>{const el=document.createElement(tag);if(txt!==undefined&&txt!==null)el.textContent=txt;if(cls)el.className=cls;return el;};
+function hash(value){let h=2166136261;for(const c of value){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return (h>>>0).toString(16).padStart(8,'0').toUpperCase();}
+function amount(t){
+  const m=t.match(/(?:sup[ée]rieur(?:e)?\s+[àa]|greater\s+than|over|above)\s*([0-9][0-9 \u00a0\u202f]*(?:[.,][0-9]+)?)\s*(?:MAD|EUR|USD|€|\$)?/i);
+  if(!m)return null;
+  const n=Number(m[1].replace(/[\s\u00a0\u202f]/g,'').replace(',','.'));
+  return Number.isFinite(n)&&n>0?n:null;
+}
+function latency(t){
+  const m=t.match(/([0-9]+(?:[.,][0-9]+)?)\s*(?:ms|millisecondes?|milliseconds?)/i);
+  if(!m)return null;
+  const n=Number(m[1].replace(',','.'));
+  return Number.isFinite(n)&&n>=0?n:null;
+}
+// Deliberately narrow and auditable rule patterns: anything uncertain remains a draft.
+function candidates(t){
+  const out=[];
+  const hasDupe=/(?:deux fois|doublon|double.?ex[ée]c|duplicat|idempoten|execute twice|twice)/i.test(t);
+  const hasLatency=/(?:latenc|\bd[ée]lai\b|\bms\b)/i.test(t);
+  const hasIf=/(?:\bsi\b|\bif\b|\bwhen\b|\blorsque\b)/i.test(t);
+  const ms=latency(t);
+  if(hasDupe && hasLatency && hasIf && ms!==null){
+    out.push({id:'CAND_CONDITIONAL_DEDUP',k:'COND_DEDUP',formula:`(latency_ms > ${ms}) => not already_executed`,action:'REVIEW_REQUIRED',meaning:'Condition sur la latence conservée ; identité métier et déduplication de bout en bout non démontrées.'});
+    return out;
+  }
+  const ceiling=amount(t);
+  if(ceiling!==null && /(approbation humaine|validation humaine|human approv|human authoriz|human sign.off)/i.test(t) && /(paiement|payment)/i.test(t)){
+    out.push({id:'CAND_CONDITIONAL_HUMAN_APPROVAL',k:'COND_HUM',formula:`(amount > ${ceiling}) => human_approved == true`,action:'REVIEW_REQUIRED',meaning:'Approbation humaine conditionnelle au montant ; préalable à la création de tout effet externe.'});
+    return out;
+  }
+  if(/(r[ée]gion autoris[ée]e|authorized region|allowed region|r[ée]siden[ct]|residen[ct]|souverainet[ée])/i.test(t)){
+    out.push({id:'CAND_DATA_RESIDENCY',k:'DATA_RES',formula:'data_region in ALLOWED_REGIONS',action:'REVIEW_REQUIRED',meaning:'Régions autorisées et point d’observation à établir.'});
+  }
+  if(/(journalis[ée]|journalis|trac[ée]|audit|\blog\b|logging|logged|journal)/i.test(t)){
+    out.push({id:'CAND_AUDIT_TRAIL',k:'AUDIT',formula:'access_is_recorded == true',action:'REVIEW_REQUIRED',meaning:'Périmètre des accès, intégrité et conservation des traces à préciser.'});
+  }
+  if(hasDupe && !hasLatency && out.length===0){
+    out.push({id:'CAND_AT_MOST_ONCE_EFFECT',k:'EFFECT',formula:'external_business_effect_count(operation_id) <= 1',action:'REVIEW_REQUIRED',meaning:'Exige une identité métier et une preuve de déduplication jusqu’au fournisseur externe.'});
+  }
+  return out;
+}
+// Best effort only. RFCs NEVER contain user text, even redacted text.
+function sanitizePreview(t){
+  return t.replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g,'[PII]')
+    .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g,'[IP]')
+    .replace(/\b\d[\d\s\u00a0\u202f.,]*\s*(?:MAD|EUR|USD|€|\$|ms|%)?\b/gi,'[CONSTANTE]')
+    .replace(/\b(?:Acme\s+Corp)\b/gi,'[ENTITÉ]');
+}
+function translate(){
+  const t=$('l0').value.trim();if(!t){$('l0').focus();return;}
+  const dom=$('dom').value,mode=$('mode').value,strict=$('strict').checked,l1=$('l1').value.trim()||'(référence non fournie)';
+  const hits=candidates(t);
+  const token=hash(JSON.stringify([t,l1,dom,mode,strict]));
+  const mapped=hits.length>0;
+  const pid=mapped?`CAND_${DOMS[dom]}_${hits.map(h=>h.k).join('_')}_${token}`:`DRAFT_COMMUNITY_${token}`;
+  R={t,l1,dom,mode,strict,hits: mapped?hits:[{id:'CAND_UNMAPPED_PATTERN',k:'UNMAPPED',formula:'UNRESOLVED',action:'REVIEW_REQUIRED',meaning:'Invariant non formalisé ; une revue humaine est nécessaire.'}],mapped,pid,token,san:sanitizePreview(t)};
+  // Public mode is an intention to review an RFC, never an automatic publication.
+  render();
+}
+function yaml(){return [
+  `profile_id: ${R.pid}`,
+  `status: ${R.mapped?'CANDIDATE_REVIEW_REQUIRED':'UNVERIFIED_COMMUNITY_DRAFT'}`,
+  `domain: ${R.dom}`,
+  `source_status: UNVERIFIED`,
+  `sigma:`,
+  `  hypotheses:`,
+  `    strict_mode_requested: ${R.strict}`,
+  `    runtime_compatibility: NOT_VERIFIED`,
+  `invariants:`,
+  ...R.hits.flatMap(h=>[
+    `  - id: ${h.id}`,
+    `    formula: "${h.formula}"`,
+    `    violation_action: ${h.action}`,
+    `    verification_status: UNVERIFIED`
+  ])
+].join('\n')+'\n';}
+function py(){
+  // This is NOT an adapter and must never return PASS/ALLOW for user-supplied rules.
+  return `# EXPÉRIMENTAL — gabarit non exécutable : validation humaine requise\n`+
+    `# NON COMPATIBLE PAR DÉFAUT avec une interface TENIR-Gov vérifiée.\n`+
+    `# Aucune méthode n'autorise l'exécution ou ne génère des reçus.\n`+
+    `class CandidateMediation:\n`+
+    `    profile_id = ${JSON.stringify(R.pid)}\n`+
+    `    properties = ${JSON.stringify(R.hits.map(h=>h.formula))}\n\n`+
+    `    def evaluate(self, context):\n`+
+    `        raise NotImplementedError('Médiation non approuvée : évaluation interdite')\n\n`+
+    `    def commit(self, context, verdict):\n`+
+    `        raise NotImplementedError('Commit interdit pour un profil candidat')\n\n`+
+    `    def record(self, context, verdict):\n`+
+    `        raise NotImplementedError('Aucun registre probatoire simulé')\n`;
+}
+function rfc(){
+  // No user input, document reference, identifiers or text are disclosed here.
+  return `## Proposition structurale — sans contenu utilisateur\n\n`+
+    `**Statut :** UNVERIFIED_COMMUNITY_DRAFT\n`+
+    `**Motif :** OUT_OF_CATALOG\n`+
+    `**Domaine générique :** ${R.dom}\n`+
+    `**Publication :** soumise à votre confirmation dans GitHub\n\n`+
+    `### Description\nMotif inconnu nécessitant une nouvelle revue de curation.\n`+
+    `Aucun texte de règle, nom, montant ni référence interne n'est transmis.\n\n`+
+    `### Travaux à réaliser\n- Expliquer les propriétés attendues sans divulgation sensible.\n- Vérifier si un profil existant peut couvrir le cas.\n- Définir les limites, les hypothèses et les tests adversariaux.\n`;
+}
+function api(){
+  const res={
+    status:R.mapped?'CANDIDATE_REVIEW_REQUIRED':'UNMAPPED_PATTERN_GENERATED',
+    catalog_match:false,
+    draft_profile_id:R.pid,
+    substantive_rule:{summary:R.mapped?'Médiation partielle sur motifs déterministes ; vérification humaine requise.':'Motif hors catalogue ; curation requise.',source_reference_status:'UNVERIFIED'},
+    generated_draft_invariants:R.hits.map(h=>({proposed_id:h.id,extracted_condition:h.formula,verification_status:'UNVERIFIED'})),
+    github_issue:{status:R.mode==='PRIVATE_ENTERPRISE'?'ROUTED_TO_PRIVATE_REPO':'READY_TO_REVIEW_NOT_SUBMITTED'},
+    limitations:{not_legal_advice:true,not_runtime_compatible:true,not_demonstrated:true}
+  };
+  return JSON.stringify(res,null,2);
+}
+function codeBlock(txt){
+  const box=mk('div');box.append(mk('pre',txt));
+  const b=mk('button','Copier','cp');b.type='button';
+  b.onclick=async()=>{try{await navigator.clipboard.writeText(txt);b.textContent='Copié';}catch(e){b.textContent='Copie impossible';}setTimeout(()=>b.textContent='Copier',1500);};
+  box.append(b);return box;
+}
+function render(){
+  $('out').hidden=false;
+  const b=$('banner');b.className=`banner warn`;b.replaceChildren();
+  b.append(R.mapped?`Profil candidat — revue requise : ${R.pid}`:`Hors catalogue : ${R.pid}`);
+  b.append(mk('small',R.mapped?'Correspondance indicative, ni résolution ni garantie démontrée.':'Brouillon non vérifié : aucun envoi public automatique.'));
+  $('rfctab').hidden=R.mapped;
+  if(R.mapped&&tab==='rfc')tab='stack';
+  pane();$('out').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function pane(){
+  document.querySelectorAll('.tab').forEach(x=>{x.setAttribute('aria-selected',String(x.dataset.t===tab));x.tabIndex=x.dataset.t===tab?0:-1;});
+  const p=$('pane');p.replaceChildren();
+  if(!R)return;
+  if(tab==='stack'){
+    const rows=[
+      ['L0','Règle métier (déclarée)',R.t],
+      ['L1','Référence à vérifier',R.l1],
+      ['L2','Médiation candidate',R.mapped?R.hits.map(h=>h.meaning).join(' '):'Motif non reconnu : clarification nécessaire.'],
+      ['L3','Propriétés candidates (σ / I*)',`${R.pid} → ${R.hits.map(h=>h.id).join(', ')} (non approuvées)`],
+      ['L4','Gabarit expérimental','Aucun code prêt à déployer : interfaces, tests et garanties non vérifiés.']
+    ];
+    rows.forEach(r=>{const d=mk('div',null,'lvl');d.append(mk('b',r[0]));const c=mk('div');c.append(mk('h3',r[1]),mk('p',r[2]));d.append(c);p.append(d);});
+  }else if(tab==='yaml') p.append(codeBlock(yaml()));
+  else if(tab==='py') p.append(codeBlock(py()));
+  else if(tab==='api') p.append(codeBlock(api()));
+  else if(tab==='rfc'&&!R.mapped){
+    if(R.mode==='PRIVATE_ENTERPRISE')p.append(mk('p','Mode privé : aucune issue publique. Aucun dépôt privé n’est contacté par ce prototype.'));
+    p.append(codeBlock(rfc()));
+    if(R.mode==='PUBLIC_COMMUNITY'){
+      const consent=mk('label',null,'chk');
+      const cb=mk('input');cb.type='checkbox';cb.setAttribute('aria-label','Je confirme avoir relu le brouillon public sans données confidentielles');
+      consent.append(cb,mk('span','J’ai vérifié le texte proposé et j’accepte d’ouvrir manuellement la création d’une issue publique.'));
+      const a=mk('a','Ouvrir une RFC sur GitHub (sans envoi automatique)','btn');
+      a.href='https://github.com/skiredj-prog/reg-conformance/issues/new?title='+encodeURIComponent('RFC: new structural pattern review')+'&body='+encodeURIComponent(rfc());
+      a.target='_blank';a.rel='noopener noreferrer';a.hidden=true;
+      cb.addEventListener('change',()=>{a.hidden=!cb.checked;});
+      p.append(consent,a,mk('p','La revue humaine GitHub reste obligatoire. Aucune issue n’est créée depuis ce prototype.','note'));
+    }
+  }
+}
+$('go').addEventListener('click',translate);
+$('tabs').addEventListener('click',e=>{const item=e.target.closest('[data-t]');if(item){tab=item.dataset.t;pane();}});
+
+</script>
+</body>
+</html>
