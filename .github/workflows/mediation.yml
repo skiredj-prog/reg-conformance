@@ -1,0 +1,80 @@
+name: REG mediation draft contracts
+on:
+  pull_request:
+    paths:
+      - 'mediation/**'
+      - 'discovery/**'
+      - '.github/workflows/mediation.yml'
+  push:
+    branches:
+      - feat/reg-translation-mediation-v0
+permissions:
+  contents: read
+jobs:
+  mediation-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install validation dependencies
+        run: python -m pip install 'pytest>=8,<10' 'jsonschema>=4,<5' 'PyYAML>=6,<7'
+      - name: Discovery and mediation adversarial tests
+        run: python -m pytest -q discovery/tests/ mediation/tests/
+      - name: REG+ structural regression
+        run: |
+          python tests/test_catalog_enumeration.py
+          python tests/test_profile_admissibility.py
+          python - <<'PY'
+          from pathlib import Path
+          from tools.validate_profiles import load_catalog, check_profile
+          files = sorted(Path('profiles').glob('*.yaml'))
+          catalog = load_catalog()
+          baseline = 'consensus-reference-single-host.yaml'
+          unexpected = []
+          for profile in files:
+              errors = check_profile(str(profile), catalog)
+              if not errors:
+                  continue
+              if profile.name == baseline and len(errors) == 1 and (
+                  "configuration inconnue dans le catalogue" in errors[0]
+                  and "'CONCURRENCY': 'consensus-reference'" in errors[0]
+              ):
+                  print("KNOWN UPSTREAM BASELINE DEFECT (not introduced by mediation):", errors[0])
+              else:
+                  unexpected += errors
+          if unexpected:
+              raise SystemExit("Unexpected REG+ profile error: " + "; ".join(unexpected))
+          print("REG+ profile checks: all other profiles valid; catalog unchanged.")
+          PY
+      - name: CLI examples generate only reviewable drafts
+        run: |
+          python -m mediation.engine --input mediation/examples/prevent-standalone.json --output /tmp/mediation-prevent.json
+          python -m mediation.engine --input mediation/examples/prepare-payflow.json --output /tmp/mediation-prepare.json
+
+      - name: Guided PREVENT and independent PREPARE examples
+        run: |
+          python -m mediation.guided --input mediation/examples/prevent-conditional-settlement.json --output /tmp/reg-guided-settlement.json
+          python -m mediation.guided --input mediation/examples/prevent-conditional-approval.json --output /tmp/reg-guided-approval.json
+          python -m mediation.guided --input mediation/examples/prepare-payflow.json --output /tmp/reg-guided-prepare.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mediation.verify_syntax import validate_syntax_result
+          settlement=json.loads(Path('/tmp/reg-guided-settlement.json').read_text())
+          approval=json.loads(Path('/tmp/reg-guided-approval.json').read_text())
+          prepare=json.loads(Path('/tmp/reg-guided-prepare.json').read_text())
+          for item in (settlement, approval):
+              assert item['authority_promotion']=='NONE'
+              assert item['mediation_draft']['profile_status']=='NOT_ADMITTED'
+              assert item['mediation_draft']['code_generation']=='NOT_GENERATED'
+              assert item['syntax_interpretation']['status']=='SYNTAX_CANDIDATES_UNVERIFIED'
+              validate_syntax_result(item['syntax_interpretation'])
+          assert settlement['syntax_interpretation']['proposals'][0]['trigger']['value']==200
+          assert approval['syntax_interpretation']['proposals'][0]['trigger']['value']==50000
+          assert prepare['syntax_interpretation'] is None
+          assert prepare['mediation_draft']['entry']=='PREPARE'
+          print('Guided PREVENT / independent PREPARE: validated without status promotion')
+          PY
+

@@ -1,0 +1,12 @@
+{
+  "schema_version": "0.1.0",
+  "entry": "PREVENT",
+  "scope": "Fictional agent payment service — illustrative rule",
+  "intent": "Tout paiement supérieur à 50 000 MAD exige une approbation humaine avant exécution.",
+  "source_refs": [
+    {
+      "source_id": "INTERNAL_POLICY_EXAMPLE",
+      "section": "§5.1 (fictional declaration; applicability not assessed)"
+    }
+  ]
+}

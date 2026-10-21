@@ -1,0 +1,12 @@
+{
+  "name": "reg-translation-studio-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser-only semantic safety preview, not a REG+ compiler",
+  "scripts": {
+    "test": "node tests/studio_regression.test.js preview/index.html"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
+}
