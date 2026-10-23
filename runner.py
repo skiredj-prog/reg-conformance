@@ -261,7 +261,11 @@ def _run_t7_membrane_vector(adapter):
             return adapter._gap("CT-R4-012", T6_T8_GAP_NOTE + " (probe module missing)")
     status, detail = run_t7_probe()
     if status == "PASS":
-        return adapter._r("CT-R4-012", ReportingState.PASS, details=detail)
+        # A lab-only probe cannot establish conformance of the selected HTTP/native
+        # backend. Preserve the successful observation as a scope-qualified gap.
+        return adapter._gap("CT-R4-012",
+            "Laboratory T7 probe passed, but this does not exercise the selected "
+            f"{adapter.interface_mode} backend: {detail}. " + T6_T8_GAP_NOTE)
     if status == "GAP":
         return adapter._gap("CT-R4-012", detail)
     return adapter._fail("CT-R4-012", detail)
