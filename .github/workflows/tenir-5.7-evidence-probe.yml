@@ -1,0 +1,67 @@
+name: tenir-5.7-evidence-probe
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'qualifications/tenir-governance-5.7.0.*'
+      - '.github/workflows/tenir-5.7-evidence-probe.yml'
+permissions:
+  contents: read
+jobs:
+  evidence-probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install harness and pinned subject source
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install "tenir-governance @ git+https://github.com/skiredj-prog/tenir_governance.git@0ec4870ee5bd73d90b9c6304f5cf774defadfb83"
+      - name: Record subject identity (not conformance evidence)
+        run: |
+          mkdir -p results
+          python - <<'PY'
+          import importlib.metadata as im, json, platform
+          import tenir_governance, tenir_kernel
+          versions = {
+            "installed_distribution": im.version("tenir-governance"),
+            "governance_import": tenir_governance.__version__,
+            "kernel_import": tenir_kernel.__version__,
+            "pinned_source_revision": "0ec4870ee5bd73d90b9c6304f5cf774defadfb83",
+            "python": platform.python_version(),
+            "note": "Import/version verification only; not a test of 5.7 native lifecycle."
+          }
+          with open("results/subject-identity.json","w") as f:
+            json.dump(versions,f,indent=2)
+          assert versions["installed_distribution"] == versions["governance_import"] == versions["kernel_import"] == "5.7.0", versions
+          PY
+          python -m pip freeze > results/pip-freeze.txt
+      - name: Run REG native reference adapter (not TENIR-Gov 5.7 native)
+        continue-on-error: true
+        run: |
+          python runner.py --mode native --output results/reference-native.json > results/reference-native.log 2>&1
+      - name: Check results exist and generate hashes
+        if: always()
+        run: |
+          mkdir -p results
+          python - <<'PY'
+          import hashlib,json,pathlib
+          directory=pathlib.Path("results")
+          files=sorted(p for p in directory.iterdir() if p.is_file())
+          hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
+          (directory/"sha256.json").write_text(json.dumps(hashes,indent=2)+"\n")
+          r=directory/"reference-native.json"
+          if r.exists():
+            report=json.loads(r.read_text())
+            summary={"interface_mode":report.get("interface_mode"),"conformance_status":report.get("conformance_status"),"summary":report.get("summary"),"subject": "local reference adapter, not TENIR-Gov 5.7.0"}
+            (directory/"classification.json").write_text(json.dumps(summary,indent=2)+"\n")
+          PY
+      - name: Upload inspection artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tenir-5.7-evidence-probe
+          path: results/
+          if-no-files-found: error
