@@ -54,10 +54,35 @@ jobs:
           assert versions["installed_distribution"] == versions["governance_import"] == versions["kernel_import"] == "5.7.0", versions
           PY
           python -m pip freeze > results/pip-freeze.txt
-      - name: Run REG native reference adapter (not TENIR-Gov 5.7 native)
-        continue-on-error: true
+      - name: Run REG reference adapter and classify incomplete evidence
         run: |
+          set +e
           python runner.py --mode native --output results/reference-native.json > results/reference-native.log 2>&1
+          code=$?
+          set -e
+          echo "$code" > results/reference-exit-code.txt
+          cat results/reference-native.log
+          python - "$code" <<'PY'
+          import json, pathlib, sys
+          code = int(sys.argv[1])
+          path = pathlib.Path("results/reference-native.json")
+          if not path.exists():
+              raise SystemExit("Missing REG reference report")
+          report = json.loads(path.read_text())
+          counts = report.get("summary", {})
+          allowed = {0: "CONFORMANT", 2: "INCOMPLETE", 3: "INCONCLUSIVE"}
+          if code not in allowed or report.get("exit_code") != code or counts.get("FAIL", 0):
+              raise SystemExit(f"REG reference failure or inconsistent report: code={code}, counts={counts}")
+          if code == 2 and not (counts.get("IMPLEMENTATION_GAP", 0) or counts.get("ADAPTER_REQUIRED", 0)):
+              raise SystemExit("Exit 2 without a reported implementation gap")
+          if code == 3 and not counts.get("INCONCLUSIVE", 0):
+              raise SystemExit("Exit 3 without inconclusive results")
+          if code == 0 and any(counts.get(k, 0) for k in ("INCONCLUSIVE","IMPLEMENTATION_GAP","ADAPTER_REQUIRED")):
+              raise SystemExit("Exit 0 while unresolved vectors remain")
+          if report.get("conformance_status") != allowed[code]:
+              raise SystemExit(f"Report status mismatch: {report.get('conformance_status')} != {allowed[code]}")
+          print(f"REG reference adapter status: {allowed[code]}; not TENIR-Gov native conformance")
+          PY
       - name: Check results exist and generate hashes
         if: always()
         run: |
