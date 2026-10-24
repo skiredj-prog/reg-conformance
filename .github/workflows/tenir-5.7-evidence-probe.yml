@@ -19,6 +19,22 @@ jobs:
         run: |
           python -m pip install -r requirements.txt
           python -m pip install "tenir-governance @ git+https://github.com/skiredj-prog/tenir_governance.git@0ec4870ee5bd73d90b9c6304f5cf774defadfb83"
+      - name: Checkout exact TENIR-Gov source for targeted release tests
+        uses: actions/checkout@v4
+        with:
+          repository: skiredj-prog/tenir_governance
+          ref: 0ec4870ee5bd73d90b9c6304f5cf774defadfb83
+          path: subject-source
+          persist-credentials: false
+      - name: Execute targeted 5.7 deployment safety regression
+        run: |
+          python -m pip install "pytest>=8,<10"
+          mkdir -p results
+          (cd subject-source && python -m pytest -q tests/test_deployment_manifest.py) > results/subject-deployment-tests.log 2>&1 || {
+            cat results/subject-deployment-tests.log
+            exit 1
+          }
+          cat results/subject-deployment-tests.log
       - name: Record subject identity (not conformance evidence)
         run: |
           mkdir -p results
