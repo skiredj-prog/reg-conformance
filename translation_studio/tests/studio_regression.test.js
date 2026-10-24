@@ -27,6 +27,8 @@ function run(l0,dom,mode){
 }
 const A=run('Ne jamais exécuter deux fois un règlement si la latence système dépasse 200 ms.','FINANCIAL_EXECUTION');
 ok(A.errs.length===0,'chargement sans erreur JS '+A.errs.join(';'));
+ok(/propriétés candidates non admises/.test(A.d.querySelector('.sub').textContent),'intro : aucune compilation de profil admis');
+ok(!/compile en profil REG\+/.test(A.d.querySelector('.sub').textContent),'intro : promesse de compilation retirée');
 ok(/\(latency_ms > 200\) => not already_executed/.test(A.yaml),'règlement : condition si latence > 200 conservée');
 ok(!/amount/.test(A.yaml),'règlement : aucun plafond de montant inventé');
 ok(!/RESOLVED/.test(A.yaml+A.api)&&!/Résolu/.test(A.banner),'règlement : jamais RESOLVED / Résolu');
@@ -37,7 +39,7 @@ const C=run('Les données clients ne doivent jamais quitter la région autorisé
 ok(/CAND_DATA_RESIDENCY/.test(C.yaml)&&/CAND_AUDIT_TRAIL/.test(C.yaml),'résidence ET audit conservés');
 const D=run('Les agents doivent adopter un ton bienveillant et ne jamais mentionner Acme Corp aux clients.','ADVISORY_ANALYTICS');
 ok(/Hors catalogue/.test(D.banner)&&JSON.parse(D.api).status==='UNMAPPED_PATTERN_GENERATED','hors catalogue : non vérifié');
-ok(JSON.parse(D.api).github_issue.status==='ROUTED_TO_PRIVATE_REPO','mode par défaut : privé');
+ok(JSON.parse(D.api).github_issue.status==='PRIVATE_ROUTING_NOT_PERFORMED','mode par défaut : privé');
 const E=run('Les agents doivent adopter un ton bienveillant et ne jamais mentionner Acme Corp aux clients.','ADVISORY_ANALYTICS','PUBLIC_COMMUNITY');
 E.d.querySelector('.tab[data-t=rfc]').click();
 const link=E.d.querySelector('#pane a.btn');

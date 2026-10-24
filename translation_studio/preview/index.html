@@ -50,7 +50,7 @@ a.btn{display:inline-block;margin-top:8px;font-size:14px;color:var(--ok);font-we
 <body>
 <main>
 <h1>REG Translation Studio</h1>
-<p class="sub">Collez une règle métier ou un article réglementaire. Le studio la compile en profil REG+, invariants et classe d’exécution pour TENIR-Gov.</p>
+<p class="sub">Saisissez une intention métier ou une référence déclarée. Le studio propose des propriétés candidates non admises, à examiner humainement. Aucun profil REG+ ni autorisation TENIR-Gov n’est produit.</p>
 
 <section class="card">
 <div class="chips" id="chips"></div>
@@ -207,7 +207,7 @@ function api(){
     draft_profile_id:R.pid,
     substantive_rule:{summary:R.mapped?'Médiation partielle sur motifs déterministes ; vérification humaine requise.':'Motif hors catalogue ; curation requise.',source_reference_status:'UNVERIFIED'},
     generated_draft_invariants:R.hits.map(h=>({proposed_id:h.id,extracted_condition:h.formula,verification_status:'UNVERIFIED'})),
-    github_issue:{status:R.mode==='PRIVATE_ENTERPRISE'?'ROUTED_TO_PRIVATE_REPO':'READY_TO_REVIEW_NOT_SUBMITTED'},
+    github_issue:{status:R.mode==='PRIVATE_ENTERPRISE'?'PRIVATE_ROUTING_NOT_PERFORMED':'READY_TO_REVIEW_NOT_SUBMITTED'},
     limitations:{not_legal_advice:true,not_runtime_compatible:true,not_demonstrated:true}
   };
   return JSON.stringify(res,null,2);
