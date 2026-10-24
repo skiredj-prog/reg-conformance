@@ -1,0 +1,60 @@
+{
+  "schema_version": "0.1.0",
+  "qualification_id": "tenir-governance-5.7.0-candidate",
+  "status": "PENDING_EXECUTION",
+  "standard": {
+    "name": "REG-Conformance",
+    "version": "v0.5.1",
+    "catalog_version": "2.0.0",
+    "rules_version": "2.0.0"
+  },
+  "target": {
+    "repository": "skiredj-prog/tenir_governance",
+    "declared_version": "5.7.0",
+    "source_commit_candidate": "0ec4870ee5bd73d90b9c6304f5cf774defadfb83",
+    "source_commit_verified_at_test": null,
+    "package_version_verified_at_test": null
+  },
+  "baseline_manifest": "deployment-manifest.json",
+  "environment": {
+    "python": null,
+    "os": null,
+    "architecture": null,
+    "installed_package_origin": null,
+    "backend": null,
+    "host_scope": null,
+    "execution_timestamp": null,
+    "command": null
+  },
+  "evidence": {
+    "runner_artifact": null,
+    "runner_sha256": null,
+    "ci_run_url": null,
+    "test_summary": null,
+    "coverage": null,
+    "native_t6_t8": {
+      "CT-R4-011": {
+        "status": "NOT_VERIFIED",
+        "evidence_level": null
+      },
+      "CT-R4-012": {
+        "status": "NOT_VERIFIED",
+        "evidence_level": null
+      },
+      "CT-R4-013": {
+        "status": "NOT_VERIFIED",
+        "evidence_level": null
+      }
+    }
+  },
+  "claims": {
+    "admissible_structural_is_effective_guarantee": false,
+    "native_t6_t8_conformant": false,
+    "external_exactly_once_proven": false,
+    "production_multi_host_validated": false
+  },
+  "publication": {
+    "eligible": false,
+    "reason": "Qualification has no new verified test artifacts; preserve existing 5.6.1 manifest and REG+ projections until evidence review."
+  }
+}
