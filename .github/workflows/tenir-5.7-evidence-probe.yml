@@ -18,7 +18,7 @@ jobs:
       - name: Install harness and pinned subject source
         run: |
           python -m pip install -r requirements.txt
-          python -m pip install "tenir-governance @ git+https://github.com/skiredj-prog/tenir_governance.git@0ec4870ee5bd73d90b9c6304f5cf774defadfb83"
+          python -m pip install "tenir-governance[raft] @ git+https://github.com/skiredj-prog/tenir_governance.git@0ec4870ee5bd73d90b9c6304f5cf774defadfb83"
       - name: Checkout exact TENIR-Gov source for targeted release tests
         uses: actions/checkout@v4
         with:
