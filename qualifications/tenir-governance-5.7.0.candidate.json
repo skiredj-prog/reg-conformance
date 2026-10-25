@@ -29,7 +29,7 @@
   "evidence": {
     "runner_artifact": "https://github.com/skiredj-prog/reg-conformance/actions/runs/40136374548 (workflow artifact, immutable linkage pending)",
     "runner_sha256": null,
-    "ci_run_url": "https://github.com/skiredj-prog/reg-conformance/actions/runs/40136374548",
+    "ci_run_url": "https://github.com/skiredj-prog/reg-conformance/actions/runs/40147833838",
     "test_summary": {
       "subject_deployment_tests": {
         "passed": 23,
@@ -40,6 +40,15 @@
         "implementation_gap": 41,
         "conformance_status": "INCOMPLETE",
         "scope": "reference only; not TENIR-Gov 5.7 native"
+      },
+      "subject_governor_recovery_tests": {
+        "passed": 12,
+        "failed": 0,
+        "scope": "SQLite single-host crash and reconciliation"
+      },
+      "native_targeted_total": {
+        "passed": 35,
+        "failed": 0
       }
     },
     "coverage": null,
@@ -66,6 +75,6 @@
   },
   "publication": {
     "eligible": false,
-    "reason": "Targeted deployment tests passed; reference conformance remains INCOMPLETE and native T6–T8 are unverified. No full qualification or promotion."
+    "reason": "35 scoped native tests pass, but T6–T8 normative equivalence remains unverified and reference suite has 41 implementation gaps."
   }
 }
