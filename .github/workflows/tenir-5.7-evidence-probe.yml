@@ -35,6 +35,14 @@ jobs:
             exit 1
           }
           cat results/subject-deployment-tests.log
+      - name: Native SQLite governor crash and reconciliation regression (scoped)
+        run: |
+          mkdir -p results
+          (cd subject-source && python -m pytest -q tests/test_sqlite_governor_crash_recovery.py) > results/subject-governor-recovery-tests.log 2>&1 || {
+            cat results/subject-governor-recovery-tests.log
+            exit 1
+          }
+          cat results/subject-governor-recovery-tests.log
       - name: Record subject identity (not conformance evidence)
         run: |
           mkdir -p results
