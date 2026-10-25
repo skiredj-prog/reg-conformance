@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import tempfile
 from decimal import Decimal
 from pathlib import Path
@@ -36,7 +37,7 @@ from tenir_governance.operations.attempt_attestation import (
 )
 
 DIGEST = "sha256:" + "ab"*32
-CANDIDATE_COMMIT = "4def8c9fd39ca758ef271be20d04a8916d67d6c1"
+CANDIDATE_COMMIT = "31da28b33cffec474c6321f139032e121b61860e"
 
 
 def _assert(condition, description):
@@ -363,6 +364,26 @@ def _exercise(base):
         raise AssertionError("G3 failed to fence pre-existing JSON registry writer")
     _assert(g3_registry.get("g3-unauthorized") is None,
             "legacy writer persisted after G3 fence")
+    # A finalized epoch must not automatically reconstruct a missing
+    # marker after possible tampering. The persistent initialized sentinel
+    # still blocks cooperating legacy JSON writers.
+    os.unlink(g3.marker)
+    try:
+        g3.fence_shadow()
+    except ShadowMigrationHold:
+        pass
+    else:
+        raise AssertionError("G3 silently recreated a missing finalized marker")
+    try:
+        g3_registry.register(OperationRecord(
+            idempotency_key="g3-after-marker-loss",
+            passage_id="g3-after-marker-loss",agent_id="old",
+            action_type="audit",state=OperationState.CREATED))
+    except RuntimeError as exc:
+        _assert("G3 authority fence" in str(exc),
+                "missing marker unexpectedly reopened old writer")
+    else:
+        raise AssertionError("G3 initialized sentinel did not block stale JSON writer")
     checked["g3_shadow_fencing"]={
         "status":"SCOPED_G3_FENCED_HOLD_PASS",
         "source_authority":"FENCED_LEGACY_JSON",
@@ -370,6 +391,7 @@ def _exercise(base):
         "execution_authorized":False,
         "production_cutover":False,
         "legacy_writers_observed_blocked":True,
+        "missing_finalized_marker_is_hold":True,
         "tested":["durable_fence_epoch","stale_writer_denial","monotonic_HOLD",
                   "immutable_shadow_snapshot"],
         "missing":["old non-fence-aware binaries","live governor ownership migration",
