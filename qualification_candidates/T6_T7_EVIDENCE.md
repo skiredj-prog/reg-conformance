@@ -61,3 +61,14 @@ This CI **does not** demonstrate: production governor/dispatch coupling, dual-st
 - [REG independent run 40169588262](https://github.com/skiredj-prog/reg-conformance/actions/runs/40169588262): PASS. [Capabilities run 40169588240](https://github.com/skiredj-prog/reg-conformance/actions/runs/40169588240): PASS.
 - [Artifact 12589837823](https://github.com/skiredj-prog/reg-conformance/actions/runs/40169588262/artifacts/12589837823): reported archive digest `sha256:2b5fb259b255b020b7d70561dc2aa9135497c27ec21f71c1661ddb417d75a97e`. Includes machine report, internal SHA-256 manifest and dependency freeze.
 - The machine classification `shadow_registry_migration.status=SCOPED_SHADOW_CAPTURE_PASS` is accompanied by `cutover_performed=false`, `execution_authorized=false` and `source_authority=JSON_REGISTRY`. This is **not** G3 cutover, G4 transactionally controlled execution or normative REG T6–T8 conformance.
+
+## G1 frozen-source × SQLite budget parity preflight — 2026-10-25
+
+- Source TENIR-Gov experimental candidate `22e0452150e382b87eba012eb6eac7c001737722`.
+- [TENIR-Gov CI 40169877931](https://github.com/skiredj-prog/tenir_governance/actions/runs/40169877931): **97/97 PASS**, including nine G1 preflight tests for reserved/committed amount and key parity, missing ownership, orphan reservation, I8 violation, UNKNOWN budget state and rollback.
+- [TENIR Governance CI 40169877940](https://github.com/skiredj-prog/tenir_governance/actions/runs/40169877940): PASS.
+- [REG independent run 40169963549](https://github.com/skiredj-prog/reg-conformance/actions/runs/40169963549): PASS, [Capabilities 40169963530](https://github.com/skiredj-prog/reg-conformance/actions/runs/40169963530): PASS.
+- [Artifact 12588938290](https://github.com/skiredj-prog/reg-conformance/actions/runs/40169963549/artifacts/12588938290): GitHub archive digest `sha256:132d617ef2cb202f4fca52b1751f41c84ca6801b6ae5de122a10db1bc321e994`. Machine report, SHA-256 file manifest and dependency freeze retained.
+- Report: `shadow_budget_parity_preflight.status=SCOPED_G1_PARITY_PASS`, `source_authority=JSON_REGISTRY`, `budget_authority=SQLiteConsensusBackend`, `execution_authorized=false`, `cutover_authorized=false`. Budget state change after baseline is rejected and never automatically reconciled.
+
+**No normative promotion:** this is a *preflight observation*, NOT actual one-store operation+attempt+budget authorization, source cutover, provider execution or full RFC-4 T6/T7/T8 qualification.
