@@ -17,6 +17,7 @@ from tenir_governance.operations.attempt_qualification import (
     AttemptQualificationStore, QualificationError,
 )
 from tenir_governance.operations.registry import DurableOperationRegistry, OperationRecord, OperationState
+from tenir_governance.operations.attempt_atomic_candidate import AtomicAttemptCandidateAuthority
 from tenir_governance.operations.attempt_operation_bridge import (
     AttemptOperationObservationBridge, inspect_governor_attempt, operation_context_digest,
 )
@@ -28,7 +29,7 @@ from tenir_governance.operations.attempt_attestation import (
 )
 
 DIGEST = "sha256:" + "ab"*32
-CANDIDATE_COMMIT = "49afb1a1d9dbb1ca3e74d946fd1ea4fab1101c8a"
+CANDIDATE_COMMIT = "105ad0755c9730f6c003d46fb98acd5198710a3d"
 
 
 def _assert(condition, description):
@@ -156,6 +157,51 @@ def _exercise(base):
         "missing":["atomic source/attempt commit authority",
                    "provider settlement proof and budget coupling",
                    "end-to-end native conformance"],
+    }
+    # A separate single-store candidate: source projection, attempt and
+    # attested outcome update atomically in ONE SQLite transaction. This
+    # source projection is NOT the authoritative governor OperationState.
+    for vector, aid, lei, nonce, outcome, expected_source in (
+        ("CT-R4-011", "atomic-a6", "atomic-LEI-6",
+         "abcdef0123456789abcdef0123456789", "EFFECT_CONFIRMED", "EFFECT_ATTESTED"),
+        ("CT-R4-012", "atomic-a7", "atomic-LEI-7",
+         "1234abcdef5678901234abcdef567890", "NON_EXECUTION_CONFIRMED", "NO_EFFECT_ATTESTED"),
+    ):
+        atomic = AtomicAttemptCandidateAuthority(base/(aid+".sqlite"),verifier)
+        initial = atomic.begin(
+            operation_key="candidate-op-"+aid, operation_digest=DIGEST,
+            attempt_id=aid, lei=lei, nonce=nonce, deadline_ms=1400,
+        )
+        _assert(initial.attempt_state == initial.candidate_source_state == "UNKNOWN",
+                vector+" atomic beginning inconsistent")
+        _assert(atomic.timeout(aid, observed_ms=1500).attempt_state=="UNKNOWN",
+                vector+" timeout promoted terminal state")
+        proof = _signed(private,aid,lei,nonce,outcome,digest=DIGEST)
+        terminal = atomic.qualify(aid,proof,observed_ms=1500)
+        _assert(terminal.candidate_source_state==expected_source,
+                vector+" atomic source projection incorrect")
+        _assert(terminal.attempt_state==
+                ("RESOLVED" if outcome=="EFFECT_CONFIRMED" else "FAILED"),
+                vector+" atomic attempt projection incorrect")
+        _assert(terminal.decision=="HOLD" and not terminal.execution_authorized
+                and not terminal.is_governor_operation_state,
+                vector+" candidate falsely granted execution")
+        _assert(atomic.qualify(aid,proof,observed_ms=1600)==terminal,
+                vector+" atomic replay not idempotent")
+        checked[vector]["atomic_source_attempt_candidate"] = {
+            "status":"SCOPED_ATOMIC_SQLITE_PASS",
+            "source_projection":expected_source,
+            "authorization":False,
+            "is_governor_operation_state":False,
+        }
+    checked["atomic_source_attempt_candidate"] = {
+        "status":"SCOPED_ATOMIC_SQLITE_PASS",
+        "execution_authorized":False,
+        "normative_conformant":False,
+        "source_authority":"candidate_projection_only",
+        "missing":["migration of production JSON operation registry",
+                   "trusted source-of-truth binding", "budget and provider settlement",
+                   "full crash protocol across backend transition"],
     }
     checked["CT-R4-013"] = {
         "status":"IMPLEMENTATION_GAP", "normative_conformant":False,
