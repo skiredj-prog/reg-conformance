@@ -19,6 +19,9 @@ from tenir_governance.operations.attempt_qualification import (
 )
 from tenir_governance.operations.registry import DurableOperationRegistry, OperationRecord, OperationState
 from tenir_governance.operations.sqlite_backend import SQLiteConsensusBackend
+from tenir_governance.operations.shadow_registry_migration import (
+    ShadowOperationMigrator, ShadowMigrationHold,
+)
 from tenir_governance.operations.attempt_atomic_candidate import AtomicAttemptCandidateAuthority
 from tenir_governance.operations.attempt_operation_bridge import (
     AttemptOperationObservationBridge, inspect_governor_attempt, operation_context_digest,
@@ -31,7 +34,7 @@ from tenir_governance.operations.attempt_attestation import (
 )
 
 DIGEST = "sha256:" + "ab"*32
-CANDIDATE_COMMIT = "18d24dda78f0234550311ddf1bbcb6a0d94621b2"
+CANDIDATE_COMMIT = "fe01013f635ba6117bcce56048b36beb6729ebec"
 
 
 def _assert(condition, description):
@@ -239,6 +242,40 @@ def _exercise(base):
         "normative_conformant":False,
         "missing":["single transaction linking governor OperationState and budget",
                    "external provider effect adjudication and compensation"],
+    }
+    # G0/G2: capture authoritative JSON operations in a frozen read-only
+    # shadow inventory under the source writer lock. The SQLite copy is NOT
+    # an executable or migrated governor registry.
+    shadow=ShadowOperationMigrator(registry,base/"governor-shadow.sqlite")
+    baseline=shadow.verify_or_stage()
+    _assert(baseline.status=="SHADOW_MATCHED_NO_CUTOVER"
+            and baseline.execution_authorized is False,
+            "G0/G2 shadow unexpectedly granted execution")
+    _assert(shadow.inspect()==baseline,"idempotent frozen source snapshot drift")
+    _assert(registry.register(OperationRecord(
+        idempotency_key="post-shadow-operation",
+        passage_id="post-shadow-passage",
+        agent_id="post-shadow-agent",action_type="audit",
+        state=OperationState.CREATED,
+    )), "test source update not applied")
+    try:
+        shadow.inspect()
+    except ShadowMigrationHold:
+        pass
+    else:
+        raise AssertionError("G2 failed to reject new JSON source operation")
+    checked["shadow_registry_migration"]={
+        "status":"SCOPED_SHADOW_CAPTURE_PASS",
+        "execution_authorized":False,
+        "cutover_performed":False,
+        "source_authority":"JSON_REGISTRY",
+        "records_at_baseline":baseline.records,
+        "snapshot_sha256":baseline.snapshot_sha256,
+        "tested":["single_host_source_lock","frozen_snapshot_idempotence",
+                  "strict_source_drift_detection","no_new_authoritative_writer"],
+        "normative_conformant":False,
+        "missing":["approved atomic cutover","backend schema migration",
+                   "single operation/attempt/budget commit transition"],
     }
     checked["CT-R4-013"] = {
         "status":"IMPLEMENTATION_GAP", "normative_conformant":False,
