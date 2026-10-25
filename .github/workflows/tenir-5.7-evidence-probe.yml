@@ -1,0 +1,143 @@
+name: tenir-5.7-evidence-probe
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches: ['audit/tenir-5.7-qualification-p0']
+    paths:
+      - 'qualifications/**'
+      - '.github/workflows/tenir-5.7-evidence-probe.yml'
+  pull_request:
+    paths:
+      - 'qualifications/tenir-governance-5.7.0.*'
+      - 'qualifications/verify_native_t6_t7.py'
+      - '.github/workflows/tenir-5.7-evidence-probe.yml'
+permissions:
+  contents: read
+jobs:
+  evidence-probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install harness and pinned subject source
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install "tenir-governance[raft] @ git+https://github.com/skiredj-prog/tenir_governance.git@0ec4870ee5bd73d90b9c6304f5cf774defadfb83"
+      - name: Checkout exact TENIR-Gov source for targeted release tests
+        uses: actions/checkout@v4
+        with:
+          repository: skiredj-prog/tenir_governance
+          ref: 0ec4870ee5bd73d90b9c6304f5cf774defadfb83
+          path: subject-source
+          persist-credentials: false
+      - name: Execute targeted 5.7 deployment safety regression
+        run: |
+          python -m pip install "pytest>=8,<10"
+          mkdir -p results
+          (cd subject-source && python -m pytest -q tests/test_deployment_manifest.py) > results/subject-deployment-tests.log 2>&1 || {
+            cat results/subject-deployment-tests.log
+            exit 1
+          }
+          cat results/subject-deployment-tests.log
+      - name: Native SQLite governor crash and reconciliation regression (scoped)
+        run: |
+          mkdir -p results
+          (cd subject-source && python -m pytest -q tests/test_sqlite_governor_crash_recovery.py) > results/subject-governor-recovery-tests.log 2>&1 || {
+            cat results/subject-governor-recovery-tests.log
+            exit 1
+          }
+          cat results/subject-governor-recovery-tests.log
+      - name: Adversarial evidence mapper unit tests
+        run: python -m unittest -v qualifications.test_verify_native_t6_t7
+      - name: Native provider T6/T7 scoped tests and machine-verified evidence
+        run: |
+          mkdir -p results
+          (cd subject-source && python -m pytest -q --junitxml=../results/native-t6-t7.xml \
+            tests/test_provider.py::test_reconcile_can_recover_interrupted_dispatching_operation \
+            tests/test_provider.py::TestMockProvider::test_reconcile_resolves \
+            tests/test_provider.py::test_indeterminate_reconciliation_normalizes_dispatching_to_unknown \
+            tests/test_provider.py::test_stripe_reconciliation_empty_search_remains_unknown \
+            tests/test_provider.py::test_concurrent_failed_reconciliation_refunds_only_once \
+            tests/test_provider.py::TestMockProvider::test_reconcile_failed \
+            tests/test_provider.py::test_i5_contradictory_reconciliation_does_not_refund_or_fail \
+            tests/test_provider.py::TestMockProvider::test_timeout_behavior \
+            tests/test_provider.py::test_i5_provider_failure_with_hypothesis_violation_returns_hold_without_refund) > results/subject-provider-uncertainty-tests.log 2>&1 || {
+            cat results/subject-provider-uncertainty-tests.log
+            exit 1
+          }
+          cat results/subject-provider-uncertainty-tests.log
+          python qualifications/verify_native_t6_t7.py results/native-t6-t7.xml results/native-t6-t7-classification.json
+      - name: Record subject identity (not conformance evidence)
+        run: |
+          mkdir -p results
+          python - <<'PY'
+          import importlib.metadata as im, json, platform
+          import tenir_governance, tenir_kernel
+          versions = {
+            "installed_distribution": im.version("tenir-governance"),
+            "governance_import": tenir_governance.__version__,
+            "kernel_import": tenir_kernel.__version__,
+            "pinned_source_revision": "0ec4870ee5bd73d90b9c6304f5cf774defadfb83",
+            "python": platform.python_version(),
+            "note": "Import/version verification only; not a test of 5.7 native lifecycle."
+          }
+          with open("results/subject-identity.json","w") as f:
+            json.dump(versions,f,indent=2)
+          assert versions["installed_distribution"] == versions["governance_import"] == versions["kernel_import"] == "5.7.0", versions
+          PY
+          python -m pip freeze > results/pip-freeze.txt
+      - name: Run REG reference adapter and classify incomplete evidence
+        run: |
+          set +e
+          python runner.py --mode native --output results/reference-native.json > results/reference-native.log 2>&1
+          code=$?
+          set -e
+          echo "$code" > results/reference-exit-code.txt
+          cat results/reference-native.log
+          python - "$code" <<'PY'
+          import json, pathlib, sys
+          code = int(sys.argv[1])
+          path = pathlib.Path("results/reference-native.json")
+          if not path.exists():
+              raise SystemExit("Missing REG reference report")
+          report = json.loads(path.read_text())
+          counts = report.get("summary", {})
+          allowed = {0: "CONFORMANT", 2: "INCOMPLETE", 3: "INCONCLUSIVE"}
+          if code not in allowed or report.get("exit_code") != code or counts.get("FAIL", 0):
+              raise SystemExit(f"REG reference failure or inconsistent report: code={code}, counts={counts}")
+          if code == 2 and not (counts.get("IMPLEMENTATION_GAP", 0) or counts.get("ADAPTER_REQUIRED", 0)):
+              raise SystemExit("Exit 2 without a reported implementation gap")
+          if code == 3 and not counts.get("INCONCLUSIVE", 0):
+              raise SystemExit("Exit 3 without inconclusive results")
+          if code == 0 and any(counts.get(k, 0) for k in ("INCONCLUSIVE","IMPLEMENTATION_GAP","ADAPTER_REQUIRED")):
+              raise SystemExit("Exit 0 while unresolved vectors remain")
+          if report.get("conformance_status") != allowed[code]:
+              raise SystemExit(f"Report status mismatch: {report.get('conformance_status')} != {allowed[code]}")
+          print(f"REG reference adapter status: {allowed[code]}; not TENIR-Gov native conformance")
+          PY
+      - name: Check results exist and generate hashes
+        if: always()
+        run: |
+          mkdir -p results
+          python - <<'PY'
+          import hashlib,json,pathlib
+          directory=pathlib.Path("results")
+          files=sorted(p for p in directory.iterdir() if p.is_file())
+          hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
+          (directory/"sha256.json").write_text(json.dumps(hashes,indent=2)+"\n")
+          r=directory/"reference-native.json"
+          if r.exists():
+            report=json.loads(r.read_text())
+            summary={"interface_mode":report.get("interface_mode"),"conformance_status":report.get("conformance_status"),"summary":report.get("summary"),"subject": "local reference adapter, not TENIR-Gov 5.7.0"}
+            (directory/"classification.json").write_text(json.dumps(summary,indent=2)+"\n")
+          PY
+      - name: Upload inspection artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tenir-5.7-evidence-probe
+          path: results/
+          if-no-files-found: error
