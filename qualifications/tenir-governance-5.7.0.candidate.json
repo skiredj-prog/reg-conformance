@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "qualification_id": "tenir-governance-5.7.0-candidate",
-  "status": "PENDING_EXECUTION",
+  "status": "PARTIAL_EVIDENCE",
   "standard": {
     "name": "REG-Conformance",
     "version": "v0.5.1",
@@ -12,25 +12,36 @@
     "repository": "skiredj-prog/tenir_governance",
     "declared_version": "5.7.0",
     "source_commit_candidate": "0ec4870ee5bd73d90b9c6304f5cf774defadfb83",
-    "source_commit_verified_at_test": null,
-    "package_version_verified_at_test": null
+    "source_commit_verified_at_test": "0ec4870ee5bd73d90b9c6304f5cf774defadfb83",
+    "package_version_verified_at_test": "5.7.0"
   },
   "baseline_manifest": "deployment-manifest.json",
   "environment": {
-    "python": null,
-    "os": null,
+    "python": "3.12.15",
+    "os": "GitHub Actions ubuntu-latest (Linux)",
     "architecture": null,
-    "installed_package_origin": null,
+    "installed_package_origin": "git+https://github.com/skiredj-prog/tenir_governance.git@0ec4870ee5bd73d90b9c6304f5cf774defadfb83 with [raft]",
     "backend": null,
     "host_scope": null,
-    "execution_timestamp": null,
-    "command": null
+    "execution_timestamp": "2026-10-24T21:56:27Z",
+    "command": "(cd subject-source && python -m pytest -q tests/test_deployment_manifest.py)"
   },
   "evidence": {
-    "runner_artifact": null,
+    "runner_artifact": "https://github.com/skiredj-prog/reg-conformance/actions/runs/40136374548 (workflow artifact, immutable linkage pending)",
     "runner_sha256": null,
-    "ci_run_url": null,
-    "test_summary": null,
+    "ci_run_url": "https://github.com/skiredj-prog/reg-conformance/actions/runs/40136374548",
+    "test_summary": {
+      "subject_deployment_tests": {
+        "passed": 23,
+        "failed": 0
+      },
+      "reference_adapter": {
+        "passed": 14,
+        "implementation_gap": 41,
+        "conformance_status": "INCOMPLETE",
+        "scope": "reference only; not TENIR-Gov 5.7 native"
+      }
+    },
     "coverage": null,
     "native_t6_t8": {
       "CT-R4-011": {
@@ -55,6 +66,6 @@
   },
   "publication": {
     "eligible": false,
-    "reason": "Qualification has no new verified test artifacts; preserve existing 5.6.1 manifest and REG+ projections until evidence review."
+    "reason": "Targeted deployment tests passed; reference conformance remains INCOMPLETE and native T6–T8 are unverified. No full qualification or promotion."
   }
 }
