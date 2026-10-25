@@ -48,3 +48,13 @@ A direct GitHub repository clone attempted in the analysis environment failed be
 - **Native targeted total: 35 passed, zero failed.** Scope is single-host SQLite deployment/recovery checks, not T6–T8 normative lifecycle equivalence.
 - Reference adapter: 14 PASS / 41 IMPLEMENTATION_GAP, `INCOMPLETE`.
 - Evidence is inspectable in CI logs and its uploaded artifact; avoid any full native conformance or external exactly-once claim.
+
+## P0 strict native-scoped evidence — 2026-10-25
+
+- [Run 40151558422](https://github.com/skiredj-prog/reg-conformance/actions/runs/40151558422), green on head `f3afdd5f7aa09c636638d8bd7594847509c28d4b`. Companion capabilities run [40151558485](https://github.com/skiredj-prog/reg-conformance/actions/runs/40151558485) also green.
+- 23 deployment-safety tests passed; 12 SQLite crash-recovery tests passed; 9 exact native provider tests passed; 6 fail-closed evidence-verifier tests passed. **44 target tests + 6 verifier tests, all passing**.
+- Machine result: `SCOPED_T6_T7_EVIDENCE` with `normative_equivalence=false` and `native_conformant=false`.
+- Reference suite remains `INCOMPLETE`: 14 PASS, 41 IMPLEMENTATION_GAP.
+- [Artifact 12582771457](https://github.com/skiredj-prog/reg-conformance/actions/runs/40151558422/artifacts/12582771457) archive digest: `sha256:6e0ffc8819e111e115f85b6eca9b1a335182f7ef5e298cc367ce40d99a6da0c5` (GitHub reported archive digest; internal individual-file hashes reside in artifact).
+- The six adversarial mapper tests check missing, unexpected, duplicate, skipped and failed cases as well as a valid scoped mapping.
+- **Engineering P0 scoped evidence tooling: VERIFIED. Native normative T6–T8 conformance: HOLD.** The same release/REG+ publication restriction remains in force.
