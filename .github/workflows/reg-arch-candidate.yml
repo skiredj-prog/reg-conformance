@@ -1,0 +1,19 @@
+name: REG-ARCH v0.4.1 candidate contract gate
+on:
+  pull_request:
+    paths:
+      - 'audits/reg-arch-v0.4.1/**'
+      - '.github/workflows/reg-arch-candidate.yml'
+  workflow_dispatch:
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'jsonschema>=4.23,<5' 'jcs>=0.2.1,<1' 'python-docx>=1,<2' 'pypdf>=5,<7'
+      - run: python audits/reg-arch-v0.4.1/verify_candidate.py
+      - run: python audits/reg-arch-v0.4.1/validate_standard.py
+      - run: python -m unittest discover -s audits/reg-arch-v0.4.1 -p 'test_contract_oracles.py'
