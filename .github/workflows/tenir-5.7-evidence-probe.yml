@@ -43,6 +43,14 @@ jobs:
             exit 1
           }
           cat results/subject-governor-recovery-tests.log
+      - name: Native provider uncertainty guards (T6/T7 partial semantic probes)
+        run: |
+          mkdir -p results
+          (cd subject-source && python -m pytest -q tests/test_provider.py -k 'indeterminate_reconciliation or reconcile_can_recover_interrupted or concurrent_failed_reconciliation or stripe_reconciliation_empty_search or i5_contradictory_reconciliation or test_timeout_behavior or test_reconcile_resolves or test_reconcile_failed') > results/subject-provider-uncertainty-tests.log 2>&1 || {
+            cat results/subject-provider-uncertainty-tests.log
+            exit 1
+          }
+          cat results/subject-provider-uncertainty-tests.log
       - name: Record subject identity (not conformance evidence)
         run: |
           mkdir -p results
