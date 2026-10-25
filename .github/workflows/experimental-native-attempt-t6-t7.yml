@@ -19,7 +19,7 @@ jobs:
           python-version: '3.12'
       - name: Install exact experimental candidate (not released 5.7.0)
         run: |
-          python -m pip install 'tenir-governance[ep02] @ git+https://github.com/skiredj-prog/tenir_governance.git@6145014d2b28c41cf595f511d12420b7a40a080c'
+          python -m pip install 'tenir-governance[ep02] @ git+https://github.com/skiredj-prog/tenir_governance.git@09bd2d73ac5b70b825d500e2f8ace2e26a4e4aaa'
       - name: Execute REG native experimental vectors
         run: |
           mkdir -p results
@@ -32,7 +32,7 @@ jobs:
           report=json.loads(report_path.read_text())
           assert report["verdict"]=="PARTIAL_CANDIDATE_EVIDENCE"
           assert report["native_normative_conformance"] is False
-          assert report["pinned_source_commit"]=="6145014d2b28c41cf595f511d12420b7a40a080c"
+          assert report["pinned_source_commit"]=="09bd2d73ac5b70b825d500e2f8ace2e26a4e4aaa"
           assert report["vectors"]["CT-R4-011"]["status"]=="SCOPED_CANDIDATE_PASS"
           assert report["vectors"]["CT-R4-012"]["status"]=="SCOPED_CANDIDATE_PASS"
           assert report["vectors"]["CT-R4-013"]["status"]=="IMPLEMENTATION_GAP"
