@@ -40,7 +40,7 @@ from tenir_governance.operations.attempt_attestation import (
 )
 
 DIGEST = "sha256:" + "ab"*32
-CANDIDATE_COMMIT = "09bd2d73ac5b70b825d500e2f8ace2e26a4e4aaa"
+CANDIDATE_COMMIT = "97c1192c31b67045ec6b8bac11450a79dcd1eab1"
 
 
 def _assert(condition, description):
@@ -442,6 +442,46 @@ def _exercise(base):
         raise AssertionError("G1 candidate exceeded I8 capacity")
     _assert(g1_atomic_backend.get_state("candidate:reg-budget").reserved==Decimal("7"),
             "failed G1 candidate admission partially reserved budget")
+    # Signed candidate-only effect settlement: attempt + source + existing
+    # budget reservation/disposition are updated inside one SQLite TX.
+    g1_effect_proof=_signed(
+        private,"candidate-reg-attempt","candidate:reg-lei",
+        "34567890123456789012345678901234","EFFECT_CONFIRMED",digest=DIGEST)
+    effect=g1_atomic.settle_attested_candidate(
+        attempt_id="candidate-reg-attempt",signed_evidence=g1_effect_proof,
+        observed_ms=1500,
+    )
+    _assert(effect.status=="CANDIDATE_EVIDENCE_SETTLED_HOLD"
+            and effect.attempt_state=="RESOLVED"
+            and effect.budget_state=="COMMITTED"
+            and effect.execution_authorized is False,
+            "signed candidate effect incorrectly settled or authorized")
+    _assert(g1_atomic.settle_attested_candidate(
+        attempt_id="candidate-reg-attempt",signed_evidence=g1_effect_proof,
+        observed_ms=1600)==effect,"signed effect replay diverged")
+    g1_now=g1_atomic_backend.get_state("candidate:reg-budget")
+    _assert(g1_now.reserved==Decimal("0") and g1_now.committed==Decimal("7"),
+            "signed candidate effect did not atomically settle budget")
+
+    # An independent simulated non-execution moves only the experimental
+    # reservation to RELEASED, never triggers a real provider retry.
+    second=dict(g1_claim,operation_key="candidate:reg-op-3",
+                attempt_id="candidate-reg-attempt-3",
+                lei="candidate:reg-lei-3",amount=Decimal("2"))
+    g1_atomic.admit(**second)
+    no_effect=_signed(private,"candidate-reg-attempt-3","candidate:reg-lei-3",
+        "34567890123456789012345678901234","NON_EXECUTION_CONFIRMED",digest=DIGEST)
+    released=g1_atomic.settle_attested_candidate(
+        attempt_id="candidate-reg-attempt-3",signed_evidence=no_effect,
+        observed_ms=1500,
+    )
+    _assert(released.attempt_state=="FAILED"
+            and released.budget_state=="RELEASED"
+            and released.execution_authorized is False,
+            "signed candidate no-effect incorrectly settled or authorized")
+    totals=g1_atomic_backend.get_state("candidate:reg-budget")
+    _assert(totals.reserved==Decimal("0") and totals.committed==Decimal("7"),
+            "signed candidate no-effect altered committed budget")
     checked["g1_atomic_budget_candidate"]={
         "status":"SCOPED_G1_ATOMIC_I8_CANDIDATE_PASS",
         "candidate_namespace_only":True,
@@ -452,7 +492,9 @@ def _exercise(base):
         "normative_conformant":False,
         "tested":["source_attempt_reservation_single_transaction",
                   "idempotent_replay","I8_capacity_fail_closed",
-                  "budget_and_attempt_atomic_rollback"],
+                  "budget_and_attempt_atomic_rollback",
+                  "signed_effect_atomic_COMMITTED","signed_no_effect_atomic_RELEASED",
+                  "exact_signed_settlement_replay"],
         "missing":["authoritative production OperationState integration",
                    "cutover owner fencing across all deployed writers",
                    "external provider dispatch and effect settlement",
