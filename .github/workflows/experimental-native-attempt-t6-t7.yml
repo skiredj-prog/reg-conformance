@@ -19,7 +19,7 @@ jobs:
           python-version: '3.12'
       - name: Install exact experimental candidate (not released 5.7.0)
         run: |
-          python -m pip install 'tenir-governance[ep02] @ git+https://github.com/skiredj-prog/tenir_governance.git@aa8f947adee87c793201fba47206543cd68c45ac'
+          python -m pip install 'tenir-governance[ep02] @ git+https://github.com/skiredj-prog/tenir_governance.git@49afb1a1d9dbb1ca3e74d946fd1ea4fab1101c8a'
       - name: Execute REG native experimental vectors
         run: |
           mkdir -p results
@@ -32,10 +32,12 @@ jobs:
           report=json.loads(report_path.read_text())
           assert report["verdict"]=="PARTIAL_CANDIDATE_EVIDENCE"
           assert report["native_normative_conformance"] is False
-          assert report["pinned_source_commit"]=="aa8f947adee87c793201fba47206543cd68c45ac"
+          assert report["pinned_source_commit"]=="49afb1a1d9dbb1ca3e74d946fd1ea4fab1101c8a"
           assert report["vectors"]["CT-R4-011"]["status"]=="SCOPED_CANDIDATE_PASS"
           assert report["vectors"]["CT-R4-012"]["status"]=="SCOPED_CANDIDATE_PASS"
           assert report["vectors"]["CT-R4-013"]["status"]=="IMPLEMENTATION_GAP"
+          assert report["vectors"]["governor_registry_observer"]["status"]=="SCOPED_OBSERVATION_PASS"
+          assert report["vectors"]["governor_registry_observer"]["execution_authorized"] is False
           assert metadata.version("tenir-governance")=="5.7.0", "Source branch retains historical package version"
           hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in pathlib.Path("results").iterdir() if p.is_file()}
           pathlib.Path("results/sha256.json").write_text(json.dumps(hashes,indent=2)+"\n")
