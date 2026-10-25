@@ -1,6 +1,6 @@
 # P0 closeout — TENIR-Gov 5.7.0 / REG Conformance
 
-Status: **IMPLEMENTED_BUT_NOT_FULLY_VERIFIED**. No merge or claim promotion.
+Status: **SCOPED_EVIDENCE_TOOLING_VERIFIED / NORMATIVE_CONFORMANCE_HOLD**. No merge or claim promotion.
 
 ## Implemented on PR #47
 
@@ -18,7 +18,7 @@ Status: **IMPLEMENTED_BUT_NOT_FULLY_VERIFIED**. No merge or claim promotion.
 | Version pin | exact Git SHA and identity check | implemented; previously CI passed |
 | 23 deployment tests | GitHub run 40149398519 | PASS |
 | 12 SQLite recovery tests | GitHub run 40149398519 | PASS |
-| 9 provider semantic tests | GitHub run 40149398519 | PASS on prior `-k` selection; new **exact-node gate pending CI** |
+| 9 provider semantic tests | GitHub run 40149398519 | PASS on prior `-k` selection; new **exact-node gate PASS in run 40151558422** |
 | T6 unknown → provider determination | native guarded subset | PARTIAL_SEMANTIC_EVIDENCE, **not T6 normative PASS** |
 | T7 failed requires evidence | provider determination, contradictory-signal guards | PARTIAL_SEMANTIC_EVIDENCE, **not T7 normative PASS** |
 | T8 retry eligibility and LEI lock | no production equivalent established | IMPLEMENTATION_GAP |
@@ -32,3 +32,10 @@ A CI green run on this branch shall certify **only** the tests and scope execute
 ## Next independent change
 
 Create a separate TENIR-Gov product design/implementation proposal for a qualifying attempt lifecycle with traceability to RFC-4, once the contract and non-contamination boundary are agreed. Do not retrofit lab state into production governor merely to produce green tests.
+
+## Final P0 CI observation
+
+- [Strict probe run 40151558422](https://github.com/skiredj-prog/reg-conformance/actions/runs/40151558422) PASS on `f3afdd5f7aa09c636638d8bd7594847509c28d4b`.
+- 44 source tests and 6 mapper tests PASS. Reference 14 PASS / 41 GAP is INCOMPLETE, not native conformity.
+- Artifact digest `sha256:6e0ffc8819e111e115f85b6eca9b1a335182f7ef5e298cc367ce40d99a6da0c5`.
+- Remaining normative decision: **HOLD** for CT-R4-011, -012 and -013 until native `AttemptState` and qualification/timeout/new-attempt contracts are implemented and tested. No downstream promotion.
