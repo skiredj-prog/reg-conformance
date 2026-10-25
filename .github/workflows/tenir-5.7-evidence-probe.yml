@@ -48,6 +48,8 @@ jobs:
             exit 1
           }
           cat results/subject-governor-recovery-tests.log
+      - name: Adversarial evidence mapper unit tests
+        run: python -m unittest -v qualifications.test_verify_native_t6_t7
       - name: Native provider T6/T7 scoped tests and machine-verified evidence
         run: |
           mkdir -p results
