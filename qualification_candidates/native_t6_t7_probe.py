@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import tempfile
+from decimal import Decimal
 from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
@@ -17,6 +18,7 @@ from tenir_governance.operations.attempt_qualification import (
     AttemptQualificationStore, QualificationError,
 )
 from tenir_governance.operations.registry import DurableOperationRegistry, OperationRecord, OperationState
+from tenir_governance.operations.sqlite_backend import SQLiteConsensusBackend
 from tenir_governance.operations.attempt_atomic_candidate import AtomicAttemptCandidateAuthority
 from tenir_governance.operations.attempt_operation_bridge import (
     AttemptOperationObservationBridge, inspect_governor_attempt, operation_context_digest,
@@ -29,7 +31,7 @@ from tenir_governance.operations.attempt_attestation import (
 )
 
 DIGEST = "sha256:" + "ab"*32
-CANDIDATE_COMMIT = "105ad0755c9730f6c003d46fb98acd5198710a3d"
+CANDIDATE_COMMIT = "18d24dda78f0234550311ddf1bbcb6a0d94621b2"
 
 
 def _assert(condition, description):
@@ -202,6 +204,41 @@ def _exercise(base):
         "missing":["migration of production JSON operation registry",
                    "trusted source-of-truth binding", "budget and provider settlement",
                    "full crash protocol across backend transition"],
+    }
+    # Colocation with the existing SQLite budget backend is tested as
+    # schema compatibility only: two API calls are NOT an atomic settlement.
+    backend_dir=base/"shared-budget"
+    budget=SQLiteConsensusBackend(str(backend_dir))
+    _assert(budget.register_resource("budget",Decimal("100"))=="REGISTERED",
+            "budget backend initialization failure")
+    reservation=budget.reserve("budget-operation-1",Decimal("20"),"budget")
+    _assert(reservation.status=="RESERVED", "budget reservation not created")
+    shared=AtomicAttemptCandidateAuthority(backend_dir/"consensus.sqlite3",verifier)
+    shared.begin(operation_key="budget-operation-1",attempt_id="shared-a7",
+                 lei="shared-LEI",nonce="34567890123456789012345678901234",
+                 operation_digest=DIGEST,deadline_ms=1400)
+    shared.qualify(
+        "shared-a7",
+        _signed(private,"shared-a7","shared-LEI",
+                "34567890123456789012345678901234",
+                "NON_EXECUTION_CONFIRMED",digest=DIGEST),
+        observed_ms=1500,
+    )
+    state=SQLiteConsensusBackend(str(backend_dir)).get_state("budget")
+    _assert(state.reserved==Decimal("20") and state.committed==Decimal("0"),
+            "signed candidate evidence altered real budget")
+    _assert(len([item for item in state.reservations
+                 if item["key"]=="budget-operation-1"
+                 and item["state"]=="RESERVED"])==1,
+            "candidate proof unexpectedly settled reservation")
+    checked["budget_colocation_guard"]={
+        "status":"SCOPED_NO_SETTLEMENT_PASS",
+        "source_authority":"SQLiteConsensusBackend",
+        "execution_authorized":False,
+        "budget_mutated":False,
+        "normative_conformant":False,
+        "missing":["single transaction linking governor OperationState and budget",
+                   "external provider effect adjudication and compensation"],
     }
     checked["CT-R4-013"] = {
         "status":"IMPLEMENTATION_GAP", "normative_conformant":False,
