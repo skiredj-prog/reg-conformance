@@ -28,10 +28,10 @@ Les garanties de traçabilité bornée et de non-confusion entre intégrité, v�
 | SHA-256 DOCX | `46752A0E1CD7AAE430742878C14C6B5C28FE1DA8167C9A81D78B23D9BAA7D3C2` |
 | Autorité d’approbation | À désigner |
 | Obligations | 001–024 + 010bis, soit 25 |
-| PDF canonique | Non fourni et non vérifié |
+| PDF canonique | Fourni par l’utilisateur et SHA-256 vérifié : `4BE9D68CA8DCE3557655905467C0975758E82AB2888F974B0B9439D59620B939` |
 | Rendu visuel PDF | 11 pages A4 rendues et contrôlées ; aucune anomalie de clipping ou chevauchement observée |
 
-Le PDF se déclare autonome, mais son champ `Source` indique « REG-ARCH v0.1 à v0.3 + corrections ciblées ». La lignée est décrite dans la préface et le journal des changements, mais aucun identifiant de révision source, hash des versions antérieures, décision d’approbation ou registre de supersession n’est incorporé. L’autonomie textuelle est donc établie ; l’autorité normative reste conditionnelle.
+Le PDF se déclare autonome, mais son champ `Source` indique « REG-ARCH v0.1 à v0.3 + corrections ciblées ». La lignée est décrite dans la préface et le journal des changements, mais aucun identifiant de révision source, hash des versions antérieures, décision d’approbation ou registre de supersession n’est incorporé. L’autonomie textuelle est donc établie ; l’autorité normative reste conditionnelle. La source PDF a été fournie et contrôlée ; la première version de ce rapport comportait une erreur de rédaction lorsqu’elle disait le contraire. Cette erreur est corrigée ici.
 
 ## 2. Examen clause par clause
 
@@ -183,3 +183,23 @@ Le manifeste machine-readable associé se trouve dans `adversarial-scenarios.yam
 REG-ARCH v0.4 établit un vocabulaire, des objets, des portes, des relations et des limites de garantie utiles. Il soutient **sous conditions** la traçabilité bornée d’une décision et la distinction entre intégrité, vérité et effet externe.
 
 Il ne définit pas encore des obligations suffisantes, cohérentes et vérifiables pour PREPARE/PREVENT, l’invalidation des preuves, l’équivalence entre REG-ARCH et ses niveaux opérationnels, ni la création conforme d’un Écart sous 010bis. La réponse finale est donc : **REG-ARCH v0.4 est partiellement soutenable, mais nécessite les corrections P0 avant toute déclaration de couverture architecturale complète.**
+
+## 9. Addendum de correction normative — candidate v0.4.1
+
+La candidate éditée est `../reg-arch-v0.4.1/REG-ARCH_v0.4.1-candidate.docx` et son export PDF homologue. Elle est une proposition non ratifiée, pas une preuve de conformité d’une implémentation. Les amendements détaillés et les scénarios sont dans `../reg-arch-v0.4.1/`.
+
+Sources v0.4 incluses et hashées dans le paquet : PDF `4BE9D68CA8DCE3557655905467C0975758E82AB2888F974B0B9439D59620B939`, DOCX `46752A0E1CD7AAE430742878C14C6B5C28FE1DA8167C9A81D78B23D9BAA7D3C2`. Hash candidate locale après correctif post-review 8 : DOCX `2C86C2CF275CF2C4028C0F2437DE332D3BC1C5B99C4967EB68C8AEF0DB1532C4`, PDF `6BE9328006812EF6ED98E7D07AE89FCF68ED08FF8A1C4E5694C4E08AAD0F62BC` (13 pages A4). Le builder vérifie les hashes des deux sources avant toute génération.
+
+| P0 | Nouvelle obligation | Oracle | Preuve contrôlable disponible | Verdict de clôture documentaire |
+|---|---|---|---|---|
+| P0.1 G-Écart | 010bis/REG-ARCH-025 : contrôleur réservé, liaison de capacité, version active, schéma de trace, clé déterministe, atomicité et reprise | A-11/A-12/A-24/A-25/A-26 | Schéma/YAML paritaires; refus contexte nul; journal indisponible; collision; drift version/manifeste; précommit/reprise | **SUPPORTED pour le contrat normatif et le cas testé, passe indépendante 9.** Identité, persistance et atomicité d’un déploiement restent CONDITIONNELLES. Le validateur de schéma local est maison; il ne constitue pas une validation complète JSON Schema. |
+| P0.2 portée/raffinement | Appendice A remplacé par une note générique informative; REG-ARCH-026 définit abstraction, appariement de transitions et couverture des refus/erreurs | A-16/A-17 | Test modèle trace permise/interdite; les tests ne prouvent pas un raffinement réel | **SUPPORTED au niveau du contrat normatif selon la revue 5.** Tout raffinement concret reste UNVERIFIABLE sans preuve propre au périmètre; passe 6 en cours. |
+| P0.3 PREPARE/PREVENT | REG-ARCH-027 définit manifeste fermé, inventaire effectif, epochs, invalidation, contrôle de consommation, digest et requalification | A-13/A-14/A-15/A-18/A-19/A-20/A-21/A-22/A-23 | Tests modèle publication/consommation, reprise PREVENT, liaison epoch/digest courant | **CONDITIONAL au niveau normatif**, revue 5 en cours. L’exhaustivité des inventaires et la validation des hypothèses réelles exigent des preuves propres au périmètre. |
+
+Les neuf passes indépendantes successives ont entraîné des corrections ciblées de trace, collision, raffinement et invalidation; le journal détaillé est dans `independent-review.md`. La passe 9 valide la cohérence normative de P0.1/P0.2 pour les cas examinés et maintient P0.3 conditionnel. Vingt tests abstraits passent et 16 scénarios sont déclarés. Un validateur JSON Schema standard n’est pas installé dans cet environnement; le contrôle de schéma demeure le validateur local. Le modèle JCS emploie `json.dumps` et ses fixtures ASCII ne démontrent pas toute la conformité RFC 8785. Ces limites sont consignées; les oracles ne prouvent pas l’atomicité d’un moteur réel, la complétude du graphe, la validation empirique des hypothèses, ni la conformité de TENIR/REG/REG+.
+
+La matrice descendant/ascendant est dans `change-traceability.md`. Les scénarios A-11 à A-23 sont dans `adversarial-scenarios.yaml`. D-01 à D-09 restent ouvertes ; la candidate précise que G-Écart est désormais normativement définie sans ratifier l’autorité métier, les automates complets, les hypothèses d’exploitation ou une implémentation.
+
+### Verdict provisoire après amendement proposé et revue 5
+
+La candidate reste **NON RATIFIÉE**. La passe indépendante 9 valide P0.1 et P0.2 au niveau normatif et du modèle pour les cas examinés. P0.3 reste **CONDITIONAL** : la complétude d’un inventaire réel et la validité empirique des hypothèses nécessitent des preuves propres au périmètre. Les 20 tests abstraits et 16 scénarios contrôlent les oracles modélisés; ils ne sont pas des preuves de conformité d’un moteur. Aucun validateur JSON Schema standard n’est disponible dans l’environnement, et l’oracle JCS Python ne prouve pas la conformité générale pour toute entrée Unicode/JSON. Les garanties d’identité, de persistance, d’atomicité, d’exhaustivité et de requalification en déploiement réel restent donc conditionnelles. REG-ARCH seul ne prouve pas l’exactement-un-effet externe. La candidate est exploitable comme proposition de correction et comme base de conformance, mais ne justifie pas une ratification sans ces preuves et décisions opérationnelles.

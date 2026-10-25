@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "REG-ARCH-025-G-Ecart-trace-v1",
+  "title": "REG-ARCH-025 G-Ecart trace event",
+  "type": "object",
+  "additionalProperties": false,
+  "required_fields": [
+    "event_id", "event_type", "schema_version", "request_id",
+    "source_refusal_event_id", "causation_event_ids", "source_object_id",
+    "source_object_version", "target_object_id", "target_object_version",
+    "refusal_category", "reason_code", "gate_id", "gate_version",
+    "reg_arch_version", "active_manifest_id", "active_manifest_version",
+    "active_manifest_digest", "requester_ref", "controller_principal_ref",
+    "capability_assertion_ref", "trust_binding_ref", "capability_scope_version",
+    "logical_order", "idempotency_key", "outcome", "gap_object_id", "conflicting_prior_event_id", "request_fingerprint", "requested_reason"
+  ],
+  "required": [
+    "event_id", "event_type", "schema_version", "request_id",
+    "source_refusal_event_id", "causation_event_ids", "source_object_id",
+    "source_object_version", "target_object_id", "target_object_version",
+    "refusal_category", "reason_code", "gate_id", "gate_version",
+    "reg_arch_version", "active_manifest_id", "active_manifest_version",
+    "active_manifest_digest", "requester_ref", "controller_principal_ref",
+    "capability_assertion_ref", "trust_binding_ref", "capability_scope_version",
+    "logical_order", "idempotency_key", "outcome", "gap_object_id", "conflicting_prior_event_id", "request_fingerprint", "requested_reason"
+  ],
+  "properties": {
+    "event_id": {"type": "string", "minLength": 1},
+    "event_type": {"const": "G_ECART_ATTEMPT"},
+    "schema_version": {"type": "string", "minLength": 1},
+    "request_id": {"type": "string", "minLength": 1},
+    "source_refusal_event_id": {"type": ["string", "null"], "minLength": 1},
+    "causation_event_ids": {"type": "array", "items": {"type": "string"}},
+    "source_object_id": {"type": ["string", "null"], "minLength": 1},
+    "source_object_version": {"type": ["string", "null"], "minLength": 1},
+    "target_object_id": {"type": ["string", "null"], "minLength": 1},
+    "target_object_version": {"type": ["string", "null"], "minLength": 1},
+    "refusal_category": {"type": ["string", "null"], "enum": ["MISSING_AUTHORITY", "INVALID_AUTHORITY", "AMBIGUOUS_LINK", "MISSING_CRITERIA", null]},
+    "reason_code": {"enum": ["STRUCTURAL_REFUSAL", "NOT_STRUCTURAL_REFUSAL", "ACTIVE_MANIFEST_UNRESOLVED", "CONTROLLER_IDENTITY_UNVERIFIED", "CAPABILITY_SCOPE_INVALID", "REQUEST_CONTEXT_INCOMPLETE", "PRECOMMIT_ABORT", "IDEMPOTENCY_KEY_CONFLICT"]},
+    "gate_id": {"const": "G-Ecart"},
+    "gate_version": {"type": "string", "minLength": 1},
+    "reg_arch_version": {"type": ["string", "null"], "minLength": 1},
+    "active_manifest_id": {"type": ["string", "null"], "minLength": 1},
+    "active_manifest_version": {"type": ["string", "null"], "minLength": 1},
+    "active_manifest_digest": {"type": ["string", "null"], "minLength": 1},
+    "requester_ref": {"type": ["string", "null"], "minLength": 1},
+    "controller_principal_ref": {"type": ["string", "null"], "minLength": 1},
+    "capability_assertion_ref": {"type": ["string", "null"], "minLength": 1},
+    "trust_binding_ref": {"type": ["string", "null"], "minLength": 1},
+    "capability_scope_version": {"type": ["string", "null"], "minLength": 1},
+    "logical_order": {"type": ["integer", "string"]},
+    "idempotency_key": {"type": "string", "minLength": 1},
+    "outcome": {"enum": ["CREATED", "REUSED", "REFUSED", "ABORTED"]},
+    "gap_object_id": {"type": ["string", "null"]},
+    "conflicting_prior_event_id": {"type": ["string", "null"]},
+    "request_fingerprint": {"type": "string", "minLength": 1},
+    "requested_reason": {"type": ["string", "null"]}
+  },
+  "allOf": [
+    {"if": {"properties": {"outcome": {"enum": ["CREATED", "REUSED"]}}}, "then": {"properties": {"gap_object_id": {"type": "string", "minLength": 1}, "reg_arch_version": {"type": "string", "minLength": 1}, "active_manifest_id": {"type": "string", "minLength": 1}, "active_manifest_version": {"type": "string", "minLength": 1}, "active_manifest_digest": {"type": "string", "minLength": 1}, "requester_ref": {"type": "string", "minLength": 1}, "controller_principal_ref": {"type": "string", "minLength": 1}, "capability_assertion_ref": {"type": "string", "minLength": 1}, "trust_binding_ref": {"type": "string", "minLength": 1}, "capability_scope_version": {"type": "string", "minLength": 1}}}},
+    {"if": {"properties": {"outcome": {"enum": ["CREATED", "REUSED"]}}}, "then": {"properties": {"source_refusal_event_id": {"type": "string", "minLength": 1}, "causation_event_ids": {"minItems": 1}, "source_object_id": {"type": "string", "minLength": 1}, "source_object_version": {"type": "string", "minLength": 1}, "target_object_id": {"type": "string", "minLength": 1}, "target_object_version": {"type": "string", "minLength": 1}, "refusal_category": {"type": "string"}}}},
+    {"if": {"properties": {"outcome": {"enum": ["REFUSED", "ABORTED"]}}}, "then": {"properties": {"gap_object_id": {"type": "null"}}}}
+  ],
+  "additional_semantic_constraints": [
+    "for CREATED/REUSED, causation_event_ids contains source_refusal_event_id; for REFUSED/ABORTED, unverifiable source/causation may be null/empty and reason_code explains the fail-closed result",
+    "controller_principal_ref resolves to a versioned capability assertion scoped only to create-or-reuse linked G-Ecart objects for CREATED/REUSED; refusal traces may use null for unverifiable context and must use a reason_code",
+    "for an idempotency conflict, conflicting_prior_event_id identifies the original committed attempt and request_fingerprint is the canonical fingerprint of the rejected request; trace fields describe that rejected request, not the original attempt",
+    "the target object is never mutated"
+  ]
+}
