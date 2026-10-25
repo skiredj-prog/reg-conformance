@@ -72,3 +72,13 @@ This CI **does not** demonstrate: production governor/dispatch coupling, dual-st
 - Report: `shadow_budget_parity_preflight.status=SCOPED_G1_PARITY_PASS`, `source_authority=JSON_REGISTRY`, `budget_authority=SQLiteConsensusBackend`, `execution_authorized=false`, `cutover_authorized=false`. Budget state change after baseline is rejected and never automatically reconciled.
 
 **No normative promotion:** this is a *preflight observation*, NOT actual one-store operation+attempt+budget authorization, source cutover, provider execution or full RFC-4 T6/T7/T8 qualification.
+
+## G3 cooperative fenced-shadow handoff — 2026-10-25
+
+- Pinned TENIR-Gov candidate source `4def8c9fd39ca758ef271be20d04a8916d67d6c1`; not published 5.7.0.
+- [Source CI 40171276528](https://github.com/skiredj-prog/tenir_governance/actions/runs/40171276528): **109/109 PASS**, including 12 new G3 tests for monotonic `PREPARED → FENCED_SHADOW_HOLD`, stale JSON writers, marker deletion safety, corrupt marker HOLD, subprocess hard exit before/after marker, restart and two-process single epoch.
+- [Governance CI 40171276493](https://github.com/skiredj-prog/tenir_governance/actions/runs/40171276493): PASS. The separate Raft run is not evidence for single-host G3 fencing until verified independently.
+- [Independent REG G3 candidate CI 40171390160](https://github.com/skiredj-prog/reg-conformance/actions/runs/40171390160): PASS; [Capabilities CI 40171389959](https://github.com/skiredj-prog/reg-conformance/actions/runs/40171389959): PASS.
+- [Artifact 12590371349](https://github.com/skiredj-prog/reg-conformance/actions/runs/40171390160/artifacts/12590371349) archive digest `sha256:1fa8a6912c261916379b6a2bbebcdd7d4178aa389304cd532ad849a9200426bf`; machine report and dependency hashes retained.
+- Machine result `g3_shadow_fencing.status=SCOPED_G3_FENCED_HOLD_PASS`, `legacy_writers_observed_blocked=true`, `execution_authorized=false`, `production_cutover=false`, `candidate_dispatch_authorized=false`.
+- **Not a genuine G3 authority transfer:** only updated single-host JSON writer implementations honor the marker. Pre-fence binaries, malicious fence deletion, distributed writers and live external effects remain outside this proof. Shadow SQLite does not gain dispatch authority; actual unified transactional commit, G4 and T8 are still blocked.
