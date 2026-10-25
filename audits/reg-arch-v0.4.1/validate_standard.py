@@ -51,7 +51,7 @@ numbers = {"numbers": [333333333.3333333, 1e30, 4.5, 0.002, 1e-27]}
 assert jcs.canonicalize(numbers) == b'{"numbers":[333333333.3333333,1e+30,4.5,0.002,1e-27]}'
 # Unicode property sorting is by UTF-16 code units, not Python codepoint order.
 unicode_keys = {"\ue000": 1, "\U00010000": 2}
-assert jcs.canonicalize(unicode_keys) == '{"\\ud800\\udc00":2,"\\ue000":1}'.encode("ascii").decode("unicode_escape").encode("utf-8")
+assert jcs.canonicalize(unicode_keys) == ('{"' + "\U00010000" + '":2,"' + "\ue000" + '":1}').encode("utf-8")
 # Escaping and non-ASCII payloads must remain stable across insertion order.
 a = {"é": "雪", "a": "line\\nbreak", "z": -0.0}
 b = dict(reversed(list(a.items())))
