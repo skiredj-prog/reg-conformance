@@ -23,3 +23,13 @@
 This CI **does not** demonstrate: production governor/dispatch coupling, dual-store atomicity, distributed linearizability, cryptographic root lifecycle/revocation freshness beyond fixed process configuration, external no-effect truthfulness, `tau_K` SLA liveness, or T8 retry authorization.
 
 **Do not** update production or baseline manifests or mark CT-R4-011/012 `NATIVE_CONFORMANT` from this evidence alone. The 5.7.0 REG qualification in draft PR #47 remains distinct, and the 5.6.1 deployment baseline remains untouched.
+
+## P0 governor operation binding — verified 2026-10-25
+
+- Source candidate pinned at `skiredj-prog/tenir_governance@49afb1a1d9dbb1ca3e74d946fd1ea4fab1101c8a` (not GA).
+- [REG experimental run 40167424102](https://github.com/skiredj-prog/reg-conformance/actions/runs/40167424102): **PASS**, including the actual JSON-backed `DurableOperationRegistry` bridge to `DualKernelGovernor` and the unconditional HOLD inspector.
+- [Artifact 12588703936](https://github.com/skiredj-prog/reg-conformance/actions/runs/40167424102/artifacts/12588703936) archive SHA-256: `81aa0c51018ff47705c43d2b5d9c75c214d7e764313616daeeb024d0428d2564` (GitHub-reported archive digest). Artifact includes candidate report, dependency freeze and internal checksums.
+- REG companion capabilities workflow on the same commit: **PASS**.
+- TENIR-Gov candidate source run [40167328231](https://github.com/skiredj-prog/tenir_governance/actions/runs/40167328231): **47/47 PASS**, source Governance CI run [40167328229](https://github.com/skiredj-prog/tenir_governance/actions/runs/40167328229): **PASS**. Raft regression independent and not used as an approval condition for this scope.
+- `governor_registry_observer.status=SCOPED_OBSERVATION_PASS`, `execution_authorized=false`; the external provider and budget settlement paths are **not exercised**. The source operation remains `UNKNOWN` after evidence recording.
+- **Strict outcome: candidate read-only integration evidence PASS, normative T6/T7/HOLD and T8/GAP.** No promotion of REG catalogue/manifest or release claims.
