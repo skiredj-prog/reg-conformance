@@ -20,6 +20,7 @@ from tenir_governance.operations.attempt_qualification import (
 from tenir_governance.operations.registry import DurableOperationRegistry, OperationRecord, OperationState
 from tenir_governance.operations.sqlite_backend import SQLiteConsensusBackend
 from tenir_governance.operations.shadow_budget_parity import ShadowBudgetParityAudit
+from tenir_governance.operations.shadow_g3_fence import G3ShadowFenceCoordinator
 from tenir_governance.operations.shadow_registry_migration import (
     ShadowOperationMigrator, ShadowMigrationHold,
 )
@@ -35,7 +36,7 @@ from tenir_governance.operations.attempt_attestation import (
 )
 
 DIGEST = "sha256:" + "ab"*32
-CANDIDATE_COMMIT = "22e0452150e382b87eba012eb6eac7c001737722"
+CANDIDATE_COMMIT = "4def8c9fd39ca758ef271be20d04a8916d67d6c1"
 
 
 def _assert(condition, description):
@@ -324,6 +325,56 @@ def _exercise(base):
                   "budget_state_drift_HOLD"],
         "missing":["production single-authority operation/attempt/settlement transaction",
                    "owner epoch fencing","provider effect and budget settlement coupling"],
+        "normative_conformant":False,
+    }
+    # G3 read-only fenced-shadow transfer *ceremony*, NOT active backend
+    # ownership. A stale JSON writer must be rejected, and no new dispatch
+    # grant may be minted from the candidate epoch.
+    g3_dir=base/"g3-budget"
+    g3_backend=SQLiteConsensusBackend(str(g3_dir))
+    _assert(g3_backend.register_resource("g3-resource",Decimal("100"))=="REGISTERED",
+            "G3 SQLite budget setup failed")
+    g3_registry=DurableOperationRegistry(str(base/"g3-operations.json"))
+    _assert(g3_registry.register(OperationRecord(
+        idempotency_key="g3-op", passage_id="g3-pass",agent_id="g3-agent",
+        action_type="audit",state=OperationState.CREATED,
+    )),"G3 source setup failed")
+    stale_registry=DurableOperationRegistry(str(base/"g3-operations.json"))
+    g3_shadow=ShadowOperationMigrator(g3_registry,g3_dir/"consensus.sqlite3")
+    g3_shadow.verify_or_stage()
+    g3_check=ShadowBudgetParityAudit(g3_shadow)
+    g3_check.verify()
+    g3=G3ShadowFenceCoordinator(g3_check)
+    fenced=g3.fence_shadow()
+    _assert(fenced.status=="FENCED_SHADOW_HOLD"
+            and fenced.legacy_writes_fenced
+            and fenced.execution_authorized is False
+            and fenced.candidate_dispatch_authorized is False
+            and fenced.is_production_cutover is False,
+            "G3 fence accidentally granted execution")
+    _assert(g3.inspect()==fenced,"G3 frozen handoff cannot be inspected")
+    try:
+        stale_registry.register(OperationRecord(
+            idempotency_key="g3-unauthorized",passage_id="g3-unauthorized",
+            agent_id="legacy",action_type="audit",state=OperationState.CREATED))
+    except RuntimeError as exc:
+        _assert("G3 authority fence" in str(exc),"legacy write rejection is not from G3")
+    else:
+        raise AssertionError("G3 failed to fence pre-existing JSON registry writer")
+    _assert(g3_registry.get("g3-unauthorized") is None,
+            "legacy writer persisted after G3 fence")
+    checked["g3_shadow_fencing"]={
+        "status":"SCOPED_G3_FENCED_HOLD_PASS",
+        "source_authority":"FENCED_LEGACY_JSON",
+        "candidate_dispatch_authorized":False,
+        "execution_authorized":False,
+        "production_cutover":False,
+        "legacy_writers_observed_blocked":True,
+        "tested":["durable_fence_epoch","stale_writer_denial","monotonic_HOLD",
+                  "immutable_shadow_snapshot"],
+        "missing":["old non-fence-aware binaries","live governor ownership migration",
+                   "budget and provider atomic execution transaction",
+                   "cross-host fencing","trusted cutover authorization"],
         "normative_conformant":False,
     }
     checked["CT-R4-013"] = {
