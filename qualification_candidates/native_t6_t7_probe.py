@@ -16,12 +16,19 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from tenir_governance.operations.attempt_qualification import (
     AttemptQualificationStore, QualificationError,
 )
+from tenir_governance.operations.registry import DurableOperationRegistry, OperationRecord, OperationState
+from tenir_governance.operations.attempt_operation_bridge import (
+    AttemptOperationObservationBridge, inspect_governor_attempt, operation_context_digest,
+)
+from tenir_governance.composition import DualKernelGovernor, ScoringKernelAdapter
+from tenir_governance.membrane import MembraneState, TransitionMembrane
+from tenir_kernel.kernel import TenirKernel
 from tenir_governance.operations.attempt_attestation import (
     Ed25519AttemptVerifier, canonical_attestation_payload,
 )
 
 DIGEST = "sha256:" + "ab"*32
-CANDIDATE_COMMIT = "aa8f947adee87c793201fba47206543cd68c45ac"
+CANDIDATE_COMMIT = "49afb1a1d9dbb1ca3e74d946fd1ea4fab1101c8a"
 
 
 def _assert(condition, description):
@@ -29,12 +36,12 @@ def _assert(condition, description):
         raise AssertionError(description)
 
 
-def _signed(private, aid, lei, nonce, outcome):
+def _signed(private, aid, lei, nonce, outcome, digest=DIGEST):
     payload = {
         "schema_version": "tenir.attempt.attestation.v1",
         "evidence_id": "e-" + aid + "-" + outcome,
         "attempt_id": aid, "lei": lei, "nonce": nonce,
-        "operation_digest": DIGEST,
+        "operation_digest": digest,
         "outcome": outcome, "authority_id": "reg-candidate-attestor",
         "issued_at_ms": 1000, "expires_at_ms": 2000,
     }
@@ -101,6 +108,55 @@ def _exercise(base):
                 pass
             else:
                 raise AssertionError("T8 retry incorrectly granted")
+    # Direct bridge observation against a real persistent governor registry.
+    # This does not enter provider dispatch, adjudication or budget settlement.
+    registry = DurableOperationRegistry(str(base/"governor-registry.json"))
+    _assert(registry.register(OperationRecord(
+        idempotency_key="gov-op-1", passage_id="passage-1", agent_id="bank-agent",
+        action_type="payment", amount=5.0, resource_id="budget",
+        state=OperationState.UNKNOWN, institutional_scope="bank",
+        operation_id="external-operation-1",
+    )), "source registry setup failed")
+    bridge_store = AttemptQualificationStore(base/"governor-attempt.sqlite",verifier)
+    bridge = AttemptOperationObservationBridge(registry,bridge_store)
+    bind = bridge.begin_observation(
+        operation_key="gov-op-1",attempt_id="gov-attempt-1",
+        lei="GOV-LEI-1",nonce="1234567890abcdef1234567890abcdef",
+        deadline_ms=1400,
+    )
+    _assert(bind.status=="MATCHED_OBSERVATION_ONLY", "governor source binding failed")
+    digest = operation_context_digest(registry.get("gov-op-1"))
+    bridge_evidence = _signed(private,"gov-attempt-1","GOV-LEI-1",
+                              "1234567890abcdef1234567890abcdef",
+                              "NON_EXECUTION_CONFIRMED",digest=digest)
+    recorded = bridge.qualify_observation(
+        operation_key="gov-op-1",attempt_id="gov-attempt-1",
+        signed_evidence=bridge_evidence,observed_ms=1500,
+    )
+    _assert(recorded.status=="EVIDENCE_RECORDED_NO_COMMIT_AUTHORITY",
+            "governor evidence not recorded safely")
+    governor = DualKernelGovernor(
+        ScoringKernelAdapter(TenirKernel()),TransitionMembrane(MembraneState()),
+        registry=registry,
+    )
+    observation = inspect_governor_attempt(
+        governor,bridge_store,operation_key="gov-op-1",attempt_id="gov-attempt-1",
+    )
+    _assert(observation["decision"]=="HOLD"
+            and observation["execution_authorized"] is False,
+            "governor candidate observation unexpectedly authorized execution")
+    _assert(registry.get("gov-op-1").state is OperationState.UNKNOWN,
+            "candidate wrote to authoritative operation state")
+    checked["governor_registry_observer"] = {
+        "status":"SCOPED_OBSERVATION_PASS",
+        "execution_authorized":False,
+        "normative_conformant":False,
+        "tested":["persistent_source_binding","qualified_signed_candidate_only",
+                  "governor_HOLD","no_operation_state_mutation"],
+        "missing":["atomic source/attempt commit authority",
+                   "provider settlement proof and budget coupling",
+                   "end-to-end native conformance"],
+    }
     checked["CT-R4-013"] = {
         "status":"IMPLEMENTATION_GAP", "normative_conformant":False,
         "missing":["retry_eligible contract","new-attempt authorization",
