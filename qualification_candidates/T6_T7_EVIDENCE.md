@@ -52,3 +52,12 @@ This CI **does not** demonstrate: production governor/dispatch coupling, dual-st
 - [Artifact 12590005932](https://github.com/skiredj-prog/reg-conformance/actions/runs/40168660397/artifacts/12590005932), GitHub archive digest `sha256:3731ff44d3266882b1f845fb80e899aab79230adae764cc441f687d434c7f520`. The file-level hash manifest and dependency freeze are uploaded with the report.
 - Machine result: `budget_colocation_guard.status=SCOPED_NO_SETTLEMENT_PASS`, `budget_mutated=false`, `execution_authorized=false`. The budget reservation remains `RESERVED` after signed proof of non-execution; it is not automatically refunded or released.
 - **No inference of shared transaction**: existing governor JSON registry, SQLite budget and candidate proof operate under separate API transactions, even when the two latter structures physically share one SQLite database. Live execution authority remains HOLD.
+
+## G0/G2 shadow registry inventory — 2026-10-25
+
+- Source TENIR-Gov candidate `fe01013f635ba6117bcce56048b36beb6729ebec` on draft PR #65. Existing published TENIR-Gov 5.7.0 is **not** this source.
+- [TENIR-Gov source CI 40169534749](https://github.com/skiredj-prog/tenir_governance/actions/runs/40169534749): **88/88 PASS** for native candidate, budget isolation, immutable G0/G2 shadow snapshot, duplicate JSON keys and corrupt source rejection, child hard exit before commit, cross-process source writer serialization and divergence HOLD.
+- [Source Governance CI 40169534772](https://github.com/skiredj-prog/tenir_governance/actions/runs/40169534772): PASS.
+- [REG independent run 40169588262](https://github.com/skiredj-prog/reg-conformance/actions/runs/40169588262): PASS. [Capabilities run 40169588240](https://github.com/skiredj-prog/reg-conformance/actions/runs/40169588240): PASS.
+- [Artifact 12589837823](https://github.com/skiredj-prog/reg-conformance/actions/runs/40169588262/artifacts/12589837823): reported archive digest `sha256:2b5fb259b255b020b7d70561dc2aa9135497c27ec21f71c1661ddb417d75a97e`. Includes machine report, internal SHA-256 manifest and dependency freeze.
+- The machine classification `shadow_registry_migration.status=SCOPED_SHADOW_CAPTURE_PASS` is accompanied by `cutover_performed=false`, `execution_authorized=false` and `source_authority=JSON_REGISTRY`. This is **not** G3 cutover, G4 transactionally controlled execution or normative REG T6–T8 conformance.
