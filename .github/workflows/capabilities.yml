@@ -11,3 +11,7 @@ jobs:
       - run: python tools/make_capabilities.py --check
       - run: python tools/verify_capabilities.py
       - run: python tools/fill_catalog_guarantees.py --check
+      - name: Verify T6-T8 runner adapter reporting scope
+        run: |
+          pip install requests cryptography
+          python -m unittest discover -s tests -p 'test_t6_t8_runner_scope.py' -v
