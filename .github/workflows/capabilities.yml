@@ -11,3 +11,9 @@ jobs:
       - run: python tools/make_capabilities.py --check
       - run: python tools/verify_capabilities.py
       - run: python tools/fill_catalog_guarantees.py --check
+
+  qualification_5_7:
+    name: P0 native evidence gate (scoped)
+    uses: ./.github/workflows/tenir-5.7-evidence-probe.yml
+    permissions:
+      contents: read
