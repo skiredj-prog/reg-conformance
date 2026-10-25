@@ -20,6 +20,9 @@ from tenir_governance.operations.attempt_qualification import (
 )
 from tenir_governance.operations.registry import DurableOperationRegistry, OperationRecord, OperationState
 from tenir_governance.operations.sqlite_backend import SQLiteConsensusBackend
+from tenir_governance.operations.candidate_atomic_budget import (
+    CandidateAtomicBudgetAdmission, CandidateBudgetHold,
+)
 from tenir_governance.operations.shadow_budget_parity import ShadowBudgetParityAudit
 from tenir_governance.operations.shadow_g3_fence import G3ShadowFenceCoordinator
 from tenir_governance.operations.shadow_registry_migration import (
@@ -37,7 +40,7 @@ from tenir_governance.operations.attempt_attestation import (
 )
 
 DIGEST = "sha256:" + "ab"*32
-CANDIDATE_COMMIT = "31da28b33cffec474c6321f139032e121b61860e"
+CANDIDATE_COMMIT = "6145014d2b28c41cf595f511d12420b7a40a080c"
 
 
 def _assert(condition, description):
@@ -398,6 +401,61 @@ def _exercise(base):
                    "budget and provider atomic execution transaction",
                    "cross-host fencing","trusted cutover authorization"],
         "normative_conformant":False,
+    }
+    # G1 candidate-namespace only: source projection + attempt + existing
+    # SQLiteConsensusBackend I8 reservation must commit in one transaction.
+    # No production JSON OperationState or external provider is involved.
+    g1_atomic_dir=base/"g1-atomic-budget"
+    g1_atomic_backend=SQLiteConsensusBackend(str(g1_atomic_dir))
+    _assert(g1_atomic_backend.register_resource(
+        "candidate:reg-budget",Decimal("10"))=="REGISTERED",
+        "isolated G1 candidate resource setup failed")
+    g1_atomic=CandidateAtomicBudgetAdmission(g1_atomic_backend,verifier)
+    g1_claim=dict(
+        operation_key="candidate:reg-op",operation_digest=DIGEST,
+        attempt_id="candidate-reg-attempt",lei="candidate:reg-lei",
+        nonce="34567890123456789012345678901234",deadline_ms=1400,
+        resource_id="candidate:reg-budget",amount=Decimal("7"),
+    )
+    receipt=g1_atomic.admit(**g1_claim)
+    _assert(receipt.status=="CANDIDATE_RESERVED_HOLD"
+            and not receipt.execution_authorized
+            and not receipt.source_is_production, "G1 budget claim overpromoted")
+    _assert(g1_atomic.admit(**g1_claim)==receipt,
+            "G1 repeated claim not idempotent")
+    observed=g1_atomic_backend.get_state("candidate:reg-budget")
+    _assert(observed.reserved==Decimal("7")
+            and observed.committed==Decimal("0"),
+            "candidate admission corrupted budget I8")
+    _assert(g1_atomic.attempts.inspect("candidate-reg-attempt").attempt_state=="UNKNOWN",
+            "G1 atomic attempt not persisted")
+    try:
+        g1_atomic.admit(**{
+            **g1_claim,"operation_key":"candidate:reg-op-2",
+            "attempt_id":"candidate-reg-attempt-2",
+            "lei":"candidate:reg-lei-2","amount":Decimal("7"),
+        })
+    except CandidateBudgetHold:
+        pass
+    else:
+        raise AssertionError("G1 candidate exceeded I8 capacity")
+    _assert(g1_atomic_backend.get_state("candidate:reg-budget").reserved==Decimal("7"),
+            "failed G1 candidate admission partially reserved budget")
+    checked["g1_atomic_budget_candidate"]={
+        "status":"SCOPED_G1_ATOMIC_I8_CANDIDATE_PASS",
+        "candidate_namespace_only":True,
+        "single_sqlite_transaction":True,
+        "source_authority":"CANDIDATE_PROJECTION_NOT_GOVERNOR",
+        "execution_authorized":False,
+        "production_cutover":False,
+        "normative_conformant":False,
+        "tested":["source_attempt_reservation_single_transaction",
+                  "idempotent_replay","I8_capacity_fail_closed",
+                  "budget_and_attempt_atomic_rollback"],
+        "missing":["authoritative production OperationState integration",
+                   "cutover owner fencing across all deployed writers",
+                   "external provider dispatch and effect settlement",
+                   "T8 retry authorization"],
     }
     checked["CT-R4-013"] = {
         "status":"IMPLEMENTATION_GAP", "normative_conformant":False,
