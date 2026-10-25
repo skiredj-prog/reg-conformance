@@ -19,6 +19,7 @@ from tenir_governance.operations.attempt_qualification import (
 )
 from tenir_governance.operations.registry import DurableOperationRegistry, OperationRecord, OperationState
 from tenir_governance.operations.sqlite_backend import SQLiteConsensusBackend
+from tenir_governance.operations.shadow_budget_parity import ShadowBudgetParityAudit
 from tenir_governance.operations.shadow_registry_migration import (
     ShadowOperationMigrator, ShadowMigrationHold,
 )
@@ -34,7 +35,7 @@ from tenir_governance.operations.attempt_attestation import (
 )
 
 DIGEST = "sha256:" + "ab"*32
-CANDIDATE_COMMIT = "fe01013f635ba6117bcce56048b36beb6729ebec"
+CANDIDATE_COMMIT = "22e0452150e382b87eba012eb6eac7c001737722"
 
 
 def _assert(condition, description):
@@ -276,6 +277,54 @@ def _exercise(base):
         "normative_conformant":False,
         "missing":["approved atomic cutover","backend schema migration",
                    "single operation/attempt/budget commit transition"],
+    }
+    # G1 preflight: source snapshot and existing SQLiteBudget parity under
+    # single-host writer locks, but still NO actual source-store cutover.
+    g1_dir=base/"g1-budget"
+    g1_backend=SQLiteConsensusBackend(str(g1_dir))
+    _assert(g1_backend.register_resource("g1-resource",Decimal("100"))=="REGISTERED",
+            "G1 budget registration failed")
+    g1_reservation=g1_backend.reserve("g1-op",Decimal("20"),"g1-resource")
+    _assert(g1_reservation.status=="RESERVED","G1 budget reservation failed")
+    g1_registry=DurableOperationRegistry(str(base/"g1-operations.json"))
+    _assert(g1_registry.register(OperationRecord(
+        idempotency_key="g1-op",passage_id="g1-pass",agent_id="g1-agent",
+        action_type="payment",amount=20.0,resource_id="g1-resource",
+        state=OperationState.UNKNOWN,
+        reservation_id=g1_reservation.reservation_id,
+        budget_reserved=True,
+    )), "G1 authoritative JSON source registration failed")
+    g1_shadow=ShadowOperationMigrator(
+        g1_registry,g1_dir/"consensus.sqlite3",
+    )
+    g1_shadow.verify_or_stage()
+    g1_check=ShadowBudgetParityAudit(g1_shadow)
+    g1_parity=g1_check.verify()
+    _assert(g1_parity.status=="BUDGET_PARITY_MATCHED_NO_CUTOVER"
+            and g1_parity.execution_authorized is False
+            and g1_parity.cutover_authorized is False,
+            "G1 parity falsely approved cutover or dispatch")
+    _assert(g1_check.verify()==g1_parity, "G1 parity repeat changed")
+    _assert(g1_backend.commit(g1_reservation.reservation_id).status=="COMMITTED",
+            "G1 mutation fault-injection failed")
+    try:
+        g1_check.verify()
+    except ShadowMigrationHold:
+        pass
+    else:
+        raise AssertionError("G1 did not fail closed after source/budget drift")
+    checked["shadow_budget_parity_preflight"]={
+        "status":"SCOPED_G1_PARITY_PASS",
+        "execution_authorized":False,
+        "cutover_authorized":False,
+        "source_authority":"JSON_REGISTRY",
+        "budget_authority":"SQLiteConsensusBackend",
+        "tested":["source_reservation_mapping","amount_and_resource_parity",
+                  "I8_accounting_consistency","frozen_parity_epoch",
+                  "budget_state_drift_HOLD"],
+        "missing":["production single-authority operation/attempt/settlement transaction",
+                   "owner epoch fencing","provider effect and budget settlement coupling"],
+        "normative_conformant":False,
     }
     checked["CT-R4-013"] = {
         "status":"IMPLEMENTATION_GAP", "normative_conformant":False,
