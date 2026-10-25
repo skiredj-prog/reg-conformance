@@ -9,7 +9,8 @@ on:
       - '.github/workflows/tenir-5.7-evidence-probe.yml'
   pull_request:
     paths:
-      - 'qualifications/tenir-governance-5.7.0.*'\n      - 'qualifications/verify_native_t6_t7.py'
+      - 'qualifications/tenir-governance-5.7.0.*'
+      - 'qualifications/verify_native_t6_t7.py'
       - '.github/workflows/tenir-5.7-evidence-probe.yml'
 permissions:
   contents: read
