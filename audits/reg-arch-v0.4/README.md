@@ -20,3 +20,7 @@ Le rapport distingue le contenu normatif du DOCX, son appendice de méthode, les
 La candidate de correction v0.4.1, ses copies de source, sa matrice, ses scénarios, ses oracles abstraits et le rapport de relecture sont dans `audits/reg-arch-v0.4.1/`. Hash SHA-256 DOCX candidate : `2C86C2CF275CF2C4028C0F2437DE332D3BC1C5B99C4967EB68C8AEF0DB1532C4`; PDF candidate : `6BE9328006812EF6ED98E7D07AE89FCF68ED08FF8A1C4E5694C4E08AAD0F62BC`. Les livrables candidate sont locaux et non ratifiés. La source v0.4 ci-dessus demeure l’objet audité ; la candidate n’est pas présentée comme norme adoptée.
 
 Vérification locale de la génération courante : 20 oracles de modèle passent, le vérificateur d’artefacts confirme les deux hash sources, la parité du schéma de trace JSON/YAML, 16 scénarios adversariaux et la présence des obligations / décisions ouvertes. Ces contrôles ne sont pas des preuves de conformité d’un déploiement.
+
+Statut de revue : **REG-ARCH v0.4.1 — NORMATIVE REVIEW PASS / DEPLOYMENT CONDITIONAL / RATIFICATION HOLD.** Les fichiers PNG de rendu et le cache Python sont exclus de la PR de revue; sources, DOCX/PDF candidats, schéma, scénarios, tests et outils reproductibles sont conservés.
+
+Le paquet inclut aussi un protocole candidat d’établissement des preuves d’exhaustivité PREPARE/PREVENT, un validateur indépendant JSON Schema/JCS et un workflow CI. Le validateur standard dépend de bibliothèques installées par le workflow et n’a pas pu être lancé dans l’environnement local (module `jcs` absent); le résultat CI reste à vérifier après le push.
