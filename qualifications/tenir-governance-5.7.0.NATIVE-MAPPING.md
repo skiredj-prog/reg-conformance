@@ -22,3 +22,7 @@ Target source: `skiredj-prog/tenir_governance@0ec4870ee5bd73d90b9c6304f5cf774def
 The CI native targeted test may demonstrate *specific existing release behavior* only. Never assign `EvidenceLevel.NATIVE_CONFORMANT` for CT-R4-011/012/013 until there is a native adapter with identical preconditions, observable state transitions, recovery behavior and negative/adversarial cases. A reference adapter report (14 PASS / 41 GAP) is not an implementation certification.
 
 Follow-up: run pinned tests for the SQLite governor crash/reconciliation cases under CI and attach output; then design a minimal native contract adapter, with an explicit gap for T8 if no production API exists.
+
+## Scoped T6/T7 probe extension (candidate CI)
+
+Workflow commit `d27b564d3ead9067bfc315502556019bcdacf6e8` adds a focused selection of existing `tests/test_provider.py` cases. Cases cover indeterminate reconciliation, successful confirmation, qualified provider failure, concurrent refund protection, Stripe empty-search uncertainty, contradictory safety signals, and timeout/UNKNOWN behavior. These are native implementation tests **of partial semantic properties**, not a normative adapter test: no claim is made that the lab's `AttemptState`, `τ_K` and `retry_eligible` contracts are present. CI results must be observed before claiming execution success.
