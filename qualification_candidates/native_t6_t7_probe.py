@@ -40,7 +40,7 @@ from tenir_governance.operations.attempt_attestation import (
 )
 
 DIGEST = "sha256:" + "ab"*32
-CANDIDATE_COMMIT = "6145014d2b28c41cf595f511d12420b7a40a080c"
+CANDIDATE_COMMIT = "09bd2d73ac5b70b825d500e2f8ace2e26a4e4aaa"
 
 
 def _assert(condition, description):
@@ -410,7 +410,8 @@ def _exercise(base):
     _assert(g1_atomic_backend.register_resource(
         "candidate:reg-budget",Decimal("10"))=="REGISTERED",
         "isolated G1 candidate resource setup failed")
-    g1_atomic=CandidateAtomicBudgetAdmission(g1_atomic_backend,verifier)
+    g1_atomic=CandidateAtomicBudgetAdmission(
+        g1_atomic_backend,verifier,experimental_only=True)
     g1_claim=dict(
         operation_key="candidate:reg-op",operation_digest=DIGEST,
         attempt_id="candidate-reg-attempt",lei="candidate:reg-lei",
