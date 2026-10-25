@@ -1,5 +1,6 @@
 name: tenir-5.7-evidence-probe
 on:
+  workflow_call:
   workflow_dispatch:
   push:
     branches: ['audit/tenir-5.7-qualification-p0']
