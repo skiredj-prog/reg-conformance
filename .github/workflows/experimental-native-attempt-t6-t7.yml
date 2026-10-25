@@ -19,7 +19,7 @@ jobs:
           python-version: '3.12'
       - name: Install exact experimental candidate (not released 5.7.0)
         run: |
-          python -m pip install 'tenir-governance[ep02] @ git+https://github.com/skiredj-prog/tenir_governance.git@31da28b33cffec474c6321f139032e121b61860e'
+          python -m pip install 'tenir-governance[ep02] @ git+https://github.com/skiredj-prog/tenir_governance.git@6145014d2b28c41cf595f511d12420b7a40a080c'
       - name: Execute REG native experimental vectors
         run: |
           mkdir -p results
@@ -32,7 +32,7 @@ jobs:
           report=json.loads(report_path.read_text())
           assert report["verdict"]=="PARTIAL_CANDIDATE_EVIDENCE"
           assert report["native_normative_conformance"] is False
-          assert report["pinned_source_commit"]=="31da28b33cffec474c6321f139032e121b61860e"
+          assert report["pinned_source_commit"]=="6145014d2b28c41cf595f511d12420b7a40a080c"
           assert report["vectors"]["CT-R4-011"]["status"]=="SCOPED_CANDIDATE_PASS"
           assert report["vectors"]["CT-R4-012"]["status"]=="SCOPED_CANDIDATE_PASS"
           assert report["vectors"]["CT-R4-013"]["status"]=="IMPLEMENTATION_GAP"
@@ -53,6 +53,9 @@ jobs:
           assert report["vectors"]["g3_shadow_fencing"]["execution_authorized"] is False
           assert report["vectors"]["g3_shadow_fencing"]["production_cutover"] is False
           assert report["vectors"]["g3_shadow_fencing"]["missing_finalized_marker_is_hold"] is True
+          assert report["vectors"]["g1_atomic_budget_candidate"]["status"]=="SCOPED_G1_ATOMIC_I8_CANDIDATE_PASS"
+          assert report["vectors"]["g1_atomic_budget_candidate"]["execution_authorized"] is False
+          assert report["vectors"]["g1_atomic_budget_candidate"]["production_cutover"] is False
           assert metadata.version("tenir-governance")=="5.7.0", "Source branch retains historical package version"
           hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in pathlib.Path("results").iterdir() if p.is_file()}
           pathlib.Path("results/sha256.json").write_text(json.dumps(hashes,indent=2)+"\n")
