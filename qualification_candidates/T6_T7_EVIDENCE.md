@@ -82,3 +82,11 @@ This CI **does not** demonstrate: production governor/dispatch coupling, dual-st
 - [Artifact 12590371349](https://github.com/skiredj-prog/reg-conformance/actions/runs/40171390160/artifacts/12590371349) archive digest `sha256:1fa8a6912c261916379b6a2bbebcdd7d4178aa389304cd532ad849a9200426bf`; machine report and dependency hashes retained.
 - Machine result `g3_shadow_fencing.status=SCOPED_G3_FENCED_HOLD_PASS`, `legacy_writers_observed_blocked=true`, `execution_authorized=false`, `production_cutover=false`, `candidate_dispatch_authorized=false`.
 - **Not a genuine G3 authority transfer:** only updated single-host JSON writer implementations honor the marker. Pre-fence binaries, malicious fence deletion, distributed writers and live external effects remain outside this proof. Shadow SQLite does not gain dispatch authority; actual unified transactional commit, G4 and T8 are still blocked.
+
+## G3 finalized fence tamper regression — 2026-10-25
+
+- TENIR-Gov candidate source pinned to `31da28b33cffec474c6321f139032e121b61860e`.
+- [Source CI 40171619527](https://github.com/skiredj-prog/tenir_governance/actions/runs/40171619527): **110/110 scoped tests PASS**, with mandatory HOLD rather than automatic reconstruction of a missing marker/sentinel from an already finalized epoch. [Source Governance CI 40171619587](https://github.com/skiredj-prog/tenir_governance/actions/runs/40171619587): PASS.
+- [REG experimental CI 40171689306](https://github.com/skiredj-prog/reg-conformance/actions/runs/40171689306): PASS, [Capabilities 40171689307](https://github.com/skiredj-prog/reg-conformance/actions/runs/40171689307): PASS.
+- [Artifact 12590337070](https://github.com/skiredj-prog/reg-conformance/actions/runs/40171689306/artifacts/12590337070), GitHub archive SHA-256 `4a41d23bf6235e30226ea05ec27f0d1baad6f42662219d49d9ac3ad21fc39563`.
+- `g3_shadow_fencing.status=SCOPED_G3_FENCED_HOLD_PASS`, `missing_finalized_marker_is_hold=true`, `legacy_writers_observed_blocked=true`, `execution_authorized=false`, `production_cutover=false`. All normative T6–T8 and G4 effect/settlement claims remain unpromoted.
