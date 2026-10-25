@@ -43,3 +43,12 @@ This CI **does not** demonstrate: production governor/dispatch coupling, dual-st
 - [Artifact 12590085095](https://github.com/skiredj-prog/reg-conformance/actions/runs/40168362170/artifacts/12590085095): GitHub-reported archive SHA-256 `9d83523b1c9393f599d83c4e5bc8de5de4a845c03cc668898109f67878c40a71`. Internal per-file hash manifest and dependency freeze are included in the artifact.
 - Classification: `atomic_source_attempt_candidate=SCOPED_ATOMIC_SQLITE_PASS`, `execution_authorized=false`, `normative_conformant=false`, `source_authority=candidate_projection_only`.
 - **No GA claim**: the candidate SQLite source is **not** the production JSON `DurableOperationRegistry` and cannot authorize any governor dispatch, budget consumption, compensation or T8 new attempt. Moving live operations to a unified backend requires a migration and atomic production integration design, plus separate proof of external effect settlement under crash/partition.
+
+## Same-file budget safety — 2026-10-25
+
+- Pinned source `skiredj-prog/tenir_governance@18d24dda78f0234550311ddf1bbcb6a0d94621b2`.
+- Source dedicated CI [40168586084](https://github.com/skiredj-prog/tenir_governance/actions/runs/40168586084): **69/69 PASS**, including candidate qualification co-located with actual `SQLiteConsensusBackend` without automatic budget mutation.
+- Independent REG native experiment [40168660397](https://github.com/skiredj-prog/reg-conformance/actions/runs/40168660397): **PASS**; Capabilities [40168660332](https://github.com/skiredj-prog/reg-conformance/actions/runs/40168660332): PASS.
+- [Artifact 12590005932](https://github.com/skiredj-prog/reg-conformance/actions/runs/40168660397/artifacts/12590005932), GitHub archive digest `sha256:3731ff44d3266882b1f845fb80e899aab79230adae764cc441f687d434c7f520`. The file-level hash manifest and dependency freeze are uploaded with the report.
+- Machine result: `budget_colocation_guard.status=SCOPED_NO_SETTLEMENT_PASS`, `budget_mutated=false`, `execution_authorized=false`. The budget reservation remains `RESERVED` after signed proof of non-execution; it is not automatically refunded or released.
+- **No inference of shared transaction**: existing governor JSON registry, SQLite budget and candidate proof operate under separate API transactions, even when the two latter structures physically share one SQLite database. Live execution authority remains HOLD.
