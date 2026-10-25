@@ -90,3 +90,13 @@ This CI **does not** demonstrate: production governor/dispatch coupling, dual-st
 - [REG experimental CI 40171689306](https://github.com/skiredj-prog/reg-conformance/actions/runs/40171689306): PASS, [Capabilities 40171689307](https://github.com/skiredj-prog/reg-conformance/actions/runs/40171689307): PASS.
 - [Artifact 12590337070](https://github.com/skiredj-prog/reg-conformance/actions/runs/40171689306/artifacts/12590337070), GitHub archive SHA-256 `4a41d23bf6235e30226ea05ec27f0d1baad6f42662219d49d9ac3ad21fc39563`.
 - `g3_shadow_fencing.status=SCOPED_G3_FENCED_HOLD_PASS`, `missing_finalized_marker_is_hold=true`, `legacy_writers_observed_blocked=true`, `execution_authorized=false`, `production_cutover=false`. All normative T6–T8 and G4 effect/settlement claims remain unpromoted.
+
+## G1 candidate operation + attempt + actual SQLite budget transaction — 2026-10-25
+
+- Source pin: `skiredj-prog/tenir_governance@09bd2d73ac5b70b825d500e2f8ace2e26a4e4aaa` (draft experimental code, not published 5.7.0).
+- [Source CI run 40174415547](https://github.com/skiredj-prog/tenir_governance/actions/runs/40174415547): **135/135 scoped PASS**, including 25 explicit G1 atomic budget tests. [Governance Gate 40174415445](https://github.com/skiredj-prog/tenir_governance/actions/runs/40174415445) PASS.
+- [REG independent CI 40174454700](https://github.com/skiredj-prog/reg-conformance/actions/runs/40174454700): PASS; [Capabilities CI 40174454695](https://github.com/skiredj-prog/reg-conformance/actions/runs/40174454695): PASS.
+- [Artifact 12590889066](https://github.com/skiredj-prog/reg-conformance/actions/runs/40174454700/artifacts/12590889066), GitHub archive `sha256:9aebe0141bb2b97be14be055a6c7905cedc73001171f8f086d9d4fad21bb4334`; output JSON, file-hash report and dependency freeze retained.
+- Machine verdict: `g1_atomic_budget_candidate.status=SCOPED_G1_ATOMIC_I8_CANDIDATE_PASS`, `candidate_namespace_only=true`, `single_sqlite_transaction=true`, `execution_authorized=false`, `production_cutover=false`, `normative_conformant=false`.
+- These tests demonstrate ONE SQLite transaction spanning `candidate_sources`, `candidate_attempts`, `candidate_events`, existing `reservations` and `resources` budget rows. The `candidate:` namespace and explicit `experimental_only=True` activation are accidental-use guards; only disposable experimental budget stores are admissible. No external dispatch or actual production JSON `OperationState` authority is involved.
+- **No normative REG promotion.** CT-R4-011/012 still candidate-scoped, T8 still implementation gap. G3 production cutover, effect-truth/settlement and G4 remain HOLD; PR #47 and deployed manifest are unmodified.
