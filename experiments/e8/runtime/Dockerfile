@@ -6,6 +6,6 @@ RUN pip install --no-cache-dir 'cryptography>=42,<47' \
     && useradd -u 1000 -g 1000 -M -s /usr/sbin/nologin runtime \
     && mkdir -p /var/lib/tenir/runtime /etc/tenir-witness \
     && chown 1000:1000 /var/lib/tenir/runtime
-COPY runtime/ /app/runtime/
+COPY witness/ /app/witness/\nCOPY runtime/ /app/runtime/
 USER 1000:1000
 CMD ["sleep", "infinity"]
