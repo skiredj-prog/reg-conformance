@@ -1,0 +1,9 @@
+# Test keys are generated at execution time only. Never commit secrets.
+witness/keys/
+**/__pycache__/
+.pytest_cache/
+*.pyc
+*.db
+*.db-wal
+*.db-shm
+evidence/raw/
