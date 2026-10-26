@@ -1,12 +1,12 @@
 # REG E8 — CI execution evidence (bounded experiment)
 
-**Evidence ID:** REG-E8-CI-20261026-01  
+**Evidence ID:** REG-E8-CI-20261026-01 (with supplemental final security-validation run)  
 **Execution date:** 2026-10-26 (GitHub Actions)  
 **Repository:** `skiredj-prog/reg-conformance`  
 **SUT commit:** `f8db75c4921c2cb3c8afc93852be5af4cf26ef56`  
 **CI run:** [40278876478](https://github.com/skiredj-prog/reg-conformance/actions/runs/40278876478)  
 **Workflow:** `.github/workflows/e8-isolation.yml`  
-**Verdict:** **EXPERIMENTAL CI GREEN — 11 Python PASS + 7 container PASS + unsigned advance denial**  
+**Verdict:** **EXPERIMENTAL CI GREEN — final run 12 Python PASS + 7 container PASS + unsigned advance denial**  
 **Assurance claim:** `CONTAINER_BOUNDARY_CI_PASS` and `IN_PROCESS_PROTOCOL_MODEL_PASS` only. **R-01/Q6 P0 OPEN. PRODUCTION HOLD.**
 
 ## Provenance
@@ -46,6 +46,27 @@ The relevant files at the fixed SHA are:
 - `.github/workflows/e8-isolation.yml`
 
 Private keys were newly generated during the job; `.gitignore` and `.dockerignore` exclude the key directory. The engine private key is not placed into the runtime or witness container. Both containers run on the **same Docker host**; no independently controlled second host, external pin authority or production cryptographic trust provisioning is demonstrated. The Q6 model uses local temporary files and an in-process witness; it is **not** an execution of the G4-A production admission path.
+
+
+## Supplemental final run — cryptographic validation hardening
+
+The above record remains valid for the earlier SUT SHA. Subsequently, the
+client was hardened to verify that a signed witness successor matches every
+field of the requested CAS transition, and malformed Base64 signatures were
+explicitly rejected rather than allowing an HTTP 500.
+
+- **Final tested SUT SHA:** `9d0117e2cf9745f1e722a94eb9f48d24363690f7`
+- **Final CI run:** [40279259477](https://github.com/skiredj-prog/reg-conformance/actions/runs/40279259477)
+- **Protocol/Q6/witness-rollback tests:** **12 PASS**, 1 warning, 0 failures
+- **Docker FS/NET/KEY:** **7 PASS of 7**, 0 failures
+- **Unsigned witness advance:** runtime-to-witness unauthorized `POST` rejection step succeeded
+- **Security verdict:** `LAB_PROTOCOL_PASS / CONTAINER_ONLY_PASS`; **R-01/Q1/Q6/C1/C2 SYSTEM P0 OPEN; PRODUCTION HOLD**
+
+Both successful jobs are confirmed from their GitHub workflow logs. The tests
+still use one Docker host and an in-process ASGI model; cryptographic pins
+are generated within the same GitHub CI runner. This does **not** establish
+an independently governed CB-05 authority, operational G1/G4-A binding,
+non-bypassable runtime enforcement, or provider-effect integrity.
 
 ## Residual gating requirements
 
