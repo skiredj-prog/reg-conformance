@@ -14,7 +14,6 @@ from witness.protocol import (
     ADVANCE_CONTEXT, ADVANCE_RESULT_CONTEXT, GENESIS_DIGEST, HEAD_CONTEXT, HEAD_KEYS, READ_CONTEXT,
     digest, head_digest, sign, verify,
 )
-from witness.service import ADVANCE_RESULT_CONTEXT
 
 
 class WitnessIntegrityError(Exception):
