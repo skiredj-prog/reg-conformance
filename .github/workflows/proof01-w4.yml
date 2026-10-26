@@ -1,0 +1,22 @@
+name: PROOF-01 W4 independent verifier
+on:
+  push:
+    paths:
+      - 'proof01_w4/**'
+      - '.github/workflows/proof01-w4.yml'
+  pull_request:
+    paths:
+      - 'proof01_w4/**'
+      - '.github/workflows/proof01-w4.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run offline adversarial unit tests
+        run: python -m unittest discover -s proof01_w4/tests -v
