@@ -1,0 +1,11 @@
+# Mandatory: signing private keys must NEVER be baked into container layers.
+witness/keys/
+**/__pycache__/
+.pytest_cache/
+*.pyc
+*.db
+*.db-wal
+*.db-shm
+evidence/
+tests/
+README.md
