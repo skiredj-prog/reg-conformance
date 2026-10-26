@@ -13,6 +13,7 @@ from cryptography.exceptions import InvalidSignature
 HEAD_CONTEXT = b"REG-E8-LAB-HEAD-v1\x00"
 READ_CONTEXT = b"REG-E8-LAB-READ-v1\x00"
 ADVANCE_CONTEXT = b"REG-E8-LAB-ADVANCE-v1\x00"
+ADVANCE_RESULT_CONTEXT = b'REG-E8-LAB-ADVANCE-RESULT-v1\\x00'
 GENESIS_DIGEST = "sha256:" + "0" * 64
 HEAD_KEYS = frozenset({
     "realm_id", "store_id", "epoch", "sequence", "state_digest",
