@@ -172,3 +172,63 @@ def test_store_identity_cannot_be_silently_reprovisioned(lab, tmp_path):
     with pytest.raises(ValueError, match="identity"):
         WitnessStore(witness.db_path, witness.key, engine.public_key(),
                      "other-realm", "lab-store", epoch=0)
+
+
+def test_witness_db_rollback_detected_only_against_retained_external_floor(lab, tmp_path):
+    """Distinct from Q6: a rewound WITNESS database needs an independent floor."""
+    import sqlite3
+    from witness.checkpoint import LocalCheckpoint
+    from witness.client import PinnedWitnessClient, WitnessChainBroken
+    from witness.protocol import HEAD_KEYS, head_digest
+    from witness.service import create_app
+    from fastapi.testclient import TestClient
+
+    first = make_request(lab, "before-backup", "sha256:"+"1"*64,
+                         "sha256:"+"2"*64)
+    assert lab["controller"].advance(first)["decision"] == "ADVANCED"
+
+    # SQLite backup API handles WAL snapshots coherently. This archive is
+    # held by the test attacker, NOT a trustworthy continuity source.
+    backup = tmp_path / "rewound-witness.db"
+    with sqlite3.connect(lab["app"].state.witness.db_path) as source:
+        with sqlite3.connect(backup) as target:
+            source.backup(target)
+
+    second = make_request(lab, "after-backup", "sha256:"+"3"*64,
+                          "sha256:"+"4"*64)
+    assert lab["controller"].advance(second)["decision"] == "ADVANCED"
+    trusted = lab["reader"].get_head()
+    trusted_floor = LocalCheckpoint(
+        trusted["sequence"],
+        head_digest({k: trusted[k] for k in HEAD_KEYS}),
+    )
+    assert trusted_floor.sequence == 2
+
+    # An actor who rolled the witness DB back to sequence 1 would still
+    # serve VALID signatures from the legitimate private key. Only an
+    # independently retained floor distinguishes that history.
+    original = lab["app"].state.witness
+    from cryptography.hazmat.primitives import serialization
+    pinned_pub = lab["public"]
+    engine_pub = tmp_path / "backup-engine.pub"
+    engine_pub.write_bytes(lab["engine"].public_key().public_bytes(
+        serialization.Encoding.PEM,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    ))
+    witness_priv = tmp_path / "backup-witness.key"
+    witness_priv.write_bytes(original.key.private_bytes(
+        serialization.Encoding.PEM,
+        serialization.PrivateFormat.PKCS8,
+        serialization.NoEncryption(),
+    ))
+    rewound_app = create_app(
+        str(backup), witness_priv, engine_pub,
+        realm_id="lab-realm", store_id="lab-store", epoch=0,
+    )
+    rewound_client = PinnedWitnessClient(
+        "http://testserver", pinned_pub, "lab-realm", "lab-store",
+        http_client=TestClient(rewound_app),
+    )
+    assert rewound_client.get_head()["sequence"] == 1
+    with pytest.raises(WitnessChainBroken, match="regression"):
+        rewound_client.walk_back(minimum=trusted_floor)
