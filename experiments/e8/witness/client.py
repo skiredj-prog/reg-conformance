@@ -147,7 +147,15 @@ class PinnedWitnessClient:
             if response.get("request_digest") != digest(ADVANCE_CONTEXT, body):
                 raise WitnessIntegrityError("advance response bound to another request")
             if response["head"] is not None:
-                self._head(response["head"])
+                verified = self._head(response["head"])
+                if response["decision"] == "ADVANCED":
+                    if (verified["sequence"] != body["expected_prev_sequence"] + 1
+                            or verified["previous_head_digest"] != body["expected_prev_digest"]
+                            or any(verified[k] != body[k] for k in (
+                                "state_digest", "key_digest", "quarantine_digest",
+                                "realm_id", "store_id", "epoch"
+                            ))):
+                        raise WitnessIntegrityError("advance result does not match request")
             return response
         except (httpx.HTTPError, OSError) as exc:
             raise WitnessUnavailable("advance outcome UNKNOWN") from exc
