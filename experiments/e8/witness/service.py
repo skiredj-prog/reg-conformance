@@ -113,8 +113,11 @@ class WitnessStore:
         with closing(self._conn()) as con:
             return self._get_head(con, sequence)
 
-    def _signed_result(self, decision, reason, *, head=None):
-        body = {"decision": decision, "reason": reason, "head": head}
+    def _signed_result(self, decision, reason, *, head=None, request_digest=None):
+        body = {
+            "decision": decision, "reason": reason, "head": head,
+            "request_digest": request_digest,
+        }
         return {
             "body": body,
             "signature": sign(self.key, ADVANCE_RESULT_CONTEXT, body),
@@ -126,7 +129,7 @@ class WitnessStore:
         if (body["realm_id"] != self.realm_id
                 or body["store_id"] != self.store_id
                 or body["epoch"] != self.epoch):
-            return self._signed_result("REJECTED", "E8_SCOPE_MISMATCH")
+            return self._signed_result("REJECTED", "E8_SCOPE_MISMATCH", request_digest=digest(ADVANCE_CONTEXT, body))
         request_digest = digest(ADVANCE_CONTEXT, body)
         with closing(self._conn()) as con:
             con.execute("BEGIN IMMEDIATE")
@@ -137,10 +140,10 @@ class WitnessStore:
             if previous_request:
                 if previous_request[0] != request_digest:
                     con.rollback()
-                    return self._signed_result("REJECTED", "E8_REQUEST_CONFLICT")
+                    return self._signed_result("REJECTED", "E8_REQUEST_CONFLICT", request_digest=request_digest)
                 head = self._get_head(con, previous_request[1])
                 con.commit()
-                return self._signed_result("ALREADY_ADVANCED", "REPLAY", head=head)
+                return self._signed_result("ALREADY_ADVANCED", "REPLAY", head=head, request_digest=request_digest)
 
             current = self._get_head(con)
             current_seq = current["sequence"] if current else 0
@@ -148,7 +151,7 @@ class WitnessStore:
             if (body["expected_prev_sequence"] != current_seq
                     or body["expected_prev_digest"] != current_hash):
                 con.rollback()
-                return self._signed_result("CONFLICT", "E8_HEAD_DIVERGENCE", head=current)
+                return self._signed_result("CONFLICT", "E8_HEAD_DIVERGENCE", head=current, request_digest=request_digest)
 
             now = datetime.now(timezone.utc).isoformat()
             next_head = {
@@ -173,7 +176,7 @@ class WitnessStore:
             con.commit()
             # Commit is durable before the CMT-like signed result is returned.
             return self._signed_result(
-                "ADVANCED", "OK", head=dict(next_head, signature=signature)
+                "ADVANCED", "OK", head=dict(next_head, signature=signature), request_digest=request_digest
             )
 
 
