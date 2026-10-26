@@ -71,7 +71,7 @@ jobs:
           # runtime or witness mount. Tests use separate ephemeral keys.
           PY
           sudo chown 2000:2000 experiments/e8/witness/keys/witness_signing.key
-          chmod 400 experiments/e8/witness/keys/witness_signing.key
+          sudo chmod 400 experiments/e8/witness/keys/witness_signing.key
           chmod 644 experiments/e8/witness/keys/*.pem
       - name: Inspect rendered Compose configuration
         run: |
