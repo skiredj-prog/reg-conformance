@@ -20,7 +20,7 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
 from witness.protocol import (
-    ADVANCE_CONTEXT, GENESIS_DIGEST, HEAD_CONTEXT, READ_CONTEXT,
+    ADVANCE_CONTEXT, ADVANCE_RESULT_CONTEXT, GENESIS_DIGEST, HEAD_CONTEXT, READ_CONTEXT,
     canonical, digest, head_digest, sign, validate_advance, verify,
 )
 
