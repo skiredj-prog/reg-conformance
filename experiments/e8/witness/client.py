@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from witness.protocol import (
-    ADVANCE_CONTEXT, GENESIS_DIGEST, HEAD_CONTEXT, HEAD_KEYS, READ_CONTEXT,
+    ADVANCE_CONTEXT, ADVANCE_RESULT_CONTEXT, GENESIS_DIGEST, HEAD_CONTEXT, HEAD_KEYS, READ_CONTEXT,
     digest, head_digest, sign, verify,
 )
 from witness.service import ADVANCE_RESULT_CONTEXT
