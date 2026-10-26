@@ -3,7 +3,7 @@
 **Identifiant :** REG-E8-INTAKE-20261026-01  
 **Date déclarée de campagne :** 26 octobre 2026  
 **Origine :** compte rendu fourni par l'opérateur dans la conversation ; rapports bruts non joints  
-**Référence architecturale :** REG-ARCH-022 / [E8 v0.2](../specs/exteriority-e8-witness.md) ; [TENIR CB-05 / PR #77](https://github.com/skiredj-prog/tenir_governance/pull/77)  
+**Référence architecturale :** REG-ARCH-022 / [E8 v0.2](../../specs/exteriority-e8-witness.md) ; [TENIR CB-05 / PR #77](https://github.com/skiredj-prog/tenir_governance/pull/77)  
 **Statut des résultats :** `REPORTED_PASS` (7/7), **non reproduits indépendamment**, environnement non figé par SHA  
 **Décision de gouvernance :** `CONTAINER_BOUNDARY_EVIDENCE_REPORTED / R01_OPEN / Q6_OPEN / PRODUCTION_HOLD`
 
