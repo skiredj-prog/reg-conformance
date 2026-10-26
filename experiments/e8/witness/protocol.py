@@ -4,6 +4,7 @@ Not a finalized REG wire format. Neither TLS nor independent root pinning is
 provided by this module; a separate G1 trust domain is still necessary.
 """
 import base64
+import binascii
 import hashlib
 import json
 import re
@@ -56,7 +57,7 @@ def verify(public_key, context, value, signature):
         if len(raw) != 64:
             raise ValueError("invalid signature length")
         public_key.verify(raw, context + canonical(value))
-    except (InvalidSignature, ValueError) as exc:
+    except (InvalidSignature, ValueError, binascii.Error) as exc:
         raise ValueError("invalid Ed25519 signature") from exc
 
 
