@@ -24,7 +24,6 @@ from witness.protocol import (
     canonical, digest, head_digest, sign, validate_advance, verify,
 )
 
-ADVANCE_RESULT_CONTEXT = b"REG-E8-LAB-ADVANCE-RESULT-v1\x00"
 NONCE = re.compile(r"^[0-9a-f]{32}$")
 
 
