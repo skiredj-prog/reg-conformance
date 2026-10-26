@@ -1,0 +1,110 @@
+name: E8 bounded container isolation and witness protocol lab
+
+on:
+  push:
+    branches:
+      - draft/e8-container-boundary-evidence-20261026
+    paths:
+      - 'experiments/e8/**'
+      - '.github/workflows/e8-isolation.yml'
+  pull_request:
+    paths:
+      - 'experiments/e8/**'
+      - '.github/workflows/e8-isolation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  signed-protocol-and-q6-model:
+    name: E8 signed witness and Q6 model — lab only
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install 'pytest>=8,<10' 'cryptography>=42,<47' 'fastapi>=0.110,<1' 'httpx>=0.27,<1'
+      - name: Protocol and LOCAL quarantine rollback model
+        run: python -m pytest -q -ra experiments/e8/tests/
+      - name: Security qualification
+        run: |
+          echo "pytest success here is SAME-PROCESS protocol/model evidence."
+          echo "Not independent CB-05; not real G1/G4-A admission or provider dispatch."
+          echo "R-01/Q1/Q6/C1/C2 remain OPEN. PRODUCTION HOLD."
+
+  docker-boundary:
+    name: Docker FS/NET/KEY — seven bounded probes
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Generate fresh ephemeral Ed25519 keys (never committed)
+        run: |
+          python -m pip install 'cryptography>=42,<47'
+          mkdir -p experiments/e8/witness/keys
+          python - <<'PY'
+          from pathlib import Path
+          from cryptography.hazmat.primitives import serialization
+          from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+          d = Path("experiments/e8/witness/keys")
+          witness = Ed25519PrivateKey.generate()
+          engine = Ed25519PrivateKey.generate()
+          def priv(path, k):
+              path.write_bytes(k.private_bytes(
+                  serialization.Encoding.PEM,
+                  serialization.PrivateFormat.PKCS8,
+                  serialization.NoEncryption()))
+          def pub(path, k):
+              path.write_bytes(k.public_key().public_bytes(
+                  serialization.Encoding.PEM,
+                  serialization.PublicFormat.SubjectPublicKeyInfo))
+          priv(d/"witness_signing.key", witness)
+          pub(d/"witness_pub.pem", witness)
+          pub(d/"engine_pub.pem", engine)
+          # The engine PRIVATE key is intentionally not written into a
+          # runtime or witness mount. Tests use separate ephemeral keys.
+          PY
+          sudo chown 2000:2000 experiments/e8/witness/keys/witness_signing.key
+          chmod 400 experiments/e8/witness/keys/witness_signing.key
+          chmod 644 experiments/e8/witness/keys/*.pem
+      - name: Inspect rendered Compose configuration
+        run: |
+          docker compose -f experiments/e8/compose.yaml config --quiet
+          docker compose -f experiments/e8/compose.yaml config > /tmp/e8-compose-config.yaml
+          git rev-parse HEAD > /tmp/e8-sut-sha.txt
+      - name: Start isolated witness/runtime experiment
+        run: docker compose -f experiments/e8/compose.yaml up -d --build --wait
+      - name: Verify seven deployment probes
+        run: |
+          set -o pipefail
+          docker compose -f experiments/e8/compose.yaml exec -T runtime \
+            python /app/runtime/probe_isolation.py | tee /tmp/e8-probe.jsonl
+      - name: Reject an unsigned witness state advance from runtime
+        run: |
+          docker compose -f experiments/e8/compose.yaml exec -T runtime \
+            python -c "import urllib.request,urllib.error,json;d=json.dumps({'body':{},'signature':'forged'}).encode();r=urllib.request.Request('http://witness:8443/advance',data=d,headers={'Content-Type':'application/json'});exec('try:\n urllib.request.urlopen(r,timeout=3)\n raise SystemExit(1)\nexcept urllib.error.HTTPError as e:\n assert e.code in (403,422), e.code')"
+      - name: Preserve non-secret trace artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e8-container-lab-traces
+          path: |
+            /tmp/e8-probe.jsonl
+            /tmp/e8-compose-config.yaml
+            /tmp/e8-sut-sha.txt
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Stop without deleting witness evidence volumes
+        if: always()
+        run: docker compose -f experiments/e8/compose.yaml down
+      - name: Explicit assurance boundary
+        run: |
+          echo "7/7 probe PASS, if obtained, is a BOUNDED container environment result."
+          echo "A Docker bridge is not an independent administration domain."
+          echo "No real G1/G4-A effect authority is exercised. PRODUCTION HOLD."
