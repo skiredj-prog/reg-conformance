@@ -1,0 +1,63 @@
+# REG E8 experimental container isolation only — NOT a production deployment.
+name: tenir-e8-lab
+services:
+  witness:
+    build:
+      context: .
+      dockerfile: witness/Dockerfile
+    user: "2000:2000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - witness_storage:/var/lib/tenir/witness
+      - ./witness/keys/witness_signing.key:/run/tenir/witness_signing.key:ro
+      - ./witness/keys/engine_pub.pem:/run/tenir/engine_pub.pem:ro
+    networks: [tenir_internal]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; assert urllib.request.urlopen('http://127.0.0.1:8443/health', timeout=2).status == 200"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    command:
+      - python
+      - -m
+      - witness.service
+      - --host=0.0.0.0
+      - --port=8443
+      - --db=/var/lib/tenir/witness/witness.db
+      - --key=/run/tenir/witness_signing.key
+      - --engine-public-key=/run/tenir/engine_pub.pem
+      - --realm=lab-realm
+      - --store=lab-store
+  runtime:
+    build:
+      context: .
+      dockerfile: runtime/Dockerfile
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      WITNESS_URL: http://witness:8443
+      WITNESS_PINNED_PUBKEY: /etc/tenir-witness/witness_pub.pem
+    volumes:
+      - runtime_storage:/var/lib/tenir/runtime
+      - ./witness/keys/witness_pub.pem:/etc/tenir-witness/witness_pub.pem:ro
+    networks: [tenir_internal]
+    depends_on:
+      witness:
+        condition: service_healthy
+volumes:
+  witness_storage:
+    name: tenir_witness_strict_volume
+  runtime_storage:
+    name: tenir_runtime_strict_volume
+networks:
+  tenir_internal:
+    driver: bridge
+    internal: true
