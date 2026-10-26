@@ -1,7 +1,7 @@
 # E8 — Witness / Runtime Container Isolation Experiment
 
 **Reference:** REG-ARCH-022 · TENIR-Gov / REG E8 · 26 October 2026  
-**Evidence classification:** original operator narrative 7/7 `REPORTED_PASS`; subsequent GitHub CI verified 7/7 bounded container probes and 11/11 same-process tests  
+**Evidence classification:** original operator narrative 7/7 `REPORTED_PASS`; subsequent GitHub CI verified 7/7 bounded container probes and 12/12 same-process tests  
 **Assurance status:** Container deployment controls under evaluation — **R-01 and Q6 remain open**  
 **Release gate:** **PRODUCTION HOLD**
 
@@ -98,10 +98,10 @@ The original report is preserved without upgrading these observations into
 production-qualified claims.
 
 **Additional independently logged execution:** the GitHub-hosted CI run
-[40278876478](https://github.com/skiredj-prog/reg-conformance/actions/runs/40278876478)
-returned **7/7 PASS** for this committed Docker lab and **11/11 PASS** for the
+[40279259477](https://github.com/skiredj-prog/reg-conformance/actions/runs/40279259477)
+returned **7/7 PASS** for this committed Docker lab and **12/12 PASS** for the
 in-process signed protocol/Q6 model, at SUT SHA
-`f8db75c4921c2cb3c8afc93852be5af4cf26ef56`.
+`9d0117e2cf9745f1e722a94eb9f48d24363690f7`.
 These are **bounded self-operated CI results**, not independent CB-05 trust
 domain qualification or proof that the operator's earlier stack was identical.
 
