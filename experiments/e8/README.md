@@ -96,52 +96,92 @@ to this repository for this campaign.
 The original report is preserved without upgrading these observations into
 production-qualified claims.
 
-## 4. Reproduction (once the deployment artifacts are available)
+## 4. Executable laboratory and reproduction
 
-**Repository status when this README was created:** the branch contains the
-documentation and E8 conformance contract, but does **not** contain the
-`experiments/e8/compose.yaml` / `docker-compose.yml` deployment or
-`experiments/e8/probe_isolation.py` probe script. The commands below are the
-**intended interface**, **not presently executable from this branch**.
+The following **experimental** artifacts are now committed in this directory:
 
-Required files to supply and review before execution:
+- `compose.yaml` — non-root runtime and witness with distinct named volumes,
+  read-only container root filesystems, `cap_drop: [ALL]`, internal bridge
+  network and **no published host port**. This is **one Docker host**, not a
+  separate administration domain.
+- `witness/service.py` and `witness/schema.sql` — SQLite monotone append-only
+  head with signed Ed25519 records and an **engine-signed CAS advance**. Unsigned
+  advances from the runtime are rejected. The database's SQL triggers alone
+  cannot resist a compromised witness UID or Docker host administrator.
+- `witness/protocol.py`, `witness/client.py`, `witness/checkpoint.py` —
+  canonical signatures, nonce-bound fresh reads, a caller-supplied public
+  key pin, historical verification, and a **local cache only**, respectively.
+  An ordinary local checkpoint file is not an independent trust root.
+- `runtime/probe_isolation.py` — precisely **seven** FS/NET/KEY probes with
+  JSON-lines output and a nonzero exit on failure.
+- `runtime/quarantine_gate.py` — **experimental** fresh-head comparison for
+  local quarantine snapshots; returns only
+  `ELIGIBLE_FOR_FURTHER_CHECKS` or `HOLD_GLOBAL`, never permission to
+  dispatch.
+- `tests/test_witness_protocol.py` and `tests/test_e8_q6.py` — signed
+  protocol, nonce/replay/identity/append-only checks, and an authentic
+  **LOCAL quarantine rollback** test. These tests use a same-process witness,
+  not a physically independent authority.
+- `.github/workflows/e8-isolation.yml` — unit/model tests and Docker
+  boundary checks on a disposable GitHub-hosted runner.
 
-- `experiments/e8/compose.yaml` — pinned image builds/digests, runtime and
-  witness services, independent named volumes, secure mounts and networks.
-- `experiments/e8/probe_isolation.py` — seven probes with machine-readable
-  results and explicit `exit_code` / `errno` per negative check.
-- Witness application and key provisioning instructions, including **external**
-  expected key fingerprint; no private signing keys in Git.
-- Evidence output destination and manifest format with SHA-256 hashes.
-- Isolated, disposable environment for destructive or adversarial tests.
+**The supplied initial bundle was deliberately corrected:** its nominal
+Q6 test rolled back the *witness's* database, not the local quarantine;
+its original `/advance` endpoint lacked caller authentication; its Docker
+test used `down -v`, destroying witness volumes. The committed experiment
+models Q6 correctly at the local-quarantine boundary, signs authorized
+advances and preserves volumes during normal teardown.
 
-After those files exist:
+### Running the Python protocol and Q6 model tests
+
+From the repository root:
+
+```bash
+python -m pip install pytest cryptography fastapi httpx
+python -m pytest -q experiments/e8/tests/
+```
+
+### Running the Docker isolation probes
+
+Prepare **ephemeral** Ed25519 test keys at
+`experiments/e8/witness/keys/` (the directory is excluded by both
+`.gitignore` and `.dockerignore`). The CI workflow generates
+`witness_signing.key` (private witness PEM),
+`witness_pub.pem` (public Ed25519 PEM), and
+`engine_pub.pem` (separately provisioned controller public key).
+The engine private key is deliberately not mounted into the runtime
+or witness containers.
+
+On Linux, the witness signing key must be readable by container UID `2000`;
+the CI workflow uses `sudo chown 2000:2000` and `sudo chmod 400` on
+that ephemeral key. Reproduce only on a dedicated laboratory host and do not
+commit or publish private signing material.
 
 ```bash
 cd experiments/e8
-
-# Examine the fully resolved settings BEFORE launching.
 docker compose config
-
-# Bring up the isolated lab; preserves existing named volumes.
-docker compose up -d --build
-
-# Execute the probe within the runtime container.
-docker compose exec -T runtime python /app/probe_isolation.py
-
-# Stop containers WITHOUT deleting volumes or evidence.
+docker compose up -d --build --wait
+docker compose exec -T runtime python /app/runtime/probe_isolation.py
 docker compose down
 ```
 
-**Do not use `docker compose down -v` as a standard test precondition.**
-The `-v` flag removes named volumes declared in the Compose file and may
-destroy witness state and forensic evidence. Resetting a disposable laboratory
-requires a separate, explicitly approved lifecycle with a preserved evidence
-manifest. Never reset a witness to manufacture a passing monotonicity result.
+**Never use `docker compose down -v` as the default cleanup.** It removes
+named volumes, including historical witness state and potential evidence.
+Provisioning and reset require separately documented, authorized ceremonies.
 
-`exit_code=0`, when the script is implemented, will mean **all seven bounded
-container probes passed**; it must **not** be interpreted as R-01/Q6 closure.
-Attach full outputs and the container image/configuration digests to any claim.
+The `exit_code=0` from `probe_isolation.py` means **the seven bounded
+container probes passed on that environment**. It **does not** close R-01,
+Q6, C1/C2, prove preauthorization, or authorize real effects.
+
+### CI protocol and trust limits
+
+The experiment intentionally does **not** provide HTTPS/mTLS or a second
+independent host. `http://witness:8443` relies on Ed25519 protocol-level
+authentication and nonce-signed head reads; it remains susceptible to network
+denial, and a Docker host compromise may control both services and their keys.
+A correctly signed new head binds to digest values **asserted by an authorized
+engine**, not independently reconstructed G4-A truth. Thus the signing
+mechanism does not itself establish non-bypassable G1 or E8 conformance.
 
 ## 5. Evidence and CI requirements
 
