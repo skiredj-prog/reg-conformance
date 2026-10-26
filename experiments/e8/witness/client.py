@@ -145,6 +145,8 @@ class PinnedWitnessClient:
                 result["body"], result["signature"]
             )
             response = result["body"]
+            if response.get("request_digest") != digest(ADVANCE_CONTEXT, body):
+                raise WitnessIntegrityError("advance response bound to another request")
             if response["head"] is not None:
                 self._head(response["head"])
             return response
