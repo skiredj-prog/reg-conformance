@@ -1,7 +1,7 @@
 # E8 — Witness / Runtime Container Isolation Experiment
 
 **Reference:** REG-ARCH-022 · TENIR-Gov / REG E8 · 26 October 2026  
-**Evidence classification:** 7/7 `REPORTED_PASS` (operator-reported, not independently reproduced)  
+**Evidence classification:** original operator narrative 7/7 `REPORTED_PASS`; subsequent GitHub CI verified 7/7 bounded container probes and 11/11 same-process tests  
 **Assurance status:** Container deployment controls under evaluation — **R-01 and Q6 remain open**  
 **Release gate:** **PRODUCTION HOLD**
 
@@ -35,6 +35,7 @@ Normative references:
 - [E8 external monotone witness contract](../../specs/exteriority-e8-witness.md)
 - [E8 container and adversarial test plan](../../specs/e8-container-boundary-test-plan-v0.1.md)
 - [Container boundary evidence intake, 26 October 2026](../../evidence/e8/CONTAINER_BOUNDARY_INTAKE_2026-10-26.md)
+- [GitHub Actions CI verification, 26 October 2026](../../evidence/e8/E8_EXPERIMENTAL_CI_VERIFICATION_2026-10-26.md)
 - [TENIR CB-05 / PR #77](https://github.com/skiredj-prog/tenir_governance/pull/77)
 - [G1 experimental IPC / PR #79](https://github.com/skiredj-prog/tenir_governance/pull/79)
 
@@ -95,6 +96,14 @@ to this repository for this campaign.
 **Reported score: 7/7 PASS; independently verified score: not established.**
 The original report is preserved without upgrading these observations into
 production-qualified claims.
+
+**Additional independently logged execution:** the GitHub-hosted CI run
+[40278876478](https://github.com/skiredj-prog/reg-conformance/actions/runs/40278876478)
+returned **7/7 PASS** for this committed Docker lab and **11/11 PASS** for the
+in-process signed protocol/Q6 model, at SUT SHA
+`f8db75c4921c2cb3c8afc93852be5af4cf26ef56`.
+These are **bounded self-operated CI results**, not independent CB-05 trust
+domain qualification or proof that the operator's earlier stack was identical.
 
 ## 4. Executable laboratory and reproduction
 
@@ -222,8 +231,9 @@ Relevant follow-up test IDs: `FS-NEG-4`, `KEY-NEG-1`, `E8-NEG-Q6`,
 
 ## 7. Verdict
 
-**Container isolation:** seven controls reported PASS in a described Docker
-configuration, subject to raw-evidence reproduction.
+**Container isolation:** seven original operator-reported controls, with a
+new 7/7 successful GitHub CI reproduction of the committed *lab topology*.
+The two campaigns are not asserted to have identical images/configuration.
 
 **Independent monotone witness:** not demonstrated by the container-isolation
 probes. **R-01, Q1, Q6, C1 and C2 remain open** for the full stated adversary
