@@ -232,3 +232,12 @@ def test_witness_db_rollback_detected_only_against_retained_external_floor(lab, 
     assert rewound_client.get_head()["sequence"] == 1
     with pytest.raises(WitnessChainBroken, match="regression"):
         rewound_client.walk_back(minimum=trusted_floor)
+
+
+def test_malformed_ed25519_base64_is_denied_not_server_error(lab):
+    req = make_request(lab, "invalid-b64", "sha256:"+"1"*64, "sha256:"+"2"*64)
+    response = lab["http"].post("/advance", json={
+        "body": req, "signature": "ed25519:@@not-valid@@",
+    })
+    assert response.status_code == 403
+    assert lab["reader"].get_head() is None
