@@ -76,7 +76,7 @@ class RFC7CandidateVectors(unittest.TestCase):
         events = [{"seq": 1, "attempt_id": "a", "resource_id": "r", "amount": 1, "capacity": 5, "kind": "RELEASED"}]
         with self.assertRaises(OracleReject) as ctx:
             reconstruct(events)
-        self.assertEqual(ctx.exception.code, "TRANSITION")
+        self.assertEqual(ctx.exception.code, "FIELDS")
 
     def test_rfc7_unsigned_claim_not_a_proof(self):
         report = {"outcome": "VERIFIED", "code": "SIGNED_TRACE_VALID",
