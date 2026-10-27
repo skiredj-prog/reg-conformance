@@ -18,5 +18,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install independent cryptographic verifier dependency
+        run: python -m pip install 'cryptography>=43,<47'
       - name: Run offline adversarial unit tests
         run: python -m unittest discover -s proof01_w4/tests -v
