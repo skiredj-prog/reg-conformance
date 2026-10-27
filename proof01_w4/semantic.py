@@ -2,6 +2,7 @@
 import base64, hashlib, json
 from pathlib import Path
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from cryptography.exceptions import InvalidSignature
 from .verifier import verify
 
 def canon(x):
@@ -81,7 +82,7 @@ def check(bundle,trust_store,claim="signed-trace-integrity"):
         if claim!="signed-trace-integrity":
             return verdict("INDETERMINATE","EXTERNAL_COMPLETENESS_UNKNOWN")
         return verdict("VERIFIED","SIGNED_TRACE_VALID",events=len(events),final_states=state,balances=balances,limits="synthetic declared trace only; NOT external effect completeness or production behavior")
-    except (ValueError,KeyError,TypeError,OSError,AttributeError) as ex:
+    except (ValueError,KeyError,TypeError,OSError,AttributeError,InvalidSignature) as ex:
         return verdict("REFUTED","INVALID_EVIDENCE",detail=type(ex).__name__+": "+str(ex))
 
 def main():
