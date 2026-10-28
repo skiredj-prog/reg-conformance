@@ -1,0 +1,91 @@
+{
+  "schema": "reg-rfc7-w43-native-lab/candidate-v0.1",
+  "normative_status": "CANDIDATE_NOT_RATIFIED",
+  "security_scope": "lab-recorded-data-only",
+  "vectors": [
+    {
+      "id": "W43-01",
+      "scenario": "reference-native-lab-consistent",
+      "expected": "VERIFIED_RELATIVE_TO_OPERATOR_PINS",
+      "test": "test_v01_positive_consistency_only"
+    },
+    {
+      "id": "W43-02",
+      "scenario": "receipt-body-forgery-with-rehashed-manifest",
+      "expected": "REFUTED",
+      "test": "test_v02_receipt_body_forgery_with_rehashed_inventory"
+    },
+    {
+      "id": "W43-03",
+      "scenario": "receipt-signature-forgery",
+      "expected": "REFUTED",
+      "test": "test_v03_receipt_signature_forgery_with_rehashed_inventory"
+    },
+    {
+      "id": "W43-04",
+      "scenario": "checkpoint-signature-forgery",
+      "expected": "REFUTED",
+      "test": "test_v04_checkpoint_signature_forgery"
+    },
+    {
+      "id": "W43-05",
+      "scenario": "false-I8-committed-total",
+      "expected": "REFUTED",
+      "test": "test_v05_wrong_budget_total"
+    },
+    {
+      "id": "W43-06",
+      "scenario": "duplicate-I8-settlement",
+      "expected": "REFUTED",
+      "test": "test_v06_duplicate_settlement_row"
+    },
+    {
+      "id": "W43-07",
+      "scenario": "witness-tip-rollback",
+      "expected": "REFUTED",
+      "test": "test_v07_witness_rollback_with_rehashed_inventory"
+    },
+    {
+      "id": "W43-08",
+      "scenario": "missing-provider-bundle",
+      "expected": "INDETERMINATE",
+      "test": "test_v08_missing_receipt_file"
+    },
+    {
+      "id": "W43-09",
+      "scenario": "missing-trust-pins",
+      "expected": "INDETERMINATE",
+      "test": "test_v09_missing_pins"
+    },
+    {
+      "id": "W43-10",
+      "scenario": "unclaimed-banking-effect",
+      "expected": "OUT_OF_SCOPE",
+      "test": "test_v10_out_of_scope_claim"
+    },
+    {
+      "id": "W43-11",
+      "scenario": "forged-receipt-hash-in-local-state",
+      "expected": "REFUTED",
+      "test": "test_v11_rehash_budget_but_effect_receipt_untouched"
+    },
+    {
+      "id": "W43-12",
+      "scenario": "manifest-path-traversal",
+      "expected": "REFUTED",
+      "test": "test_v12_manifest_injection_path_escape"
+    },
+    {
+      "id": "W43-OPEN-B1",
+      "scenario": "raw G4-A/fixture dispatch bypass",
+      "expected": "OPEN",
+      "test": null
+    },
+    {
+      "id": "W43-OPEN-B2",
+      "scenario": "Q1 erasure, Q6 rollback and same-UID tampering",
+      "expected": "OPEN",
+      "test": null
+    }
+  ]
+}
