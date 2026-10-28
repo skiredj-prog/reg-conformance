@@ -1,0 +1,29 @@
+{
+  "producer_sha": "95263530bbe095d97c9b662b51ee482fd96618d6",
+  "parent_sha": "f1ada7b78d9f4c13656efc7f9f8c5a165394a9fb",
+  "files": [
+    {
+      "path": "w2_integration/proof_provider.py",
+      "git_blob": "ec29e73f93cd42acc36833ad7db824a9697e1380"
+    },
+    {
+      "path": "w2_integration/i8_ledger.py",
+      "git_blob": "fd7da1e4e1882e97931a7784a006ef852ed54c49"
+    },
+    {
+      "path": "w2_integration/lab_s1_bridge.py",
+      "git_blob": "c7564b9f3db8287388e5133e6dbb9f7adffe3f75"
+    },
+    {
+      "path": "w2_integration/test_w2_1.py",
+      "git_blob": "30c60a988c482a033110ea98a6b7944f0030aef6"
+    }
+  ],
+  "scope": "W4 partial native component reproduction",
+  "producer_pr": {
+    "number": 85,
+    "url": "https://github.com/skiredj-prog/tenir_governance/pull/85",
+    "draft": false,
+    "merged": false
+  }
+}

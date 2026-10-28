@@ -1,0 +1,27 @@
+{
+  "producer_sha": "3c390c30f3ed0deb030576b1ed9aa8dc1a7360f2",
+  "base_sha": "95263530bbe095d97c9b662b51ee482fd96618d6",
+  "files": [
+    {
+      "path": "w2_integration/proof_provider.py",
+      "git_blob": "b95b565323fd320c50f6c46b58f9f838044e5baa"
+    },
+    {
+      "path": "w2_integration/lab_s1_bridge.py",
+      "git_blob": "99be1147eb9b5d6839cc56b1fa645b1d84591ffe"
+    },
+    {
+      "path": "w2_integration/test_w2_1.py",
+      "git_blob": "d88fa4b5775e6a8c19090ab3e7b5a650c304e799"
+    },
+    {
+      "path": "w2_integration/i8_ledger.py",
+      "git_blob": "fd7da1e4e1882e97931a7784a006ef852ed54c49"
+    }
+  ],
+  "legacy_provider": {
+    "producer_sha": "02ea1d3bcf5c6fca8e4de6bd7bf5c69cb63f4413",
+    "git_blob": "ebc0cdee36f19e4adbcfc713b5b8370725714f9f"
+  },
+  "scope": "Only affected migration and terminal-state properties; native tests separately recorded"
+}

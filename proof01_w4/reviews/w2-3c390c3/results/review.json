@@ -1,0 +1,350 @@
+{
+  "producer_sha": "3c390c30f3ed0deb030576b1ed9aa8dc1a7360f2",
+  "current_sources": [
+    {
+      "name": "proof_provider.py",
+      "git_blob": "b95b565323fd320c50f6c46b58f9f838044e5baa",
+      "sha256": "0f27f83c67283735d76aa24dcd929eeb8de9fedc6634b41cee1349532553467f"
+    },
+    {
+      "name": "lab_s1_bridge.py",
+      "git_blob": "99be1147eb9b5d6839cc56b1fa645b1d84591ffe",
+      "sha256": "65bdde6612bd7eedb75b0e66249a2cefe13d471452728cdc7e6c5b356761c550"
+    },
+    {
+      "name": "test_w2_1.py",
+      "git_blob": "d88fa4b5775e6a8c19090ab3e7b5a650c304e799",
+      "sha256": "a36c2026381bc165f3fb523bd9cb197ba94fe6f8b9779f43a58974f7921c293e"
+    },
+    {
+      "name": "i8_ledger.py",
+      "git_blob": "fd7da1e4e1882e97931a7784a006ef852ed54c49",
+      "sha256": "fd1543f785ef5e3c9d53a3f68b07dd91670f469d32306089ee399ced7fbd2e6d"
+    }
+  ],
+  "legacy_sources": [
+    {
+      "name": "proof_provider.py",
+      "git_blob": "ebc0cdee36f19e4adbcfc713b5b8370725714f9f",
+      "sha256": "36561769365dc0a2b45e834533bc60d2e8023cea3b06f4937350e19b19755c80"
+    }
+  ],
+  "environment": {
+    "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "platform": "Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+    "sqlite": "3.46.1",
+    "assertions_enabled": true
+  },
+  "native_test_script": {
+    "test_functions": 3,
+    "result": "PASS"
+  },
+  "clean_migration": {
+    "before": {
+      "created_by": "02ea1d3bcf5c6fca8e4de6bd7bf5c69cb63f4413",
+      "rows": 1,
+      "unique_index_columns": [
+        [
+          "operation_id"
+        ]
+      ],
+      "fixture_scope": "Actual historical laboratory producer, not externally observed real effects"
+    },
+    "after": {
+      "constructor_accepted": true,
+      "unique_index_columns": [
+        [
+          "idempotency_key"
+        ],
+        [
+          "operation_id"
+        ]
+      ],
+      "new_distinct_key_write_accepted": true,
+      "duplicate_groups_after_open_and_write": []
+    }
+  },
+  "duplicate_migration": {
+    "before": {
+      "created_by": "02ea1d3bcf5c6fca8e4de6bd7bf5c69cb63f4413",
+      "rows": 2,
+      "unique_index_columns": [
+        [
+          "operation_id"
+        ]
+      ],
+      "fixture_scope": "Actual historical laboratory producer, not externally observed real effects"
+    },
+    "after": {
+      "constructor_accepted": true,
+      "unique_index_columns": [
+        [
+          "operation_id"
+        ]
+      ],
+      "new_distinct_key_write_accepted": true,
+      "duplicate_groups_after_open_and_write": [
+        [
+          "legacy-reused-key",
+          2
+        ]
+      ]
+    }
+  },
+  "terminal_properties": {
+    "blocked_terminal_to_reserved": [
+      {
+        "before": "RECONCILED_CONFIRMED",
+        "after": "RESERVED",
+        "error": "refusing to leave terminal state RECONCILED_CONFIRMED -> RESERVED",
+        "state_preserved": true
+      },
+      {
+        "before": "RECONCILED_NOT_EXECUTED",
+        "after": "RESERVED",
+        "error": "refusing to leave terminal state RECONCILED_NOT_EXECUTED -> RESERVED",
+        "state_preserved": true
+      },
+      {
+        "before": "CONFIRMED",
+        "after": "RESERVED",
+        "error": "refusing to leave terminal state CONFIRMED -> RESERVED",
+        "state_preserved": true
+      },
+      {
+        "before": "FAILED",
+        "after": "RESERVED",
+        "error": "refusing to leave terminal state FAILED -> RESERVED",
+        "state_preserved": true
+      }
+    ],
+    "accepted_terminal_replacements": [
+      {
+        "ts": "2026-10-28T18:56:56.278573+00:00",
+        "op": "RECONCILED_CONFIRMED-to-RECONCILED_NOT_EXECUTED",
+        "from": "RECONCILED_CONFIRMED",
+        "to": "RECONCILED_NOT_EXECUTED",
+        "reason": "W4 bounded terminal check"
+      },
+      {
+        "ts": "2026-10-28T18:56:56.278878+00:00",
+        "op": "RECONCILED_CONFIRMED-to-CONFIRMED",
+        "from": "RECONCILED_CONFIRMED",
+        "to": "CONFIRMED",
+        "reason": "W4 bounded terminal check"
+      },
+      {
+        "ts": "2026-10-28T18:56:56.279215+00:00",
+        "op": "RECONCILED_CONFIRMED-to-FAILED",
+        "from": "RECONCILED_CONFIRMED",
+        "to": "FAILED",
+        "reason": "W4 bounded terminal check"
+      },
+      {
+        "ts": "2026-10-28T18:56:56.281817+00:00",
+        "op": "RECONCILED_NOT_EXECUTED-to-RECONCILED_CONFIRMED",
+        "from": "RECONCILED_NOT_EXECUTED",
+        "to": "RECONCILED_CONFIRMED",
+        "reason": "W4 bounded terminal check"
+      },
+      {
+        "ts": "2026-10-28T18:56:56.283004+00:00",
+        "op": "RECONCILED_NOT_EXECUTED-to-CONFIRMED",
+        "from": "RECONCILED_NOT_EXECUTED",
+        "to": "CONFIRMED",
+        "reason": "W4 bounded terminal check"
+      },
+      {
+        "ts": "2026-10-28T18:56:56.283416+00:00",
+        "op": "RECONCILED_NOT_EXECUTED-to-FAILED",
+        "from": "RECONCILED_NOT_EXECUTED",
+        "to": "FAILED",
+        "reason": "W4 bounded terminal check"
+      },
+      {
+        "ts": "2026-10-28T18:56:56.284656+00:00",
+        "op": "CONFIRMED-to-RECONCILED_CONFIRMED",
+        "from": "CONFIRMED",
+        "to": "RECONCILED_CONFIRMED",
+        "reason": "W4 bounded terminal check"
+      },
+      {
+        "ts": "2026-10-28T18:56:56.285719+00:00",
+        "op": "CONFIRMED-to-RECONCILED_NOT_EXECUTED",
+        "from": "CONFIRMED",
+        "to": "RECONCILED_NOT_EXECUTED",
+        "reason": "W4 bounded terminal check"
+      },
+      {
+        "ts": "2026-10-28T18:56:56.286731+00:00",
+        "op": "CONFIRMED-to-FAILED",
+        "from": "CONFIRMED",
+        "to": "FAILED",
+        "reason": "W4 bounded terminal check"
+      },
+      {
+        "ts": "2026-10-28T18:56:56.287978+00:00",
+        "op": "FAILED-to-RECONCILED_CONFIRMED",
+        "from": "FAILED",
+        "to": "RECONCILED_CONFIRMED",
+        "reason": "W4 bounded terminal check"
+      },
+      {
+        "ts": "2026-10-28T18:56:56.288705+00:00",
+        "op": "FAILED-to-RECONCILED_NOT_EXECUTED",
+        "from": "FAILED",
+        "to": "RECONCILED_NOT_EXECUTED",
+        "reason": "W4 bounded terminal check"
+      },
+      {
+        "ts": "2026-10-28T18:56:56.289028+00:00",
+        "op": "FAILED-to-CONFIRMED",
+        "from": "FAILED",
+        "to": "CONFIRMED",
+        "reason": "W4 bounded terminal check"
+      }
+    ],
+    "same_terminal_replays_accepted": 4,
+    "race_results": [
+      {
+        "target": "FAILED",
+        "accepted": true,
+        "native_transition": {
+          "ts": "2026-10-28T18:56:57.075863+00:00",
+          "op": "race-op",
+          "from": "RESERVED",
+          "to": "FAILED",
+          "reason": "W4 controlled interleaving"
+        }
+      },
+      {
+        "target": "RECONCILED_CONFIRMED",
+        "accepted": true,
+        "native_transition": {
+          "ts": "2026-10-28T18:56:57.075924+00:00",
+          "op": "race-op",
+          "from": "RESERVED",
+          "to": "RECONCILED_CONFIRMED",
+          "reason": "W4 controlled interleaving"
+        }
+      }
+    ],
+    "race_final_state": "RECONCILED_CONFIRMED",
+    "race_scope": "Two real processes scheduled after read; trace hook changes scheduling only",
+    "bridge_replay": {
+      "first_final_state": "RECONCILED_CONFIRMED",
+      "second_call_rejected": true,
+      "error": "refusing to leave terminal state RECONCILED_CONFIRMED -> RESERVED",
+      "persisted_state_after_replay": "RECONCILED_CONFIRMED"
+    }
+  },
+  "executions": [
+    {
+      "name": "native-three-tests",
+      "command": [
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/.venv-linux/bin/python",
+        "-B",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3/sources/w2_integration/test_w2_1.py"
+      ],
+      "cwd": "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3/sources/w2_integration",
+      "exit_code": 0
+    },
+    {
+      "name": "legacy-clean-create",
+      "command": [
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/.venv-linux/bin/python",
+        "-B",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3/revalidate.py",
+        "--sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3/sources/w2_integration",
+        "--previous-sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-02ea1d3/sources/w2_integration",
+        "--worker",
+        "legacy-clean",
+        "--db",
+        "/tmp/w4-w21c-_nr_qvic/clean.db"
+      ],
+      "cwd": "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3",
+      "exit_code": 0
+    },
+    {
+      "name": "clean-upgrade",
+      "command": [
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/.venv-linux/bin/python",
+        "-B",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3/revalidate.py",
+        "--sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3/sources/w2_integration",
+        "--previous-sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-02ea1d3/sources/w2_integration",
+        "--worker",
+        "migrate",
+        "--db",
+        "/tmp/w4-w21c-_nr_qvic/clean.db"
+      ],
+      "cwd": "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3",
+      "exit_code": 0
+    },
+    {
+      "name": "legacy-duplicate-create",
+      "command": [
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/.venv-linux/bin/python",
+        "-B",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3/revalidate.py",
+        "--sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3/sources/w2_integration",
+        "--previous-sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-02ea1d3/sources/w2_integration",
+        "--worker",
+        "legacy-duplicates",
+        "--db",
+        "/tmp/w4-w21c-_nr_qvic/duplicates.db"
+      ],
+      "cwd": "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3",
+      "exit_code": 0
+    },
+    {
+      "name": "duplicate-upgrade",
+      "command": [
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/.venv-linux/bin/python",
+        "-B",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3/revalidate.py",
+        "--sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3/sources/w2_integration",
+        "--previous-sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-02ea1d3/sources/w2_integration",
+        "--worker",
+        "migrate",
+        "--db",
+        "/tmp/w4-w21c-_nr_qvic/duplicates.db"
+      ],
+      "cwd": "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3",
+      "exit_code": 0
+    },
+    {
+      "name": "terminal-properties",
+      "command": [
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/.venv-linux/bin/python",
+        "-B",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3/revalidate.py",
+        "--sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3/sources/w2_integration",
+        "--previous-sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-02ea1d3/sources/w2_integration",
+        "--worker",
+        "terminals",
+        "--db",
+        "/tmp/w4-w21c-_nr_qvic/rc01.db"
+      ],
+      "cwd": "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-3c390c3",
+      "exit_code": 0
+    }
+  ],
+  "scope": "Affected-property review only, not a full W3 or integrated crash/recovery campaign",
+  "verdict": "W2_1C_SCOPED_PROGRESS",
+  "p0_migration": "OPEN",
+  "p0_terminal": "OPEN",
+  "integration_lock": "HOLD",
+  "e2e": "HOLD",
+  "production": "HOLD"
+}
