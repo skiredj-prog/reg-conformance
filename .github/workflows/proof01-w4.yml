@@ -15,10 +15,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install independent cryptographic verifier dependency
-        run: python -m pip install 'cryptography>=43,<47'
+        run: python -m pip install 'cryptography==46.0.7'
+      - name: Record exact checkout and environment
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          git rev-parse HEAD | tee w4-checkout.txt
+          test "$(cat w4-checkout.txt)" = "$EXPECTED_SHA"
+          python -c "import sys,platform,cryptography,json; print(json.dumps({'python':sys.version,'platform':platform.platform(),'cryptography':cryptography.__version__},indent=2))" > w4-environment.json
       - name: Run offline adversarial unit tests
-        run: python -m unittest discover -s proof01_w4/tests -v
+        shell: bash
+        run: |
+          set -o pipefail
+          python -B -m unittest discover -s proof01_w4/tests -v 2>&1 | tee w4-tests.log
+      - name: Preserve bounded W4 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w4-review-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            w4-checkout.txt
+            w4-environment.json
+            w4-tests.log

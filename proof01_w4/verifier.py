@@ -10,6 +10,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
+from typing import Mapping
 
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 OUTCOMES = ("VERIFIED", "REFUTED", "INDETERMINATE", "OUT_OF_SCOPE")
@@ -23,6 +24,34 @@ def _reject(code: str, detail: str, outcome: str = "REFUTED") -> dict:
     return {"outcome": outcome, "code": code, "detail": detail}
 
 
+def parse_json(data):
+    """Reject duplicate object keys and non-JSON numeric constants."""
+    def pairs(items):
+        result = {}
+        for key, value in items:
+            if key in result:
+                raise ValueError("Duplicate JSON key: " + key)
+            result[key] = value
+        return result
+    def constant(value):
+        raise ValueError("Invalid JSON constant: " + value)
+    try:
+        return json.loads(data, object_pairs_hook=pairs, parse_constant=constant)
+    except RecursionError as exc:
+        raise ValueError("JSON nesting limit") from exc
+
+
+def safe_name(name):
+    return (isinstance(name, str) and 0 < len(name) <= 2048
+            and not any(c in name for c in ("\\", ":", "\x00"))
+            and not any(ord(c) < 32 for c in name)
+            and all(p not in ("", ".", "..") for p in name.split("/")))
+
+
+class EvidenceMissing(ValueError):
+    pass
+
+
 def verify(bundle_dir: Path, requested_claim: str | None = None) -> dict:
     """Read an untrusted bundle without following symlinks or external paths."""
     root = Path(bundle_dir).resolve(strict=True)
@@ -30,9 +59,29 @@ def verify(bundle_dir: Path, requested_claim: str | None = None) -> dict:
     if manifest_path.is_symlink() or not manifest_path.is_file():
         return _reject("MANIFEST_MISSING", "Manifest absent or symlink", "INDETERMINATE")
     try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = parse_json(manifest_path.read_bytes())
     except (OSError, ValueError, UnicodeError):
         return _reject("MANIFEST_INVALID", "Manifest cannot be parsed")
+    def read_artifact(path):
+        candidate = root / path
+        if candidate.is_symlink() or not candidate.is_file() or not candidate.resolve().is_relative_to(root):
+            raise EvidenceMissing(path)
+        return candidate.read_bytes()
+    return _verify_manifest(manifest, read_artifact, requested_claim)
+
+
+def verify_snapshot(entries: Mapping[str, bytes], requested_claim: str | None = None) -> dict:
+    """Verify captured bytes without reopening producer paths or attesting effects."""
+    try:
+        manifest = parse_json(entries["proof-manifest-v1.json"])
+    except KeyError:
+        return _reject("MANIFEST_MISSING", "Manifest absent", "INDETERMINATE")
+    except (ValueError, UnicodeError):
+        return _reject("MANIFEST_INVALID", "Manifest cannot be parsed")
+    return _verify_manifest(manifest, entries.__getitem__, requested_claim)
+
+
+def _verify_manifest(manifest, read_artifact, requested_claim):
     if not isinstance(manifest, dict) or manifest.get("schema_version") != "proof01-w4/1":
         return _reject("SCHEMA", "Unknown manifest version")
     scope = manifest.get("scope")
@@ -59,16 +108,18 @@ def verify(bundle_dir: Path, requested_claim: str | None = None) -> dict:
         path, digest = item.get("path"), item.get("sha256")
         if not isinstance(path, str) or not path or not isinstance(digest, str) or not SHA256.fullmatch(digest):
             return _reject("ENTRY", "Artifact path or digest malformed")
-        rel = Path(path)
-        if rel.is_absolute() or ".." in rel.parts or "\\" in path or path.startswith("/"):
+        if not safe_name(path):
             return _reject("PATH_ESCAPE", "Absolute or escaping path forbidden")
         if path in seen or path == "proof-manifest-v1.json":
             return _reject("DUPLICATE", "Duplicate or self-referential artifact")
         seen.add(path)
-        candidate = root / rel
-        if candidate.is_symlink() or not candidate.is_file() or not candidate.resolve().is_relative_to(root):
+        try:
+            body = read_artifact(path)
+        except (KeyError, EvidenceMissing, OSError):
             return _reject("EVIDENCE_MISSING", f"Missing, linked or escaping evidence: {path}", "INDETERMINATE")
-        if sha256(candidate.read_bytes()) != digest:
+        if not isinstance(body, bytes):
+            return _reject("ENTRY", "Captured evidence must be bytes")
+        if sha256(body) != digest:
             return _reject("HASH_MISMATCH", f"Evidence changed: {path}")
         checked.append(path)
     # Integrity is not evidence of truth. An authenticated, trusted external
