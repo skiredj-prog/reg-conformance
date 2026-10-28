@@ -1,0 +1,1 @@
+{"constructor_accepted": true, "unique_index_columns": [["idempotency_key"], ["operation_id"]], "new_distinct_key_write_accepted": true, "duplicate_groups_after_open_and_write": []}
