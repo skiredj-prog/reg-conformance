@@ -29,6 +29,8 @@ These are source/interface observations. They do not replace Agent 2 counterexam
 
 ## Prepared oracle
 
+The complementary [five-identifier binding review](BINDING_REVIEW.md) distinguishes receipt-covered operation/idempotency/request fields from absent evaluation/grant relations and specifies the causal evidence still required. Its negative consumer tests do not impose a producer wire format.
+
 `rc01_i8_oracle.py` is a separate state/arithmetic implementation and imports no producer module, receipt verifier or synthetic semantic replay. Its internal input profile is documented in [RC01_I8_ORACLE.md](../../RC01_I8_ORACLE.md). It recognizes explicit ordered single-operation projections only. It never infers missing operation/amount bindings or sorts independent timestamp streams into an invented causal order.
 
 The earlier campaign 001 lacks required settlement bindings/baselines and trustworthy causal ordering. The current W2 source returns a scenario summary rather than this projection or a CEB-01. **No complete replay or actual verifier/oracle agreement is claimed for either input.** The comparison API and tests are prepared; the verifier currently has no native projection result to compare.
