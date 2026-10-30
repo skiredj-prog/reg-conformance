@@ -246,25 +246,31 @@ EXTENDED_GAP_NOTES: dict[str, str] = {
 }
 
 T6_T8_GAP_NOTE = (
-    "T6–T8 (Attempt State Lifecycle) proven in tenir-conformance-s1-g1 membrane; "
-    "full RFC-4 kernel integration pending. "
+    "T6–T8 have laboratory behavioral probes in tenir-conformance-s1-g1; "
+    "native TENIR-Gov lifecycle integration and external-effect evidence remain unverified. "
     "See: https://github.com/skiredj-prog/tenir-conformance-s1-g1/tree/main/src/tenir_conformance/membrane"
 )
-def _run_t7_membrane_vector(adapter):
-    """Execute CT-R4-012 against lab membrane when importable."""
+
+
+def _run_lifecycle_membrane_vector(adapter, vector_id):
+    """Exercise laboratory behavior without promoting it to native REG conformance."""
     try:
-        from lifecycle.t7_membrane_probe import run_t7_probe
+        from lifecycle.t7_membrane_probe import (
+            run_t6_probe, run_t7_probe, run_t8_probe,
+        )
     except ImportError:
-        try:
-            from t7_membrane_probe import run_t7_probe
-        except ImportError:
-            return adapter._gap("CT-R4-012", T6_T8_GAP_NOTE + " (probe module missing)")
-    status, detail = run_t7_probe()
+        return adapter._gap(vector_id, T6_T8_GAP_NOTE + " (probe module missing)")
+    probes = {
+        "CT-R4-011": run_t6_probe,
+        "CT-R4-012": run_t7_probe,
+        "CT-R4-013": run_t8_probe,
+    }
+    status, detail = probes[vector_id]()
     if status == "PASS":
-        return adapter._r("CT-R4-012", ReportingState.PASS, details=detail)
+        return adapter._gap(vector_id, "LAB_PROBE_PASS_ONLY; " + detail + "; " + T6_T8_GAP_NOTE)
     if status == "GAP":
-        return adapter._gap("CT-R4-012", detail)
-    return adapter._fail("CT-R4-012", detail)
+        return adapter._gap(vector_id, detail)
+    return adapter._fail(vector_id, detail)
 
 
 
@@ -576,13 +582,13 @@ class HTTPAdapter(BaseAdapter):
 
     # CT-R4-011..013 — lifecycle vectors (lab membrane validation only)
     def _v_ct_r4_011(self):
-        return self._gap("CT-R4-011", T6_T8_GAP_NOTE)
+        return _run_lifecycle_membrane_vector(self, "CT-R4-011")
 
     def _v_ct_r4_012(self):
-        return _run_t7_membrane_vector(self)
+        return _run_lifecycle_membrane_vector(self, "CT-R4-012")
 
     def _v_ct_r4_013(self):
-        return self._gap("CT-R4-013", T6_T8_GAP_NOTE)
+        return _run_lifecycle_membrane_vector(self, "CT-R4-013")
 
 
 # ── Extended: CT-R2-002 and CT-R2-003 (only extended vectors that PASS) ──
@@ -617,12 +623,13 @@ class HTTPAdapter(BaseAdapter):
 
 class NativeKernelAdapter(BaseAdapter):
     """
-    Tests REG normative properties directly against the TENIR-Gov kernel.
-    interface_mode: "native" — Level 3 / Native-Conformant (RFC-7 §8.2).
-    No HTTP layer. This is the mode for authorize(record, payload_bytes, …) kernels.
+    Bundled in-process reference kernel (kernel/policy_engine.py), NOT the
+    deployed tenir_governance.PolicyEngine or JW-17 execution runtime.
+    No HTTP or provider-effect verification. This adapter is not native
+    implementation-conformance evidence, regardless of interface_mode.
     """
-    interface_mode = "native"
-    evidence_level = EvidenceLevel.NATIVE_CONFORMANT
+    interface_mode = "native"  # invocation style; NOT a certification claim
+    evidence_level = EvidenceLevel.SEMANTIC_MAPPING
 
     def __init__(self, policy_file: str):
         sys.path.insert(0, str(Path(__file__).parent))
@@ -910,13 +917,13 @@ class NativeKernelAdapter(BaseAdapter):
             "evidence of an external effect.")
 
     def _v_ct_r4_011(self):
-        return self._gap("CT-R4-011", T6_T8_GAP_NOTE)
+        return _run_lifecycle_membrane_vector(self, "CT-R4-011")
 
     def _v_ct_r4_012(self):
-        return _run_t7_membrane_vector(self)
+        return _run_lifecycle_membrane_vector(self, "CT-R4-012")
 
     def _v_ct_r4_013(self):
-        return self._gap("CT-R4-013", T6_T8_GAP_NOTE)
+        return _run_lifecycle_membrane_vector(self, "CT-R4-013")
 
 
 # ── Extended: CT-R2-002 and CT-R2-003 ────────────────────────────────────
@@ -1124,7 +1131,7 @@ def main():
             f"HTTP adapter → {args.endpoint}", args.endpoint)
 
     if args.mode in ("native","both"):
-        run(NativeKernelAdapter(args.kernel), "Native kernel (TENIR-Gov PolicyEngine)")
+        run(NativeKernelAdapter(args.kernel), "Bundled reference kernel (NOT TENIR-Gov runtime)")
 
     has_fail = any(rep["summary"]["FAIL"] for rep in all_reports)
     has_inconclusive = any(rep["summary"]["INCONCLUSIVE"] for rep in all_reports)

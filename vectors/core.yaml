@@ -79,9 +79,9 @@ vectors:
     rfc: RFC-4 lifecycle T7
     category: core
     property: UNKNOWN → FAILED (evidence guard)
-    input: declare_failed without/with evidence_qualified
-    intended: REJECT without qualification; FAILED with qualification
-    expected: evidence guard enforced; timeout ≠ FAILED
+    input: declare_failed without a verified attestation vs with a bound Ed25519 non-execution attestation
+    intended: REJECT without cryptographic verification; FAILED only with verified non-execution evidence
+    expected: timeout and boolean alone cannot declare FAILED; exact attempt/LEI/nonce binding is required
     status: lab_validated
     native: IMPLEMENTATION_GAP
     observed: Validated in tenir-conformance-s1-g1 (test_t7_t8); native adapter pending
@@ -91,9 +91,9 @@ vectors:
     rfc: RFC-4 lifecycle T8
     category: core
     property: FAILED + retry_eligible → new attempt
-    input: FAILED with retry_eligible true/false
-    intended: new attempt_id allowed only if retry_eligible
-    expected: LEI unlock only when retry_eligible=true
+    input: FAILED with verified non-execution, no observed effect, and retry_eligible true/false
+    intended: new attempt_id allowed only if retry_eligible and non-execution are verified
+    expected: retry_eligible=false preserves LEI lock; true permits a fresh evaluation, never automatic execution
     status: lab_validated
     native: IMPLEMENTATION_GAP
     observed: Validated in tenir-conformance-s1-g1 (T8 tests); native adapter pending

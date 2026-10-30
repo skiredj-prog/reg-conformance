@@ -27,5 +27,7 @@ NORMATIVE = {
     "timeout_alone_is_not_failed": True,
     "unknown_blocks_retry_until_t7_or_resolve": True,
     "t7_requires_evidence_qualification": True,
+    "t7_requires_bound_cryptographic_attestation": True,
     "t8_requires_retry_eligible_property": True,
+    "t8_false_blocks_even_after_verified_non_execution": True,
 }
