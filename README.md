@@ -1,5 +1,14 @@
 # reg-conformance
 
+> **Qualification boundary (30 October 2026):** `runner.py --mode native` currently
+> exercises the **bundled reference** `kernel/policy_engine.py`, not the
+> `tenir_governance` runtime. Its results are structural/reference observations,
+> never certification of JW-17. The T6–T8 probes independently exercise
+> `tenir-conformance-s1-g1`, but their successes are reported as
+> `LAB_PROBE_PASS_ONLY / IMPLEMENTATION_GAP` by the native runner until a
+> real runtime adapter and external outcome evidence exist.
+> See [lifecycle integration](LIFECYCLE_INTEGRATION.md).
+
 Standard de preuve runtime pour REG+. Séparation stricte : spécification (`specs/`),
 données déclaratives (`catalog/`), outils (`tools/`), profils (`profiles/`), tests (`tests/`).
 
