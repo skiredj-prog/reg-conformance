@@ -20,3 +20,36 @@ jobs:
         run: python -m pip install "git+https://github.com/skiredj-prog/tenir-conformance-s1-g1.git@469f6de65090c990ea393c7b76942927616c2fc1"
       - name: Test T6-T8 lab probes and no native promotion
         run: python -m pytest tests/test_lifecycle_probes.py -q --tb=short
+      - name: Run 56-vector bundled reference (non-certifying)
+        shell: bash
+        run: |
+          mkdir -p artifacts/lifecycle
+          set +e
+          python runner.py --mode native --output artifacts/lifecycle/reference-56.json > artifacts/lifecycle/runner-stdout.txt 2>&1
+          status=$?
+          set -e
+          echo "runner_exit_code=$status" >> "$GITHUB_STEP_SUMMARY"
+          cat artifacts/lifecycle/runner-stdout.txt
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("artifacts/lifecycle/reference-56.json")
+          r = json.loads(p.read_text())
+          assert r["vector_sets"] == {"core": 18, "extended": 38, "total": 56}, r["vector_sets"]
+          assert len(r["results"]) == 56
+          counts = r["summary"]
+          assert sum(counts.values()) == 56
+          print("REFERENCE_RUN_ONLY:", counts, "exit_code:", r["exit_code"])
+          Path("artifacts/lifecycle/verification.json").write_text(
+              json.dumps({"scope": "bundled-reference-only", "total": 56,
+                          "summary": counts, "exit_code": r["exit_code"]}, indent=2)
+          )
+          PY
+          sha256sum artifacts/lifecycle/*.json > artifacts/lifecycle/SHA256SUMS
+      - name: Upload bundled reference evidence (not native TENIR-Gov)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reg-56-vector-reference-only
+          path: artifacts/lifecycle/
+          if-no-files-found: warn
