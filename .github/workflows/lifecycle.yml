@@ -1,0 +1,22 @@
+name: lifecycle T6-T8 (lab contract only)
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lifecycle-lab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runner dependencies
+        run: python -m pip install -r requirements.txt pytest
+      - name: Install pinned TENIR-Gov kernel candidate
+        run: python -m pip install "git+https://github.com/skiredj-prog/tenir_governance.git@b65efbaeda527b70fe2682ad38d2bc37cda1effc"
+      - name: Install pinned lab membrane PR candidate
+        run: python -m pip install "git+https://github.com/skiredj-prog/tenir-conformance-s1-g1.git@469f6de65090c990ea393c7b76942927616c2fc1"
+      - name: Test T6-T8 lab probes and no native promotion
+        run: python -m pytest tests/test_lifecycle_probes.py -q --tb=short
