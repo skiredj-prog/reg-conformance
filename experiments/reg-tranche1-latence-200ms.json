@@ -1,0 +1,152 @@
+{
+  "contract_version": "0.1.3",
+  "status": "CANDIDATE_CONTRACT: composite illustratif, non instancié, non canonique",
+  "slice": "Lane A -> pont : prétention 'latence <= 200 ms'",
+  "source_of_known_breaks": "analyse du corpus fournie par l'auteur ; non revérifiée ici. Le paramètre T=200 ms n'est pas mesuré dans cette fixture. Il sera calibré contre la distribution de latence du provider lors de la tranche runtime.",
+  "event_schema": {
+    "event_id": "identifiant unique de l'événement",
+    "prev_event_id": "événement précédent du même sujet (null au premier)",
+    "occurred_at": "horodatage ISO 8601",
+    "lifecycle_id": "LC-01 | LC-02 | LC-03",
+    "subject": { "id": "objet concerné", "version": "version de l'objet" },
+    "transition": { "from": "état avant l'événement (null si création)", "to": "état demandé" },
+    "event_persisted": "booléen : true pour tout événement journalisé, accepté ou refusé. Persistance, pas décision.",
+    "decision": "ACCEPTED | REFUSED : résultat de la porte, et seulement cela",
+    "effective_state": "état de l'objet après l'événement. Si decision = REFUSED, effective_state = transition.from",
+    "refusal": { "gate": "porte évaluée (si REFUSED)", "reason_code": "motif (si REFUSED)" },
+    "actor": { "role": "rôle, pas un nom", "decision_ref": "référence de décision du comité, ou null" },
+    "verified_scope": "integrity | provenance | test_execution | property_satisfaction | null (obligatoire si to = VERIFIED)",
+    "evidence_refs": [],
+    "source_refs": []
+  },
+  "events": [
+    {
+      "event_id": "EV-001a",
+      "prev_event_id": null,
+      "lifecycle_id": "LC-03",
+      "subject": { "id": "hyp-unknown-after-T", "version": "1" },
+      "transition": { "from": "STATED", "to": "CHALLENGED" },
+      "event_persisted": true,
+      "decision": "ACCEPTED",
+      "effective_state": "CHALLENGED",
+      "note": "Hypothèse : il existe un seuil T au-delà duquel une absence de réponse doit être classée UNKNOWN, et non FAILED."
+    },
+    {
+      "event_id": "EV-001b",
+      "prev_event_id": null,
+      "lifecycle_id": "LC-03",
+      "subject": { "id": "hyp-hold-on-unknown", "version": "1" },
+      "transition": { "from": "STATED", "to": "CHALLENGED" },
+      "event_persisted": true,
+      "decision": "ACCEPTED",
+      "effective_state": "CHALLENGED",
+      "causation_event_ids": ["EV-001a"],
+      "note": "Hypothèse : un état UNKNOWN déclenche HOLD, sans rejeu automatique. Politique dérivée de REG-ARCH-020. Indépendante du choix de T."
+    },
+    {
+      "event_id": "EV-001c",
+      "prev_event_id": null,
+      "lifecycle_id": "LC-03",
+      "subject": { "id": "param-T-latency-200ms", "version": "1" },
+      "transition": { "from": "STATED", "to": "CHALLENGED" },
+      "event_persisted": true,
+      "decision": "ACCEPTED",
+      "effective_state": "CHALLENGED",
+      "causation_event_ids": ["EV-001a", "EV-001b"],
+      "note": "Valeur candidate T=200 ms retenue pour cette fixture illustrative. Non mesurée. Non validée contre une distribution de latence réelle. Justification : commodité de test, pas calibration."
+    },
+    {
+      "event_id": "EV-002",
+      "prev_event_id": "EV-001a",
+      "lifecycle_id": "LC-03",
+      "subject": { "id": "hyp-unknown-after-T", "version": "1" },
+      "causation_event_ids": ["EV-001c"],
+      "transition": { "from": "CHALLENGED", "to": "SUPPORTED" },
+      "event_persisted": true,
+      "decision": "REFUSED",
+      "effective_state": "CHALLENGED",
+      "refusal": { "gate": "evidence_linked", "reason_code": "NO_LINKED_EVIDENCE" },
+      "note": "Reste CHALLENGED. Le benchmark n'est pas lié à l'hypothèse."
+    },
+    {
+      "event_id": "EV-003",
+      "prev_event_id": null,
+      "lifecycle_id": "LC-01",
+      "subject": { "id": "prop-latency-bound", "version": "0.1.0" },
+      "transition": { "from": null, "to": "CANDIDATE" },
+      "event_persisted": true,
+      "decision": "ACCEPTED",
+      "effective_state": "CANDIDATE",
+      "actor": { "role": "studio_proposal", "decision_ref": null },
+      "source_refs": ["hyp-unknown-after-T"],
+      "note": "Proposition du Studio. Ce n'est pas une admission."
+    },
+    {
+      "event_id": "EV-004",
+      "prev_event_id": "EV-003",
+      "lifecycle_id": "LC-01",
+      "subject": { "id": "prop-latency-bound", "version": "0.1.0" },
+      "transition": { "from": "CANDIDATE", "to": "ADMITTED" },
+      "event_persisted": true,
+      "decision": "REFUSED",
+      "effective_state": "CANDIDATE",
+      "refusal": { "gate": "admission_decision", "reason_code": "NO_COMMITTEE_DECISION" },
+      "actor": { "role": "admission_committee", "decision_ref": null },
+      "note": "Comité RFC désigné, règle de décision non rédigée, aucune décision rendue. Aucun invariant appliqué."
+    },
+    {
+      "event_id": "EV-005",
+      "prev_event_id": null,
+      "lifecycle_id": "LC-02",
+      "subject": { "id": "claim-latency-bound", "version": "1" },
+      "transition": { "from": "UNLINKED", "to": "LINKED" },
+      "event_persisted": true,
+      "decision": "REFUSED",
+      "effective_state": "UNLINKED",
+      "refusal": { "gate": "evidence_binding", "reason_code": "NO_HASH_BINDING" },
+      "verified_scope": null,
+      "note": "Aucun VERIFIED possible : aucune preuve liée par hash, aucun objet de vérification nommé."
+    },
+    {
+      "event_id": "EV-006",
+      "prev_event_id": "EV-004",
+      "lifecycle_id": "LC-01",
+      "subject": { "id": "prop-latency-bound", "version": "0.1.0" },
+      "transition": { "from": "ADMITTED", "to": "VERIFIED" },
+      "event_persisted": true,
+      "decision": "REFUSED",
+      "effective_state": "ADMITTED",
+      "refusal": { "gate": "verification_scope", "reason_code": "NO_VERIFIED_SCOPE" },
+      "verified_scope": null,
+      "note": "Refusé car le statut VERIFIED exige un verified_scope (REG-ARCH-014). Aucune promotion possible."
+    }
+  ],
+  "negative_tests": [
+    "Tout événement avec decision = REFUSED doit avoir effective_state = transition.from (EV-002, EV-004, EV-005, EV-006)",
+    "Tout événement avec decision = REFUSED doit porter un refusal.gate et un refusal.reason_code",
+    "event_persisted doit valoir true pour tout événement, accepté ou refusé",
+    "Un événement sans decision (ou decision hors ACCEPTED|REFUSED) est invalide",
+    "EV-003 -> ADMITTED sans decision_ref du comité : doit être REFUSED",
+    "Tout to = VERIFIED avec verified_scope null : doit être REFUSED (EV-006)",
+    "Un invariant CANDIDATE présenté à l'admission runtime : doit être REFUSED"
+  ],
+  "admission_authority": {
+    "phase": "0",
+    "body": "TENIR Labs (éditeur unique)",
+    "decider": "Abdelaziz Skiredj",
+    "decision_ref_required": true,
+    "publication": "reg-conformance/admissions/",
+    "phase_1_target": {
+      "body": "comité RFC",
+      "activation_condition": "signature écrite de 3 co-auteurs + règle de décision publiée",
+      "decision_rule": {
+        "voting": "à définir (écrit)",
+        "majority": "à définir (écrit)",
+        "veto": "à définir (écrit)",
+        "disagreement": "à définir (écrit)"
+      },
+      "conflict_declaration": "obligatoire ; abstention sur les décisions concernant son propre cadre"
+    },
+    "status": "spécifié pour phase 0 ; cible pour phase 1"
+  }
+}
