@@ -10,7 +10,7 @@ def register(runner_module) -> None:
         ),
         "CT-R4-012": TestVector(
             "CT-R4-012", "RFC-4 lifecycle T7", "UNKNOWN → FAILED (evidence guard)",
-            "FAILED requires evidence_qualified=true; timeout alone must not auto-FAILED.",
+            "FAILED requires verified, exactly bound non-execution attestation; timeout alone never fails.",
         ),
         "CT-R4-013": TestVector(
             "CT-R4-013", "RFC-4 lifecycle T8", "FAILED + retry_eligible → new attempt",
