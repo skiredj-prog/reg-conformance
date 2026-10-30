@@ -623,12 +623,13 @@ class HTTPAdapter(BaseAdapter):
 
 class NativeKernelAdapter(BaseAdapter):
     """
-    Tests REG normative properties directly against the TENIR-Gov kernel.
-    interface_mode: "native" — Level 3 / Native-Conformant (RFC-7 §8.2).
-    No HTTP layer. This is the mode for authorize(record, payload_bytes, …) kernels.
+    Bundled in-process reference kernel (kernel/policy_engine.py), NOT the
+    deployed tenir_governance.PolicyEngine or JW-17 execution runtime.
+    No HTTP or provider-effect verification. This adapter is not native
+    implementation-conformance evidence, regardless of interface_mode.
     """
-    interface_mode = "native"
-    evidence_level = EvidenceLevel.NATIVE_CONFORMANT
+    interface_mode = "native"  # invocation style; NOT a certification claim
+    evidence_level = EvidenceLevel.SEMANTIC_MAPPING
 
     def __init__(self, policy_file: str):
         sys.path.insert(0, str(Path(__file__).parent))
@@ -1130,7 +1131,7 @@ def main():
             f"HTTP adapter → {args.endpoint}", args.endpoint)
 
     if args.mode in ("native","both"):
-        run(NativeKernelAdapter(args.kernel), "Native kernel (TENIR-Gov PolicyEngine)")
+        run(NativeKernelAdapter(args.kernel), "Bundled reference kernel (NOT TENIR-Gov runtime)")
 
     has_fail = any(rep["summary"]["FAIL"] for rep in all_reports)
     has_inconclusive = any(rep["summary"]["INCONCLUSIVE"] for rep in all_reports)
