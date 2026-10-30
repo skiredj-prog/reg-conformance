@@ -29,9 +29,10 @@ custody. The laboratory does not assert multi-process or production safety.
 
 ## Cross-repository synchronization
 
-- Membrane candidate: [PR #49](https://github.com/skiredj-prog/tenir-conformance-s1-g1/pull/49).
-- The lifecycle CI temporarily pins that PR's exact unmerged SHA; replace the
-  pin with the final reviewed commit when the candidate is merged.
+- Membrane merged: [PR #49](https://github.com/skiredj-prog/tenir-conformance-s1-g1/pull/49),
+  commit `8bc0e5e291f7ac64d601bb08d76b5f2c3f70562f`.
+- The lifecycle CI pins that merged commit to ensure reproducible cross-repo
+  tests, independent of future changes on `main`.
 - The native TENIR-Gov adapter must independently implement and qualify the
   lifecycle vectors before `CT-R4-011..013` can be reported as native PASS.
 
