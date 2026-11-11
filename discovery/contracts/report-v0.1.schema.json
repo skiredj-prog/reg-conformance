@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/skiredj-prog/reg-conformance/blob/main/discovery/contracts/report-v0.1.schema.json",
+  "title": "REG Discovery Report v0.1 — exploratory, non-certifying",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "report_id",
+    "mode",
+    "generated_at",
+    "catalog_version",
+    "selected_sources",
+    "behavior",
+    "findings",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "report_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "enum": [
+        "exploratory",
+        "contextualized"
+      ]
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "catalog_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "selected_sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "behavior": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "claim",
+            "scope"
+          ],
+          "properties": {
+            "claim": {
+              "type": "string",
+              "minLength": 1
+            },
+            "scope": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    },
+    "limitations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "not_legal_advice",
+        "not_implementation_audit",
+        "not_deployment_authorization",
+        "not_guarantee_demonstration"
+      ],
+      "properties": {
+        "not_legal_advice": {
+          "const": true
+        },
+        "not_implementation_audit": {
+          "const": true
+        },
+        "not_deployment_authorization": {
+          "const": true
+        },
+        "not_guarantee_demonstration": {
+          "const": true
+        }
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_kind",
+        "source_version",
+        "jurisdiction",
+        "section",
+        "authority_uri",
+        "applicability",
+        "checked_at"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_kind": {
+          "enum": [
+            "binding_law",
+            "voluntary_framework",
+            "management_standard",
+            "recommendation",
+            "treaty",
+            "draft"
+          ]
+        },
+        "source_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "section": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authority_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "applicability": {
+          "enum": [
+            "not_assessed",
+            "declared_applicable",
+            "declared_not_applicable"
+          ]
+        },
+        "checked_at": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finding_id",
+        "assumption_id",
+        "title",
+        "assessment",
+        "relationship",
+        "failure_path",
+        "clarifying_question",
+        "source_refs",
+        "candidate_invariants"
+      ],
+      "properties": {
+        "finding_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assumption_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assessment": {
+          "enum": [
+            "open_question",
+            "conditional",
+            "structural_conflict"
+          ]
+        },
+        "relationship": {
+          "enum": [
+            "direct_source_statement",
+            "analyst_inference",
+            "illustrative"
+          ]
+        },
+        "failure_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clarifying_question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_id",
+              "section"
+            ],
+            "properties": {
+              "source_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "section": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "candidate_invariants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "condition"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "condition": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "exploratory"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "behavior": {
+            "type": "null"
+          },
+          "findings": {
+            "items": {
+              "properties": {
+                "assessment": {
+                  "const": "open_question"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "contextualized"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "behavior": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "schema_version": "0.1.0",
+  "report_id": "example-oversight-001",
+  "mode": "contextualized",
+  "generated_at": "2026-10-21T00:00:00Z",
+  "catalog_version": "discovery-draft-v0.1",
+  "selected_sources": [
+    {
+      "source_id": "EU-AI-ACT-14",
+      "source_kind": "binding_law",
+      "source_version": "2024/1689",
+      "jurisdiction": "EU",
+      "section": "Article 14",
+      "authority_uri": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+      "applicability": "not_assessed",
+      "checked_at": "2026-10-21"
+    },
+    {
+      "source_id": "NIST-AI-RMF-MAP-1.1",
+      "source_kind": "voluntary_framework",
+      "source_version": "AI RMF 1.0 (2023)",
+      "jurisdiction": "USA / voluntary",
+      "section": "MAP 1.1",
+      "authority_uri": "https://airc.nist.gov/airmf-resources/airmf/5-sec-core/",
+      "applicability": "not_assessed",
+      "checked_at": "2026-10-21"
+    }
+  ],
+  "behavior": {
+    "claim": "A human can intervene before a consequential automated decision takes effect",
+    "scope": "Illustrative decision workflow, not an assessed deployment"
+  },
+  "findings": [
+    {
+      "finding_id": "F-HUMAN-TIME-001",
+      "assumption_id": "H-INTERVENTION-WINDOW",
+      "title": "Does the human intervention window precede the irreversible effect?",
+      "assessment": "open_question",
+      "relationship": "analyst_inference",
+      "failure_path": "If an external effect commits before the reviewer can act, a review interface may not provide effective preventive control.",
+      "clarifying_question": "At what step does an external effect become irreversible, and can an authorized human still stop it?",
+      "source_refs": [
+        {
+          "source_id": "EU-AI-ACT-14",
+          "section": "Article 14"
+        },
+        {
+          "source_id": "NIST-AI-RMF-MAP-1.1",
+          "section": "MAP 1.1"
+        }
+      ],
+      "candidate_invariants": [
+        {
+          "id": "INV-INTERVENTION-BEFORE-EFFECT",
+          "condition": "For transitions declared to require prior human approval, do not initiate an external effect before valid approval."
+        }
+      ]
+    }
+  ],
+  "limitations": {
+    "not_legal_advice": true,
+    "not_implementation_audit": true,
+    "not_deployment_authorization": true,
+    "not_guarantee_demonstration": true
+  }
+}
