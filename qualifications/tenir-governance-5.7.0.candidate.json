@@ -1,0 +1,104 @@
+{
+  "schema_version": "0.1.0",
+  "qualification_id": "tenir-governance-5.7.0-candidate",
+  "status": "PARTIAL_EVIDENCE",
+  "standard": {
+    "name": "REG-Conformance",
+    "version": "v0.5.1",
+    "catalog_version": "2.0.0",
+    "rules_version": "2.0.0"
+  },
+  "target": {
+    "repository": "skiredj-prog/tenir_governance",
+    "declared_version": "5.7.0",
+    "source_commit_candidate": "0ec4870ee5bd73d90b9c6304f5cf774defadfb83",
+    "source_commit_verified_at_test": "0ec4870ee5bd73d90b9c6304f5cf774defadfb83",
+    "package_version_verified_at_test": "5.7.0"
+  },
+  "baseline_manifest": "deployment-manifest.json",
+  "environment": {
+    "python": "3.12.15",
+    "os": "GitHub Actions ubuntu-latest (Linux)",
+    "architecture": null,
+    "installed_package_origin": "git+https://github.com/skiredj-prog/tenir_governance.git@0ec4870ee5bd73d90b9c6304f5cf774defadfb83 with [raft]",
+    "backend": null,
+    "host_scope": null,
+    "execution_timestamp": "2026-10-24T21:56:27Z",
+    "command": "(cd subject-source && python -m pytest -q tests/test_deployment_manifest.py)"
+  },
+  "evidence": {
+    "runner_artifact": "https://github.com/skiredj-prog/reg-conformance/actions/runs/40151558422/artifacts/12582771457",
+    "runner_sha256": "sha256:6e0ffc8819e111e115f85b6eca9b1a335182f7ef5e298cc367ce40d99a6da0c5",
+    "ci_run_url": "https://github.com/skiredj-prog/reg-conformance/actions/runs/40151558422",
+    "test_summary": {
+      "subject_deployment_tests": {
+        "passed": 23,
+        "failed": 0
+      },
+      "reference_adapter": {
+        "passed": 14,
+        "implementation_gap": 41,
+        "conformance_status": "INCOMPLETE",
+        "scope": "reference only; not TENIR-Gov 5.7 native"
+      },
+      "subject_governor_recovery_tests": {
+        "passed": 12,
+        "failed": 0,
+        "scope": "SQLite single-host crash and reconciliation"
+      },
+      "native_targeted_total": {
+        "passed": 44,
+        "failed": 0
+      },
+      "native_t6_t7_scoped": {
+        "passed": 9,
+        "failed": 0,
+        "classification": "PARTIAL_SEMANTIC_EVIDENCE",
+        "normative_equivalence": false
+      },
+      "evidence_mapper_adversarial": {
+        "passed": 6,
+        "failed": 0
+      },
+      "full_selected_and_mapper": {
+        "passed": 50,
+        "failed": 0
+      }
+    },
+    "coverage": null,
+    "native_t6_t8": {
+      "CT-R4-011": {
+        "status": "PARTIAL_SEMANTIC_EVIDENCE",
+        "evidence_level": "SCOPED_IMPLEMENTATION_TESTED",
+        "normative_equivalence": false
+      },
+      "CT-R4-012": {
+        "status": "PARTIAL_SEMANTIC_EVIDENCE",
+        "evidence_level": "SCOPED_IMPLEMENTATION_TESTED",
+        "normative_equivalence": false
+      },
+      "CT-R4-013": {
+        "status": "IMPLEMENTATION_GAP",
+        "evidence_level": null,
+        "normative_equivalence": false
+      }
+    },
+    "source_workflow_commit": "f3afdd5f7aa09c636638d8bd7594847509c28d4b"
+  },
+  "claims": {
+    "admissible_structural_is_effective_guarantee": false,
+    "native_t6_t8_conformant": false,
+    "external_exactly_once_proven": false,
+    "production_multi_host_validated": false
+  },
+  "publication": {
+    "eligible": false,
+    "reason": "Scoped P0 tooling passes CI with 44 subject tests + 6 mapper tests. Native normative T6/T7 equivalence, T8 and full REG conformance remain unproven."
+  },
+  "p0": {
+    "scoped_evidence_tooling": "IMPLEMENTED_AND_CI_VERIFIED",
+    "native_normative_conformance": "HOLD",
+    "release_gate": "HOLD",
+    "verified_ci_run": "40151558422"
+  }
+}
