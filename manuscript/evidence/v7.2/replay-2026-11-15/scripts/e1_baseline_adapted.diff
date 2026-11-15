@@ -1,0 +1,22 @@
+--- a/experiments/e1_e2/e1_baseline.py
++++ b/experiments/e1_e2/e1_baseline.py
+@@ -90,12 +90,18 @@
+ 
+ 
+ # ----------------------------------------------------------------- membrane
++import os as _os, sys as _sys
++_sys.path.insert(0, _os.environ["S1G1_TESTS"])
++from s7_helpers import sign_attestation
++
++
+ def _ev(aid, nonce, status, nonexec):
+     return Evidence(evidence_id=f"E-{aid}-{status}", attempt_id=aid, lei="L", nonce=nonce,
+                     status=status, properties={}, reference_scope="op:L",
+                     reference_snapshot="snap:1", normalization_profile="np-1",
+                     integrity_verified=True, source_authoritative=True,
+-                    expires_at_ms=T0 + 10**9, non_execution_confirmed=nonexec)
++                    expires_at_ms=T0 + 10**9, non_execution_confirmed=nonexec,
++                    attestation=sign_attestation(attestation_id=f"ATT-{aid}", attempt_id=aid, lei="L", nonce=nonce) if nonexec else None)
+ 
+ 
+ def run_membrane(seq, reconcile):

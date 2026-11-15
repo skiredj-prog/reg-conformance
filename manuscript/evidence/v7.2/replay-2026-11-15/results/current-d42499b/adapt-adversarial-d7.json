@@ -1,0 +1,176 @@
+{
+ "world": "adversarial",
+ "depth": 7,
+ "distinct_states": 280023,
+ "transitions_checked": 3410213,
+ "violations": {
+  "I1": 305429
+ },
+ "shortest_counterexamples": {
+  "I1": {
+   "trace": [
+    "admit_await(A1,HIDDEN_effect)",
+    "declare_failed(A1,qualified=True)",
+    "process(A2,ok)"
+   ],
+   "msg": "world effects for LEI = 2 (>1)"
+  }
+ },
+ "new_states_by_depth": {
+  "0": 1,
+  "1": 17,
+  "2": 145,
+  "3": 845,
+  "4": 4106,
+  "5": 17352,
+  "6": 63217,
+  "7": 194340
+ },
+ "max_world_effects_for_LEI": 2,
+ "reachability": {
+  "states_with_a_RESOLVED_attempt": 65242,
+  "states_with_observed_effect": 102098,
+  "states_with_a_FAILED_attempt": 273962,
+  "states_with_two_admitted_attempts": 267926
+ },
+ "event_census": {
+  "process(A*,ok)": {
+   "attempted": 171366,
+   "returned_normally": 171366,
+   "raised": {}
+  },
+  "process(A*,request_lost)": {
+   "attempted": 171366,
+   "returned_normally": 171366,
+   "raised": {}
+  },
+  "process(A*,receipt_lost)": {
+   "attempted": 171366,
+   "returned_normally": 171366,
+   "raised": {}
+  },
+  "process(A*,target_rejected_seen)": {
+   "attempted": 171366,
+   "returned_normally": 171366,
+   "raised": {}
+  },
+  "process(A*,target_rejected_lost)": {
+   "attempted": 171366,
+   "returned_normally": 171366,
+   "raised": {}
+  },
+  "process(A*,kernel_veto)": {
+   "attempted": 171366,
+   "returned_normally": 171366,
+   "raised": {}
+  },
+  "admit_await(A*,effect=True)": {
+   "attempted": 171366,
+   "returned_normally": 171366,
+   "raised": {}
+  },
+  "admit_await(A*,effect=False)": {
+   "attempted": 171366,
+   "returned_normally": 171366,
+   "raised": {}
+  },
+  "admit_await(A*,HIDDEN_effect)": {
+   "attempted": 171366,
+   "returned_normally": 171366,
+   "raised": {}
+  },
+  "retry(A*)": {
+   "attempted": 171366,
+   "returned_normally": 171366,
+   "raised": {}
+  },
+  "receipt(A*,valid)": {
+   "attempted": 171366,
+   "returned_normally": 163450,
+   "raised": {
+    "KeyError: 'A1'": 3958,
+    "KeyError: 'A2'": 3958
+   }
+  },
+  "receipt(A*,expired_token)": {
+   "attempted": 171366,
+   "returned_normally": 138596,
+   "raised": {
+    "KeyError: 'A1'": 3958,
+    "KeyError: 'A2'": 3958,
+    "StaleReceiptError: Receipt token expired for attempt 'A1' (expires_at_ms=100000": 5791,
+    "StaleReceiptError: Receipt token expired for attempt 'A2' (expires_at_ms=100000": 5791,
+    "StaleReceiptError: Receipt token expired for attempt 'A1' (expires_at_ms=100500": 4793,
+    "StaleReceiptError: Receipt token expired for attempt 'A2' (expires_at_ms=100500": 4793,
+    "StaleReceiptError: Receipt token expired for attempt 'A1' (expires_at_ms=101000": 1843,
+    "StaleReceiptError: Receipt token expired for attempt 'A2' (expires_at_ms=101000": 1843
+   }
+  },
+  "receipt(A*,wrong_nonce)": {
+   "attempted": 171366,
+   "returned_normally": 163450,
+   "raised": {
+    "KeyError: 'A1'": 3958,
+    "KeyError: 'A2'": 3958
+   }
+  },
+  "declare_failed(A*,qualified=True)": {
+   "attempted": 171366,
+   "returned_normally": 163450,
+   "raised": {
+    "KeyError: 'A1'": 3958,
+    "KeyError: 'A2'": 3958
+   }
+  },
+  "declare_failed(A*,qualified=False)": {
+   "attempted": 171366,
+   "returned_normally": 163450,
+   "raised": {
+    "KeyError: 'A1'": 3958,
+    "KeyError: 'A2'": 3958
+   }
+  },
+  "reconcile(A*,COMMITTED)": {
+   "attempted": 171366,
+   "returned_normally": 163450,
+   "raised": {
+    "KeyError: 'A1'": 3958,
+    "KeyError: 'A2'": 3958
+   }
+  },
+  "reconcile(A*,FAILED+nonexec)": {
+   "attempted": 171366,
+   "returned_normally": 163450,
+   "raised": {
+    "KeyError: 'A1'": 3958,
+    "KeyError: 'A2'": 3958
+   }
+  },
+  "reconcile(A*,FAILED-noproof)": {
+   "attempted": 171366,
+   "returned_normally": 163450,
+   "raised": {
+    "KeyError: 'A1'": 3958,
+    "KeyError: 'A2'": 3958
+   }
+  },
+  "evidence_batch(A*,contradictory)": {
+   "attempted": 171366,
+   "returned_normally": 163450,
+   "raised": {
+    "KeyError: 'A1'": 3958,
+    "KeyError: 'A2'": 3958
+   }
+  },
+  "advance(tau_K)": {
+   "attempted": 68576,
+   "returned_normally": 68576,
+   "raised": {}
+  },
+  "release_quarantine": {
+   "attempted": 85683,
+   "returned_normally": 85683,
+   "raised": {}
+  }
+ }
+}

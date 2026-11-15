@@ -1,0 +1,31 @@
+
+[adversarial: hidden effect + false attestation signed by trusted key K1]
+   1 admit_await(A1,HIDDEN_effect)              -> AWAITING_QUALIFICATION effect_observed=False
+   2 declare_failed(A1,signed_false)            -> FAILED                 LEI_UNLOCKED_BY_VERIFIED_NON_EXECUTION
+   3 process(A2,ok,nonce)                       -> RESOLVED               PASS/RESOLVED
+   world effects for LEI = 2   membrane-observed effects = 1   =>  I1 VIOLATED
+
+[as the committed explorer sends it: hidden effect + evidence_qualified=True, no attestation]
+   1 admit_await(A1,HIDDEN_effect)              -> AWAITING_QUALIFICATION effect_observed=False
+   2 declare_failed(A1,unsigned_flag)           -> AWAITING_QUALIFICATION NON_EXECUTION_ATTESTATION_REJECTED
+   3 process(A2,ok,nonce)                       -> not admitted           HOLD/UNKNOWN
+   world effects for LEI = 1   membrane-observed effects = 0   =>  I1 holds
+
+[hidden effect + attestation with invalid signature]
+   1 admit_await(A1,HIDDEN_effect)              -> AWAITING_QUALIFICATION effect_observed=False
+   2 declare_failed(A1,bad_signature)           -> AWAITING_QUALIFICATION NON_EXECUTION_ATTESTATION_REJECTED
+   3 process(A2,ok,nonce)                       -> not admitted           HOLD/UNKNOWN
+   world effects for LEI = 1   membrane-observed effects = 0   =>  I1 holds
+
+[false_attest: observed effect + false attestation signed by K1]
+   1 admit_await(A1,effect=True)                -> AWAITING_QUALIFICATION effect_observed=True
+   2 declare_failed(A1,signed_false)            -> AWAITING_QUALIFICATION T7_REJECTED_EFFECT_ALREADY_OBSERVED
+   3 process(A2,ok,nonce)                       -> not admitted           HOLD/UNKNOWN
+   world effects for LEI = 1   membrane-observed effects = 1   =>  I1 holds
+
+SUMMARY {
+ "adversarial: hidden effect + signed false attestation (not O, not A)": 2,
+ "as committed explorer: hidden effect + unsigned qualified flag": 1,
+ "hidden effect + invalid signature": 1,
+ "false_attest: observed effect + signed false attestation (O, not A)": 1
+}

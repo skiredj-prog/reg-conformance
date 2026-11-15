@@ -1,0 +1,65 @@
+{
+  "audited_on": "2026-11-15",
+  "verification": "Downloaded ZIP SHA-256 matched GitHub artifact digest; member bytes preserved. No experiment rerun.",
+  "artifacts": [
+    {
+      "name": "e2-current-four-worlds.zip",
+      "run_id": "38198777951",
+      "commit": "d42499bc8685c03612893d711598fe641ab31d44",
+      "zip_sha256": "82d3d53efb3a6a3a5ad6aa4c44b92532f5fbfddf0909f8f1f1f02748c0682970",
+      "run_url": "https://github.com/skiredj-prog/tenir-conformance-s1-g1/actions/runs/38198777951",
+      "members": [
+        {
+          "path": "e2-adversarial.json",
+          "sha256": "93ffbfc84e53aebf3377144483fd1b1527f05c8c3242d0460badb9c43b7b484f"
+        },
+        {
+          "path": "e2-false_attest.json",
+          "sha256": "24cf8426ab9d29378d459623b17d3499def00f04b8ba874950ae9b4422afcba5"
+        },
+        {
+          "path": "e2-hidden_honest.json",
+          "sha256": "367af76af8163e9578a29f425dc0d0526e4d54e57887e762542fe36776f83ba4"
+        },
+        {
+          "path": "e2-honest.json",
+          "sha256": "ba50877bbee0bb260a2a5754571ae3fd104ac82e9961451a4d57a36a2efb8f1a"
+        },
+        {
+          "path": "run-info.txt",
+          "sha256": "f68be8211f2d7330f130030daa2a3b1fb934889cf16e7acad0a0149143547aa1"
+        }
+      ]
+    },
+    {
+      "name": "s12-evidence.zip",
+      "run_id": "38202044948",
+      "commit": "4671dffa3b6edd0caaaa8db84ca558467dc23a01",
+      "zip_sha256": "c4a5c1f2d2ebc7308f97a258125efd4ff1a6df4ff86dca5d1f5d4def73a25a8b",
+      "run_url": "https://github.com/skiredj-prog/tenir-conformance-s1-g1/actions/runs/38202044948",
+      "members": [
+        {
+          "path": "s12-cross-realm-junit.xml",
+          "sha256": "b79d879b03136a7218dd918da23f5b52314019b6b89824a04094cbacaf1c869b"
+        }
+      ]
+    }
+  ],
+  "repository_files": [
+    {
+      "path": "e1_results.txt",
+      "source_url": "https://github.com/skiredj-prog/tenir-conformance-s1-g1/blob/d42499bc8685c03612893d711598fe641ab31d44/experiments/e1_e2/e1_results.txt",
+      "git_blob": "e9b88964b78ec462c564289d48fa2ff91f215637",
+      "sha256": "751281e250b3ca7444bb8deab78f9eb31313d117f03c53baeccbd0ba3ed633cb",
+      "note": "UTF-8 text copied via GitHub connector; numeric content compared with manuscript."
+    }
+  ],
+  "replay": {
+    "date": "2026-11-15",
+    "path": "replay-2026-11-15/",
+    "zip": "replay-2026-11-15.zip",
+    "zip_sha256": "42aead3e83ec10015754c07683cabd485fcb30a7ebfa3c8f8c70a21d0e407daf",
+    "zenodo_doi": "10.5281/zenodo.24249646",
+    "verification": "Member hashes in replay-2026-11-15/SHA256SUMS. Existing harnesses re-run against cf1b1ea+84e46d9, d42499b and 8bc0e5e; no event, invariant, state key or scenario added."
+  }
+}

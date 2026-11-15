@@ -1,0 +1,31 @@
+{
+  "world": "adversarial",
+  "depth": 8,
+  "distinct_states": 2307,
+  "transitions_checked": 88567,
+  "new_states_by_depth": {
+    "0": 1,
+    "1": 7,
+    "2": 49,
+    "3": 186,
+    "4": 440,
+    "5": 658,
+    "6": 600,
+    "7": 302,
+    "8": 64
+  },
+  "violations": {},
+  "shortest_counterexamples": {},
+  "n_event_types": 40,
+  "seconds": 16.9,
+  "invariants": [
+    "I1 effect-at-most-once (ground truth)",
+    "I2 permit single-use",
+    "I3 terminal immutability",
+    "I4 only dispatch appends effects",
+    "I5 FAILED => no observed effect",
+    "I6 no admission under quarantine",
+    "I7 admission only after FAILED-without-effect",
+    "I8 attempt record permanence"
+  ]
+}
