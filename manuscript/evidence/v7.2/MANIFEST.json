@@ -58,7 +58,7 @@
     "date": "2026-11-15",
     "path": "replay-2026-11-15/",
     "zip": "replay-2026-11-15.zip",
-    "zip_sha256": "42aead3e83ec10015754c07683cabd485fcb30a7ebfa3c8f8c70a21d0e407daf",
+    "zip_sha256": "4b408850592934690af803ac734f15c831c3de716e1eca34c3a47bfef7740650",
     "zenodo_doi": "10.5281/zenodo.24249646",
     "verification": "Member hashes in replay-2026-11-15/SHA256SUMS. Existing harnesses re-run against cf1b1ea+84e46d9, d42499b and 8bc0e5e; no event, invariant, state key or scenario added."
   }
