@@ -8,7 +8,7 @@ Concept DOI: [10.5281/zenodo.23270928](https://doi.org/10.5281/zenodo.23270928).
 |---|---|---|---|---|
 | v1 (v7.0) | 2026-10-09 | [23270929](https://doi.org/10.5281/zenodo.23270929) | History before PR #13 | Published historical, uncorrected text |
 | v7.1 (second Zenodo record) | 2026-10-12 | [23314839](https://doi.org/10.5281/zenodo.23314839) | `manuscript/v7.1.md`; annotated tag `v7.1` → `9f2a03d7e1c3cce346b1c9d36671fc33edada5ac` | Published preprint; frozen |
-| v7.2 | 2026-11-15 | [24249646](https://doi.org/10.5281/zenodo.24249646) | `manuscript/v7.2.md`; annotated tag `v7.2`; replay in `manuscript/evidence/v7.2/replay-2026-11-15/` | Published preprint with replay archive; journal submission candidate, not submitted or accepted |
+| v7.2 | 2026-11-15 | [24249646](https://doi.org/10.5281/zenodo.24249646) | `manuscript/v7.2.md`; tag `7.2` (GitHub release, commit `98bf685`); replay in `manuscript/evidence/v7.2/replay-2026-11-15/` | Published preprint with replay archive; journal submission candidate, not submitted or accepted |
 
 ## Published PDF fingerprints
 
@@ -16,7 +16,7 @@ Zenodo metadata lists:
 
 - v1 PDF: MD5 `328f60592f2bcdf1214f2f9a9b570425`.
 - v7.1 PDF: MD5 `baad4b8aff168024fdbaa4e53af03b9c`.
-- v7.2 PDF (as uploaded to Zenodo 10.5281/zenodo.24249646): SHA-256 `9c471275fd8832f6af6ad56887a868fff59b583017d60efeea3aea7002a044c2`. Built with pandoc 3.1.3 / XeLaTeX from `manuscript/v7.2.md` at tag `v7.2`. Replay archive SHA-256 `4b408850592934690af803ac734f15c831c3de716e1eca34c3a47bfef7740650`.
+- v7.2 PDF (as uploaded to Zenodo 10.5281/zenodo.24249646): SHA-256 `9c471275fd8832f6af6ad56887a868fff59b583017d60efeea3aea7002a044c2`. Built with pandoc 3.1.3 / XeLaTeX from `manuscript/v7.2.md` at tag `7.2`. Replay archive SHA-256 `4b408850592934690af803ac734f15c831c3de716e1eca34c3a47bfef7740650`.
 - The prior repository register also records v7.1 SHA-256 `4603c9aff1f0ec7a8f9c336ea6ba5f0d7d3efab1cf9c5bbeba7d5c143529c9b0`; this SHA-256 was retained, not recomputed in this audit.
 
 The second Zenodo record intentionally contains both PDFs. A filename in that record is not by itself evidence that both files contain the corrected text.
