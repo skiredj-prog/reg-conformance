@@ -1,0 +1,175 @@
+{
+ "world": "adversarial",
+ "depth": 6,
+ "distinct_states": 85683,
+ "transitions_checked": 895539,
+ "violations": {
+  "I1": 53894
+ },
+ "shortest_counterexamples": {
+  "I1": {
+   "trace": [
+    "admit_await(A1,HIDDEN_effect)",
+    "declare_failed(A1,qualified=True)",
+    "process(A2,ok)"
+   ],
+   "msg": "world effects for LEI = 2 (>1)"
+  }
+ },
+ "new_states_by_depth": {
+  "0": 1,
+  "1": 17,
+  "2": 145,
+  "3": 845,
+  "4": 4106,
+  "5": 17352,
+  "6": 63217
+ },
+ "max_world_effects_for_LEI": 2,
+ "reachability": {
+  "states_with_a_RESOLVED_attempt": 18570,
+  "states_with_observed_effect": 32066,
+  "states_with_a_FAILED_attempt": 81294,
+  "states_with_two_admitted_attempts": 77770
+ },
+ "event_census": {
+  "process(A*,ok)": {
+   "attempted": 44932,
+   "returned_normally": 44932,
+   "raised": {}
+  },
+  "process(A*,request_lost)": {
+   "attempted": 44932,
+   "returned_normally": 44932,
+   "raised": {}
+  },
+  "process(A*,receipt_lost)": {
+   "attempted": 44932,
+   "returned_normally": 44932,
+   "raised": {}
+  },
+  "process(A*,target_rejected_seen)": {
+   "attempted": 44932,
+   "returned_normally": 44932,
+   "raised": {}
+  },
+  "process(A*,target_rejected_lost)": {
+   "attempted": 44932,
+   "returned_normally": 44932,
+   "raised": {}
+  },
+  "process(A*,kernel_veto)": {
+   "attempted": 44932,
+   "returned_normally": 44932,
+   "raised": {}
+  },
+  "admit_await(A*,effect=True)": {
+   "attempted": 44932,
+   "returned_normally": 44932,
+   "raised": {}
+  },
+  "admit_await(A*,effect=False)": {
+   "attempted": 44932,
+   "returned_normally": 44932,
+   "raised": {}
+  },
+  "admit_await(A*,HIDDEN_effect)": {
+   "attempted": 44932,
+   "returned_normally": 44932,
+   "raised": {}
+  },
+  "retry(A*)": {
+   "attempted": 44932,
+   "returned_normally": 44932,
+   "raised": {}
+  },
+  "receipt(A*,valid)": {
+   "attempted": 44932,
+   "returned_normally": 40624,
+   "raised": {
+    "KeyError: 'A1'": 2154,
+    "KeyError: 'A2'": 2154
+   }
+  },
+  "receipt(A*,expired_token)": {
+   "attempted": 44932,
+   "returned_normally": 33762,
+   "raised": {
+    "KeyError: 'A1'": 2154,
+    "KeyError: 'A2'": 2154,
+    "StaleReceiptError: Receipt token expired for attempt 'A1' (expires_at_ms=100000": 1966,
+    "StaleReceiptError: Receipt token expired for attempt 'A2' (expires_at_ms=100000": 1966,
+    "StaleReceiptError: Receipt token expired for attempt 'A1' (expires_at_ms=100500": 1152,
+    "StaleReceiptError: Receipt token expired for attempt 'A2' (expires_at_ms=100500": 1152,
+    "StaleReceiptError: Receipt token expired for attempt 'A1' (expires_at_ms=101000": 313,
+    "StaleReceiptError: Receipt token expired for attempt 'A2' (expires_at_ms=101000": 313
+   }
+  },
+  "receipt(A*,wrong_nonce)": {
+   "attempted": 44932,
+   "returned_normally": 40624,
+   "raised": {
+    "KeyError: 'A1'": 2154,
+    "KeyError: 'A2'": 2154
+   }
+  },
+  "declare_failed(A*,qualified=True)": {
+   "attempted": 44932,
+   "returned_normally": 40624,
+   "raised": {
+    "KeyError: 'A1'": 2154,
+    "KeyError: 'A2'": 2154
+   }
+  },
+  "declare_failed(A*,qualified=False)": {
+   "attempted": 44932,
+   "returned_normally": 40624,
+   "raised": {
+    "KeyError: 'A1'": 2154,
+    "KeyError: 'A2'": 2154
+   }
+  },
+  "reconcile(A*,COMMITTED)": {
+   "attempted": 44932,
+   "returned_normally": 40624,
+   "raised": {
+    "KeyError: 'A1'": 2154,
+    "KeyError: 'A2'": 2154
+   }
+  },
+  "reconcile(A*,FAILED+nonexec)": {
+   "attempted": 44932,
+   "returned_normally": 40624,
+   "raised": {
+    "KeyError: 'A1'": 2154,
+    "KeyError: 'A2'": 2154
+   }
+  },
+  "reconcile(A*,FAILED-noproof)": {
+   "attempted": 44932,
+   "returned_normally": 40624,
+   "raised": {
+    "KeyError: 'A1'": 2154,
+    "KeyError: 'A2'": 2154
+   }
+  },
+  "evidence_batch(A*,contradictory)": {
+   "attempted": 44932,
+   "returned_normally": 40624,
+   "raised": {
+    "KeyError: 'A1'": 2154,
+    "KeyError: 'A2'": 2154
+   }
+  },
+  "advance(tau_K)": {
+   "attempted": 19365,
+   "returned_normally": 19365,
+   "raised": {}
+  },
+  "release_quarantine": {
+   "attempted": 22466,
+   "returned_normally": 22466,
+   "raised": {}
+  }
+ }
+}

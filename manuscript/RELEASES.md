@@ -8,7 +8,7 @@ Concept DOI: [10.5281/zenodo.23270928](https://doi.org/10.5281/zenodo.23270928).
 |---|---|---|---|---|
 | v1 (v7.0) | 2026-10-09 | [23270929](https://doi.org/10.5281/zenodo.23270929) | History before PR #13 | Published historical, uncorrected text |
 | v7.1 (second Zenodo record) | 2026-10-12 | [23314839](https://doi.org/10.5281/zenodo.23314839) | `manuscript/v7.1.md`; annotated tag `v7.1` → `9f2a03d7e1c3cce346b1c9d36671fc33edada5ac` | Published preprint; frozen |
-| v7.2 | 2026-11-15 preparation | Not assigned | `manuscript/v7.2.md`; tag not yet created | Audited submission candidate; not submitted, accepted or published by a journal |
+| v7.2 | 2026-11-15 | [24249646](https://doi.org/10.5281/zenodo.24249646) | `manuscript/v7.2.md`; annotated tag `v7.2`; replay in `manuscript/evidence/v7.2/replay-2026-11-15/` | Published preprint with replay archive; journal submission candidate, not submitted or accepted |
 
 ## Published PDF fingerprints
 
@@ -16,6 +16,7 @@ Zenodo metadata lists:
 
 - v1 PDF: MD5 `328f60592f2bcdf1214f2f9a9b570425`.
 - v7.1 PDF: MD5 `baad4b8aff168024fdbaa4e53af03b9c`.
+- v7.2 PDF (as uploaded to Zenodo 10.5281/zenodo.24249646): SHA-256 `d5806d293a746f53e7c9195df24e2b0ef1c3028963de66edc9ac20ff51ecdb84`. Built with pandoc 3.1.3 / XeLaTeX from `manuscript/v7.2.md` at tag `v7.2`. Replay archive SHA-256 `42aead3e83ec10015754c07683cabd485fcb30a7ebfa3c8f8c70a21d0e407daf`.
 - The prior repository register also records v7.1 SHA-256 `4603c9aff1f0ec7a8f9c336ea6ba5f0d7d3efab1cf9c5bbeba7d5c143529c9b0`; this SHA-256 was retained, not recomputed in this audit.
 
 The second Zenodo record intentionally contains both PDFs. A filename in that record is not by itself evidence that both files contain the corrected text.
@@ -35,7 +36,8 @@ The second Zenodo record intentionally contains both PDFs. A filename in that re
 - Separate the historical three-transition E2 counterexample from the current depth-eight artifact, which records no violations in all four worlds. Preserve the historical counts; add current Table 3 with verified artifact provenance. No new experiment was run.
 - Archive the current E2 JSON files and S12 XML under `evidence/v7.2/`, with a hash manifest. S12 XML records seven tests; S12c is a separate workflow gate.
 - Correct the v5.4.1 companion middleware description: `authorize_exit()` constructs an `ExitReceipt` from caller-provided fields; the inspected method does not verify a signature or independently establish authority.
-- State reproduction limits: unavailable historical explorer, catch-all exceptions in the current explorer, and an unpinned companion dependency in the historical CI workflow.
+- State reproduction limits: catch-all exceptions in the current explorer and an unpinned companion dependency in the CI workflow. (The 15 November audit also recorded the historical explorer as unavailable; the replay below supersedes that point.)
+- Replay of 15 November 2026 (`evidence/v7.2/replay-2026-11-15/`): Table 1 reproduced from the archived explorer `cf1b1ea` with membrane overlay `84e46d9`; the archived current artifact (Table 3) shown not to reach the admission guard; Table 4 re-run with caller nonces and signed attestations; three-transition trace with a verified signature on `d42499b` and `8bc0e5e`; E1 with signed negative evidence byte-identical to the committed output on both revisions. No event, invariant, state key or scenario added.
 - Prepare a 203-word abstract, seven keywords and a Methodology / Evaluation Paper category for STANAIC.
 
 ## Publication procedure after review

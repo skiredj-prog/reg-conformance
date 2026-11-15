@@ -1,0 +1,159 @@
+{
+ "world": "false_attest",
+ "depth": 6,
+ "distinct_states": 58258,
+ "transitions_checked": 619207,
+ "violations": {},
+ "shortest_counterexamples": {},
+ "new_states_by_depth": {
+  "0": 1,
+  "1": 15,
+  "2": 123,
+  "3": 687,
+  "4": 3149,
+  "5": 12382,
+  "6": 41901
+ },
+ "max_world_effects_for_LEI": 1,
+ "reachability": {
+  "states_with_a_RESOLVED_attempt": 14994,
+  "states_with_observed_effect": 26808,
+  "states_with_a_FAILED_attempt": 54733,
+  "states_with_two_admitted_attempts": 52241
+ },
+ "event_census": {
+  "process(A*,ok)": {
+   "attempted": 32714,
+   "returned_normally": 32714,
+   "raised": {}
+  },
+  "process(A*,request_lost)": {
+   "attempted": 32714,
+   "returned_normally": 32714,
+   "raised": {}
+  },
+  "process(A*,receipt_lost)": {
+   "attempted": 32714,
+   "returned_normally": 32714,
+   "raised": {}
+  },
+  "process(A*,target_rejected_seen)": {
+   "attempted": 32714,
+   "returned_normally": 32714,
+   "raised": {}
+  },
+  "process(A*,target_rejected_lost)": {
+   "attempted": 32714,
+   "returned_normally": 32714,
+   "raised": {}
+  },
+  "process(A*,kernel_veto)": {
+   "attempted": 32714,
+   "returned_normally": 32714,
+   "raised": {}
+  },
+  "admit_await(A*,effect=True)": {
+   "attempted": 32714,
+   "returned_normally": 32714,
+   "raised": {}
+  },
+  "admit_await(A*,effect=False)": {
+   "attempted": 32714,
+   "returned_normally": 32714,
+   "raised": {}
+  },
+  "retry(A*)": {
+   "attempted": 32714,
+   "returned_normally": 32714,
+   "raised": {}
+  },
+  "receipt(A*,valid)": {
+   "attempted": 32714,
+   "returned_normally": 29376,
+   "raised": {
+    "KeyError: 'A1'": 1669,
+    "KeyError: 'A2'": 1669
+   }
+  },
+  "receipt(A*,expired_token)": {
+   "attempted": 32714,
+   "returned_normally": 25170,
+   "raised": {
+    "KeyError: 'A1'": 1669,
+    "KeyError: 'A2'": 1669,
+    "StaleReceiptError: Receipt token expired for attempt 'A1' (expires_at_ms=100000": 1192,
+    "StaleReceiptError: Receipt token expired for attempt 'A2' (expires_at_ms=100000": 1192,
+    "StaleReceiptError: Receipt token expired for attempt 'A1' (expires_at_ms=100500": 703,
+    "StaleReceiptError: Receipt token expired for attempt 'A2' (expires_at_ms=100500": 703,
+    "StaleReceiptError: Receipt token expired for attempt 'A1' (expires_at_ms=101000": 208,
+    "StaleReceiptError: Receipt token expired for attempt 'A2' (expires_at_ms=101000": 208
+   }
+  },
+  "receipt(A*,wrong_nonce)": {
+   "attempted": 32714,
+   "returned_normally": 29376,
+   "raised": {
+    "KeyError: 'A1'": 1669,
+    "KeyError: 'A2'": 1669
+   }
+  },
+  "declare_failed(A*,qualified=True)": {
+   "attempted": 32714,
+   "returned_normally": 29376,
+   "raised": {
+    "KeyError: 'A1'": 1669,
+    "KeyError: 'A2'": 1669
+   }
+  },
+  "declare_failed(A*,qualified=False)": {
+   "attempted": 32714,
+   "returned_normally": 29376,
+   "raised": {
+    "KeyError: 'A1'": 1669,
+    "KeyError: 'A2'": 1669
+   }
+  },
+  "reconcile(A*,COMMITTED)": {
+   "attempted": 32714,
+   "returned_normally": 29376,
+   "raised": {
+    "KeyError: 'A1'": 1669,
+    "KeyError: 'A2'": 1669
+   }
+  },
+  "reconcile(A*,FAILED+nonexec)": {
+   "attempted": 32714,
+   "returned_normally": 29376,
+   "raised": {
+    "KeyError: 'A1'": 1669,
+    "KeyError: 'A2'": 1669
+   }
+  },
+  "reconcile(A*,FAILED-noproof)": {
+   "attempted": 32714,
+   "returned_normally": 29376,
+   "raised": {
+    "KeyError: 'A1'": 1669,
+    "KeyError: 'A2'": 1669
+   }
+  },
+  "evidence_batch(A*,contradictory)": {
+   "attempted": 32714,
+   "returned_normally": 29376,
+   "raised": {
+    "KeyError: 'A1'": 1669,
+    "KeyError: 'A2'": 1669
+   }
+  },
+  "advance(tau_K)": {
+   "attempted": 13998,
+   "returned_normally": 13998,
+   "raised": {}
+  },
+  "release_quarantine": {
+   "attempted": 16357,
+   "returned_normally": 16357,
+   "raised": {}
+  }
+ }
+}

@@ -1,0 +1,5 @@
+r6_adversarial     IDENTICAL (all fields except seconds)  states=30,485 transitions=344,512 violations={'I1': 42934} shortest={'I1': ['admit_await(A1,HIDDEN_effect)', 'declare_failed(A1,qualified=True)', 'process(A2,ok)']}  [38.9s here vs 37.2s committed]
+r6_false_attest    IDENTICAL (all fields except seconds)  states=14,446 transitions=179,590 violations={} shortest={}  [20.4s here vs 19.0s committed]
+r8_honest          IDENTICAL (all fields except seconds)  states=36,892 transitions=700,891 violations={} shortest={}  [85.7s here vs 79.7s committed]
+r8_hidden_honest   IDENTICAL (all fields except seconds)  states=49,502 transitions=981,615 violations={} shortest={}  [113.2s here vs 112.2s committed]
+ALL MATCH

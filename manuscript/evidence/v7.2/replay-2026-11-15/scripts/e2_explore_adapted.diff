@@ -1,0 +1,64 @@
+--- a/experiments/e1_e2/e2_explore.py
++++ b/experiments/e1_e2/e2_explore.py
+@@ -29,6 +29,10 @@
+ )
+ from tenir_conformance.membrane.kernel_bridge import KernelBridge
+ 
++import os as _os
++sys.path.insert(0, _os.environ["S1G1_TESTS"])
++from s7_helpers import sign_attestation
++
+ LEI = "L"
+ IDS = ("A1", "A2")
+ NONCE = {"A1": "nA1", "A2": "nA2"}
+@@ -37,6 +41,7 @@
+ T0 = 1_000_000
+ TAU = 5_000
+ MAX_ADVANCES = 2
++ATT = {a: sign_attestation(attestation_id=f"ATT-{a}", attempt_id=a, lei=LEI, nonce=NONCE[a]) for a in IDS}
+ 
+ 
+ def ev(eid, status, aid, *, nonexec=False, props=None, nonce=None, ttl=60_000_000):
+@@ -46,6 +51,7 @@
+         reference_snapshot="snap:1", normalization_profile="np-1",
+         integrity_verified=True, source_authoritative=True,
+         expires_at_ms=T0 + ttl, non_execution_confirmed=nonexec,
++        attestation=ATT[aid] if nonexec else None,
+     )
+ 
+ 
+@@ -78,14 +84,14 @@
+         ]:
+             def f(m, w, a=a, kw=kw, eff=eff):
+                 n0 = len(m.sink.effects)
+-                m.process_transaction(lei=LEI, attempt_id=a, payload=OK, **kw)
++                m.process_transaction(lei=LEI, attempt_id=a, payload=OK, nonce=NONCE[a], **kw)
+                 if len(m.sink.effects) > n0:
+                     w.effects[a] += 1
+                 return True
+             E.append((f"process({a},{label})", f))
+ 
+         def fveto(m, w, a=a):
+-            m.process_transaction(lei=LEI, attempt_id=a, payload=VETO)
++            m.process_transaction(lei=LEI, attempt_id=a, payload=VETO, nonce=NONCE[a])
+             return True
+         E.append((f"process({a},kernel_veto)", fveto))
+ 
+@@ -111,7 +117,7 @@
+ 
+         def fretry(m, w, a=a):
+             n0 = len(m.sink.effects)
+-            m.retry(lei=LEI, attempt_id=a, payload=OK)
++            m.retry(lei=LEI, attempt_id=a, payload=OK, nonce=NONCE[a])
+             if len(m.sink.effects) > n0:
+                 w.effects[a] += 1
+             return True
+@@ -129,7 +135,7 @@
+             def f(m, w, a=a, q=q):
+                 if q and not false_att and w.effects[a] > 0:
+                     return False                      # honest world: no false attestation
+-                m.declare_failed(attempt_id=a, evidence_qualified=q)
++                m.declare_failed(attempt_id=a, evidence_qualified=q, attestation=ATT[a] if q else None)
+                 return False
+             E.append((f"declare_failed({a},qualified={q})", f))
+ 

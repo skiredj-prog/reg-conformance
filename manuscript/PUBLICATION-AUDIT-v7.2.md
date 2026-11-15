@@ -51,3 +51,16 @@ At inspection, APC remained under review, ISSN was not assigned, and the site ma
 ## Readiness conclusion
 
 The v7.2 source and evidence record are prepared for review. Journal submission awaits the official opening, completed author declarations, human approval of the scientific corrections, and an agreed anonymous evidence route. Historical/current exploration differences remain disclosed scientific limitations. Publishing a preprint does not imply journal acceptance or conformance certification.
+
+## Addendum — replay of 15 November 2026
+
+This addendum is later than the audit above and supersedes it where they conflict. The existing E1 and E2 harnesses were re-run against archived and current membrane revisions; scripts, patches, outputs and SHA-256 values are in `evidence/v7.2/replay-2026-11-15/`.
+
+- **Historical E2 (Table 1).** The explorer archived at tag `archive/forensic/e2-key-audit-20261009` (`cf1b1ea`) with membrane overlay `84e46d9` reproduces all four historical outputs field for field, runtime excepted. The first limit above ("historical E2 script is unavailable … cannot be labelled reproduced") is withdrawn: the script behind the first Zenodo version is not preserved, but the archived explorer reproduces its figures.
+- **Current E2 artifact (Table 3).** An instrumented replay reproduces the CI counts and shows that every dispatch-class event raises `NONCE_REQUIRED` and every qualified non-execution claim is rejected for a missing signature. The zero-violation result therefore exercises no dispatch; the artifact is retained, not used as evidence.
+- **Current revision with nonces and signed attestations (Table 4).** With a 13-line explorer patch (caller nonce; Ed25519 attestation from the repository test signer), `I1` fails only in the adversarial world (305,429 occurrences at depth 7, shortest trace 3); honest, false_attest and hidden_honest record none within depth 8, 7 and 8.
+- **Three-transition trace and E1.** The trace violates `I1` with a verified signature on `d42499b` and `8bc0e5e`. The committed E1 script collapses M1 on the current membrane; with signed negative evidence its output is byte-identical to the committed `e1_results.txt` on both revisions.
+- **Kernel dependency.** The replay used the local kernel fallback and reproduced the CI counts, so the unpinned companion kernel does not affect them. The pin remains advisable.
+
+Remaining limits: the catch-all exception handler in the unmodified explorer, Table 2 and Hypothesis Lab totals not re-run, no fixpoint reached in any world, and evidence derived from harness ground truth (an upper bound on what a real attestation channel provides). The manuscript was revised accordingly and published as Zenodo version [10.5281/zenodo.24249646](https://doi.org/10.5281/zenodo.24249646).
+

@@ -1,0 +1,37 @@
+system                                         metric                             committed  re-run
+B1 stateless PEP/PDP                           duplicate_effects                         14      14
+B1 stateless PEP/PDP                           exactly_one_effect                        24      24
+B1 stateless PEP/PDP                           zero_effects                              15      15
+B1 stateless PEP/PDP                           client_confirmed_success                  13      13
+B1 stateless PEP/PDP                           correct_no_effect_sequences                1       1
+B1 stateless PEP/PDP                           correct_single_effect_sequences            7       7
+B1 stateless PEP/PDP                           blocked_retry_attempts                     0       0
+B1 stateless PEP/PDP                           sequences_with_at_least_one_block          0       0
+B2 PEP/PDP + idempotency key (reused)          duplicate_effects                          0       0
+B2 PEP/PDP + idempotency key (reused)          exactly_one_effect                        38      38
+B2 PEP/PDP + idempotency key (reused)          zero_effects                              15      15
+B2 PEP/PDP + idempotency key (reused)          client_confirmed_success                  13      13
+B2 PEP/PDP + idempotency key (reused)          correct_no_effect_sequences                1       1
+B2 PEP/PDP + idempotency key (reused)          correct_single_effect_sequences           13      13
+B2 PEP/PDP + idempotency key (reused)          blocked_retry_attempts                     0       0
+B2 PEP/PDP + idempotency key (reused)          sequences_with_at_least_one_block          0       0
+M0 membrane, no reconciliation                 duplicate_effects                          0       0
+M0 membrane, no reconciliation                 exactly_one_effect                        18      18
+M0 membrane, no reconciliation                 zero_effects                              35      35
+M0 membrane, no reconciliation                 client_confirmed_success                   1       1
+M0 membrane, no reconciliation                 correct_no_effect_sequences                1       1
+M0 membrane, no reconciliation                 correct_single_effect_sequences            1       1
+M0 membrane, no reconciliation                 blocked_retry_attempts                    96      96
+M0 membrane, no reconciliation                 sequences_with_at_least_one_block         51      51
+M1 membrane + evidence-bound reconciliation    duplicate_effects                          0       0
+M1 membrane + evidence-bound reconciliation    exactly_one_effect                        38      18   <-- differs
+M1 membrane + evidence-bound reconciliation    zero_effects                              15      35   <-- differs
+M1 membrane + evidence-bound reconciliation    client_confirmed_success                  38      18   <-- differs
+M1 membrane + evidence-bound reconciliation    correct_no_effect_sequences               15       1   <-- differs
+M1 membrane + evidence-bound reconciliation    correct_single_effect_sequences           38      18   <-- differs
+M1 membrane + evidence-bound reconciliation    blocked_retry_attempts                     0      64   <-- differs
+M1 membrane + evidence-bound reconciliation    sequences_with_at_least_one_block          0      34   <-- differs
+tail committed: B1 duplicate sequences: 14 [['F1', 'F2', 'F0'], ['F1', 'F2', 'F2'], ['F2', 'F0'], ['F2', 'F1', 'F0'], ['F2', 'F1', 'F2'], ['F2', 'F2', 'F0']]
+M0/M1 any duplicate: False
+tail re-run   : B1 duplicate sequences: 14 [['F1', 'F2', 'F0'], ['F1', 'F2', 'F2'], ['F2', 'F0'], ['F2', 'F1', 'F0'], ['F2', 'F1', 'F2'], ['F2', 'F2', 'F0']]
+M0/M1 any duplicate: False
