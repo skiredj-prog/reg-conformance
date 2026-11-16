@@ -90,8 +90,11 @@ def main():
         source = sys.argv[position]
     try:
         target_version = json.loads(Path("conformance-target.json").read_text(encoding="utf-8"))["implementation"]["version"]
-    except (OSError, KeyError, ValueError):
+    except (OSError, KeyError, TypeError, ValueError):
         target_version = None
+    if not isinstance(target_version, str) or not target_version:
+        print("ERROR: conformance-target.json illisible ou sans implementation.version : la cible déclarée ne peut pas être établie")
+        sys.exit(2)
     not_runnable = []
     schema = load_schema()
     capabilities_dir = Path("capabilities/v1.0.0")
