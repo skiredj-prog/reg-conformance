@@ -1,0 +1,22 @@
+# Test policy for the REG pilot gateway. Two rules, both scoped to the test
+# tool's arguments. Loaded as the workspace policy (.prismor/policy.yaml).
+rules:
+  - id: reg-pilot-deny
+    severity: HIGH
+    category: reg-pilot
+    title: REG pilot - call marked deny
+    event_types: [tool_result]
+    fields: [response]
+    patterns: ['"intent": "deny"']
+    action: block
+    mode: enforce
+
+  - id: reg-pilot-step-up
+    severity: HIGH
+    category: reg-pilot
+    title: REG pilot - call marked for human approval
+    event_types: [tool_result]
+    fields: [response]
+    patterns: ['"intent": "step_up"']
+    action: step_up
+    mode: enforce

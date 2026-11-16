@@ -20,6 +20,7 @@ class TemplatePort(P.RuntimePort):
     interface_mode = "port:template"
     evidence_level = 2
     capabilities = frozenset()          # add capabilities as you implement them
+    intents = frozenset()               # intents your runtime can be driven to produce
     not_applicable = {}                 # vector_id -> why it cannot apply
     declared_gaps = {}                  # vector_id -> gap you already know about
 
