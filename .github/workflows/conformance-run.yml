@@ -65,6 +65,8 @@ jobs:
         working-directory: harness-src
         shell: bash
         run: |
+          # The harness exits 2 on gaps and 1 on FAIL: capture the code, decide later.
+          set +e
           set -uo pipefail
           out="$RUNNER_TEMP/run"; mkdir -p "$out"
           args=(--port harness.ports.reference:ReferencePort)
