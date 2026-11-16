@@ -10,7 +10,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
-from validate_profiles import admissibility, check_profile, load_catalog, AXES
+from validate_profiles import admissibility, check_profile, load_catalog, AXES, validate_fault_model
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -35,7 +35,28 @@ def main():
         if not ok:
             failures.append(f"config connue admissible rejetée : {c} → {v}")
 
-    # 3. Configs connues rejetées, avec la clause attendue
+    # 3. Fault-model validation: majority, crash budget, and unsupported faults.
+    valid_faults = {
+        "config": {"CONCURRENCY": "distributed-consensus"},
+        "fault_model": {"crash": 1, "byzantine": 0, "omission": 0, "quorum": 2, "total_nodes": 3},
+    }
+    errors, warnings = validate_fault_model(valid_faults)
+    if errors:
+        failures.append(f"fault model 3/2/1 valide rejeté : {errors}")
+
+    invalid_faults = [
+        ({"config": {"CONCURRENCY": "distributed-consensus"}, "fault_model": {"crash": 1, "byzantine": 0, "omission": 0, "quorum": 2, "total_nodes": 5}}, "QUORUM_TOO_SMALL"),
+        ({"config": {"CONCURRENCY": "distributed-consensus"}, "fault_model": {"crash": 2, "byzantine": 0, "omission": 0, "quorum": 3, "total_nodes": 4}}, "NOT_ENOUGH_NODES_FOR_DECLARED_FAULTS"),
+        ({"config": {"CONCURRENCY": "distributed-consensus"}, "fault_model": {"crash": 1, "byzantine": 0, "omission": 0, "quorum": 4, "total_nodes": 3}}, "QUORUM_GREATER_THAN_TOTAL_NODES"),
+        ({"config": {"CONCURRENCY": "distributed-consensus"}, "fault_model": {"crash": 0, "byzantine": 1, "omission": 0, "quorum": 2, "total_nodes": 3}}, "UNSUPPORTED_FAULT_MODEL"),
+        ({"config": {"CONCURRENCY": "distributed-consensus"}, "fault_model": {"crash": 1, "byzantine": 0, "omission": 0, "quorum": 2, "total_nodes": 3.0}}, "FAULT_MODEL_FIELD_MUST_BE_INTEGER"),
+    ]
+    for profile, expected in invalid_faults:
+        errors, _ = validate_fault_model(profile)
+        if not any(expected in error for error in errors):
+            failures.append(f"fault model invalide non rejeté ({expected}) : {errors}")
+
+    # 4. Configs connues rejetées, avec la clause attendue
     rejected = [
         ({"HOST_SCOPE": "mono-process", "DEDUP_LAYER": "none", "CONCURRENCY": "file-lock", "UNCERTAINTY": "fail-closed"}, "R1a"),
         ({"HOST_SCOPE": "mono-host", "DEDUP_LAYER": "distributed-consensus-registry",
