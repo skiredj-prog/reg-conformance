@@ -1,0 +1,42 @@
+flowchart TB
+    subgraph REF["Référentiels distincts — aucune hiérarchie ni dépendance normative affirmée"]
+      direction LR
+      ARCH["REG-ARCH<br/>Cadre architectural illustratif<br/>Version/ratification publique à confirmer"]
+      CORE["REG Core / RFCs<br/>Contrats et propriétés normatives ou proposées<br/>RFC-0 : dimensions d’admissibilité indépendantes"]
+      PLUS["REG+<br/>Profils, hypothèses, compatibilité<br/>Admissibilité structurelle ≠ preuve effective"]
+    end
+
+    MAP["Registre de cross-reference<br/>concept • version • précondition • séquence causale • preuve attendue<br/><b>Référence documentaire uniquement — pas une intégration ou un ordre imposé</b>"]
+    REF -. "tracer les correspondances dans le texte, sans arête d’exécution" .- MAP
+
+    subgraph EXEC["Parcours client de conformance — hors des architectures documentaires"]
+      direction LR
+      CLIENT["Implémentation client<br/>framework et topologie choisis par le client"]
+      ADAPTER["Interface/adaptateur observable<br/>contrat et profil épinglés"]
+      RUNNER["reg-conformance runner<br/>vectors + scheduler DAG"]
+      REPORT["Rapport par profil<br/>résultats, gaps, limites et evidence"]
+      CLIENT <--> ADAPTER
+      ADAPTER <--> RUNNER
+      RUNNER --> REPORT
+    end
+
+    subgraph LAB["Preuve de laboratoire séparée"]
+      direction LR
+      SCEN["tenir-conformance-s1-g1<br/>scénarios, fixtures et oracles candidats"]
+      MEM["Membrane de laboratoire<br/>résultats LAB_REFERENCE"]
+      SCEN --> MEM
+    end
+    SCEN -. "scénarios à adapter et réexécuter sur le client; pas de transfert du PASS labo" .-> RUNNER
+    MEM -. "colonne/source distincte; ne qualifie pas le client" .-> REPORT
+
+    classDef arch fill:#f2eaff,stroke:#6842a6,color:#25143d;
+    classDef core fill:#e8f1ff,stroke:#2c5f9a,color:#10243a;
+    classDef plus fill:#e7f5ed,stroke:#32714b,color:#163322;
+    classDef process fill:#fff2cc,stroke:#b87900,color:#3b2a00;
+    classDef lab fill:#fbe9e7,stroke:#a7493f,color:#421b17;
+    class ARCH arch;
+    class CORE core;
+    class PLUS plus;
+    class MAP process;
+    class CLIENT,ADAPTER,RUNNER,REPORT process;
+    class SCEN,MEM lab;
