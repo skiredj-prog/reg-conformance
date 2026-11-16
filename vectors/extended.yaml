@@ -11,7 +11,7 @@ vectors:
     input: Policy file hash verification
     intended: Policy file hash verifiable independently
     expected: hash verifiable
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Policy anchor hash endpoint not yet implemented
     reference: RFC-0
@@ -23,7 +23,7 @@ vectors:
     input: RFC version declaration check
     intended: Implementation declares conformant RFC versions
     expected: versions declared
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: RFC version declaration endpoint absent
     reference: RFC-0
@@ -35,7 +35,7 @@ vectors:
     input: Declared scope vs tested behavior
     intended: Declared scope matches tested behavior
     expected: scope declared
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: Governance scope declaration not formally specified in implementation
     reference: RFC-0
@@ -47,7 +47,7 @@ vectors:
     input: RFC references with SHA/date
     intended: All referenced RFCs pinned with SHA/date
     expected: pinned
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Normative RFC SHAs not yet pinned in implementation manifest
     reference: RFC-0
@@ -59,7 +59,7 @@ vectors:
     input: Override mechanism bypass attempt
     intended: No mechanism bypasses REG constitution
     expected: no bypass
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: Constitutional override prohibition not formally tested
     reference: RFC-0
@@ -72,7 +72,7 @@ vectors:
     input: Response fields from evaluation endpoint
     intended: Response fields match declared schema exactly
     expected: schema compliant
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Response schema validation endpoint absent; schema not machine-readable
     reference: RFC-1
@@ -82,9 +82,9 @@ vectors:
     category: extended
     property: Content-Type Declaration
     input: HTTP response headers
-    intended: Responses declare Content-Type: application/json
+    intended: "Responses declare Content-Type: application/json"
     expected: declared
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Content-Type header present in practice; formal compliance test absent
     reference: RFC-1
@@ -96,7 +96,7 @@ vectors:
     input: HTTP status codes in responses
     intended: 2xx/4xx/5xx used per RFC semantics
     expected: semantically correct
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: HTTP status semantics partially correct; formal semantic validation absent
     reference: RFC-1
@@ -108,7 +108,7 @@ vectors:
     input: Requests within and beyond timeout window
     intended: Requests time out within declared window
     expected: timeout enforced
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Configurable request timeout not enforced at server level
     reference: RFC-1
@@ -120,7 +120,7 @@ vectors:
     input: Non-TLS connection attempt
     intended: Non-TLS connections rejected in production mode
     expected: rejected
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: TLS enforcement absent; --insecure flag provided as dev workaround only
     reference: RFC-1
@@ -132,7 +132,7 @@ vectors:
     input: Oversized payload submission
     intended: Oversized payloads rejected with 413
     expected: 413 on oversized
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Request size limit not enforced (FastAPI default only)
     reference: RFC-1
@@ -144,7 +144,7 @@ vectors:
     input: Parallel evaluation requests
     intended: Parallel evaluations do not interfere
     expected: isolated
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Concurrent isolation not formally tested (in-memory dict is not thread-safe)
     reference: RFC-1
@@ -157,7 +157,7 @@ vectors:
     input: Threshold values in policy file
     intended: Thresholds declared and pinned in policy file
     expected: declared
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: Threshold declaration endpoint absent; thresholds accessible in YAML only
     reference: RFC-2
@@ -193,7 +193,7 @@ vectors:
     input: Values at threshold boundaries
     intended: Values at threshold boundaries produce consistent, declared dispositions
     expected: consistent
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Exact boundary behavior (S == threshold) not formally specified
     reference: RFC-2
@@ -205,7 +205,7 @@ vectors:
     input: P/V/K outside [0,1]
     intended: P/V/K outside [0,1] rejected with 422
     expected: 422 on out-of-range
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Out-of-range P/V/K accepted and computed; 422 rejection not implemented
     reference: RFC-2
@@ -217,7 +217,7 @@ vectors:
     input: Threshold override event
     intended: Threshold overrides logged with policy_epoch
     expected: logged
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Institutional threshold override audit logging absent
     reference: RFC-2
@@ -230,7 +230,7 @@ vectors:
     input: Malformed credentials
     intended: Malformed credentials rejected before evaluation
     expected: rejected
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: Credential format validation limited to null/empty check
     reference: RFC-3
@@ -242,7 +242,7 @@ vectors:
     input: Revocation event
     intended: Revocation effective within declared latency window
     expected: propagated
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: Revocation propagation latency not declared or measured
     reference: RFC-3
@@ -254,7 +254,7 @@ vectors:
     input: Two principals, one revoked
     intended: Revocation of A does not affect principal B
     expected: isolated
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Multi-principal isolation not formally tested
     reference: RFC-3
@@ -266,7 +266,7 @@ vectors:
     input: Revocation event
     intended: All revocation events appended to manifest
     expected: appended
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Revocation events not appended to hash-chain manifest
     reference: RFC-3
@@ -278,7 +278,7 @@ vectors:
     input: Delegation chain
     intended: Delegation chain depth limit enforced
     expected: enforced
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Delegation depth enforcement not implemented
     reference: RFC-3
@@ -290,7 +290,7 @@ vectors:
     input: Time-limited credentials at expiry
     intended: Time-limited credentials expire as declared
     expected: expired
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: Temporal credential binding (time-limited credentials) not implemented
     reference: RFC-3
@@ -302,7 +302,7 @@ vectors:
     input: Cross-organizational credential usage
     intended: Standing valid only within declared organizational scope
     expected: bounded
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: Standing scope boundary not declared or enforced
     reference: RFC-3
@@ -314,7 +314,7 @@ vectors:
     input: Rotated credentials
     intended: Rotated credentials invalidate prior grants
     expected: invalidated
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: Credential rotation invalidation not implemented
     reference: RFC-3
@@ -327,7 +327,7 @@ vectors:
     input: Full manifest export request
     intended: Full manifest exportable as verifiable artifact
     expected: exported
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: Manifest export endpoint absent; manifest in-memory only
     reference: RFC-5
@@ -339,7 +339,7 @@ vectors:
     input: Exported manifest re-import
     intended: Imported manifest verifies from genesis block
     expected: verified
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: Manifest import and re-verification path absent
     reference: RFC-5
@@ -351,7 +351,7 @@ vectors:
     input: Evidence retention deadline
     intended: Evidence retained for declared minimum period
     expected: retained
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Evidence retention policy not declared
     reference: RFC-5
@@ -363,7 +363,7 @@ vectors:
     input: Closed manifest deletion attempt
     intended: No evidence silently deleted from closed manifest
     expected: no deletion
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: Redaction prohibition not formally enforced (in-memory list)
     reference: RFC-5
@@ -375,7 +375,7 @@ vectors:
     input: Policy epoch change during manifest growth
     intended: Manifest chain survives policy epoch changes
     expected: continuous
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Cross-epoch manifest continuity not formally tested
     reference: RFC-5
@@ -388,7 +388,7 @@ vectors:
     input: Override decision event
     intended: Override decisions always appended to manifest
     expected: appended
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Override audit logging absent
     reference: RFC-6
@@ -400,7 +400,7 @@ vectors:
     input: Override request from unauthorized principal
     intended: Only declared principals may invoke override
     expected: rejected
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Override authority validation absent
     reference: RFC-6
@@ -412,7 +412,7 @@ vectors:
     input: Override request outside authorization window
     intended: Override grant valid only within declared window
     expected: expired
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Override time window not implemented
     reference: RFC-6
@@ -424,7 +424,7 @@ vectors:
     input: Override decision event
     intended: Override decisions generate signed receipts
     expected: signed receipt
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Override receipt generation absent
     reference: RFC-6
@@ -437,7 +437,7 @@ vectors:
     input: Same input to adapter and native modes
     intended: Adapter and native modes produce identical dispositions for same inputs
     expected: identical
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Formal equivalence test between adapter and native modes absent
     reference: RFC-7
@@ -449,7 +449,7 @@ vectors:
     input: Adapter-tested result claim as native
     intended: Adapter results never promoted to native-conformance claims
     expected: no promotion
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: Evidence level non-promotion enforced structurally; formal test absent
     reference: RFC-7
@@ -461,7 +461,7 @@ vectors:
     input: Same inputs to two independent implementations
     intended: Two independent implementations agree on disposition for same inputs
     expected: agree
-    status: implemented
+    status: proposal
     native: IMPLEMENTATION_GAP
     observed: Cross-implementation testing requires second independent implementation
     reference: RFC-7

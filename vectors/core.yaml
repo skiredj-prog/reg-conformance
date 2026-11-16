@@ -35,8 +35,8 @@ vectors:
     intended: HARD_VETO; commit blocked
     expected: HARD_VETO
     status: implemented
-    native: FAIL
-    observed: commit accepted — revocation prospective
+    native: PASS
+    observed: "post-verdict revocation produced HARD_VETO; commit blocked (native): STANDING_REVOKED:HARD_VETO"
     reference: RFC-3 §4.2; RFC-4 §2.2
 
   - id: C4
@@ -46,7 +46,7 @@ vectors:
     input: Transport fault or 5xx
     intended: No execution proceeds
     expected: no execution
-    status: implemented
+    status: specified
     native: NOT_APPLICABLE
     observed: No transport layer in in-process kernel
     reference: RFC-1 §5

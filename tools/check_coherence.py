@@ -163,7 +163,7 @@ def v06():
 def v07():
     y = {v["id"]: v.get("status") for v in yaml_vectors()}
     md = {i: row[3] for i, row in vectors_md_rows().items()}
-    same = {"implemented": "IMPLEMENTED", "specified": "DECLARED", "proposal": "RESERVED"}
+    same = {"implemented": "IMPLEMENTED", "specified": "DECLARED", "proposal": "RESERVED", "lab_validated": "RESERVED"}
     out = []
     yv, mv = sorted({s for s in y.values() if s}), sorted(set(md.values()))
     out.append(f"vectors/*.yaml uses {yv}; VECTORS.md uses {mv}; vectors/schema.json allows "
@@ -398,7 +398,8 @@ def x02():
 def x03():
     spec = [p for p in ROOT.rglob("*") if p.is_file() and ".git" not in p.parts and re.search(r"REG-ARCH[_ -]v?\d", p.name)]
     refs = [p.relative_to(ROOT).as_posix() for p in ROOT.rglob("*") if p.is_file() and ".git" not in p.parts
-            and p.suffix in (".md", ".json", ".yaml", ".yml", ".py") and p.name != "check_coherence.py"
+            and p.suffix in (".md", ".json", ".yaml", ".yml", ".py")
+            and p.name not in ("check_coherence.py", "coherence-baseline.json", "test_coherence.py")
             and "REG-ARCH" in p.read_text(encoding="utf-8", errors="ignore")]
     if refs and not spec:
         return [f"{len(refs)} file(s) refer to REG-ARCH ({few(refs, 3)}); no REG-ARCH specification file is on this branch"]

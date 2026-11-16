@@ -1,4 +1,4 @@
-# REG Conformance Spec — v0.3.1
+# REG Conformance Spec — v0.3.2
 **TENIR Labs** | 2026-09-29 | RFC-4 (frozen) · RFC-7 (updated)
 
 ---
@@ -84,7 +84,7 @@ No HTTP paths. No interface shape. Adapters translate.
 
 ## Current execution scope and known gaps (shim v0.3.1 / kernel-r5-1.0.0)
 
-The runner registers and dispatches 53 vectors: five C-series vectors, ten CT-R4 vectors, and 38 extended RFC-0/1/2/3/5/6/7 vectors. The two RFC-2 math vectors have active probes; the other 36 extended vectors report `IMPLEMENTATION_GAP` because their adapter tests are not implemented. HTTP C4 is `ADAPTER_REQUIRED` because the generic adapter cannot establish that a transport failure prevented execution. Native C4 is `NOT_APPLICABLE`. CT-R4-009 remains a gap because the manifest lacks enough inputs and policy state for independent decision reproduction. CT-R4-010 remains a gap because the implementation does not provide external-effect evidence. Protected administrative test helpers require `REG_ADMIN_TOKEN` on the shim and `--admin-token` on the runner. Reports record harness/specification hashes and disclose missing target/environment bindings; they are not externally certifiable without a clean pinned subject and reproducible environment. The per-vector inventory is maintained in [`VECTORS.md`](VECTORS.md).
+The runner registers and dispatches 56 vectors: five C-series vectors, ten CT-R4 commit vectors, three CT-R4 lifecycle vectors (CT-R4-011 to CT-R4-013, added in v0.3.2; laboratory probes only, see [`LIFECYCLE_INTEGRATION.md`](LIFECYCLE_INTEGRATION.md)), and 38 extended RFC-0/1/2/3/5/6/7 vectors. The two RFC-2 math vectors have active probes; the other 36 extended vectors report `IMPLEMENTATION_GAP` because their adapter tests are not implemented. HTTP C4 is `ADAPTER_REQUIRED` because the generic adapter cannot establish that a transport failure prevented execution. Native C4 is `NOT_APPLICABLE`. CT-R4-009 remains a gap because the manifest lacks enough inputs and policy state for independent decision reproduction. CT-R4-010 remains a gap because the implementation does not provide external-effect evidence. Protected administrative test helpers require `REG_ADMIN_TOKEN` on the shim and `--admin-token` on the runner. Reports record harness/specification hashes and disclose missing target/environment bindings; they are not externally certifiable without a clean pinned subject and reproducible environment. The per-vector inventory is maintained in [`VECTORS.md`](VECTORS.md).
 
 ---
 
@@ -132,7 +132,7 @@ The suite runs in two modes. **Conformance is declared per mode.** Native does n
 
 ### Same vectors, same criteria — different interface only
 
-Both modes run the same 53 registered IDs from `VECTORS`. Pass/fail criteria are identical where an executable probe exists. The only legitimate differences between modes:
+Both modes run the same 56 registered IDs from `VECTORS`. Pass/fail criteria are identical where an executable probe exists. The only legitimate differences between modes:
 
 - **C4** (`Fail-Closed Transport Safety`) — `NOT_APPLICABLE` for native: no transport layer exists. This is architectural, not a permissiveness concession.
 - **CT-R4-004** (`Expired Grant Rejection`) — native uses `_inject_stale_grant()` to set `valid_until = now - 1 s`, rather than waiting 30 s. The normative property tested is identical: commit on an expired grant must be rejected with `EVALUATION_EXPIRED`. The precondition mechanism differs; the criterion does not.

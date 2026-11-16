@@ -59,8 +59,8 @@ vectors:
     intended: HARD_VETO / STATE_DRIFT; commit blocked
     expected: HARD_VETO
     status: implemented
-    native: FAIL
-    observed: STATE_DRIFT (epoch 0→1) (native)
+    native: PASS
+    observed: "STATE_DRIFT produced HARD_VETO (epoch 0→1) (native)"
     reference: RFC-4 §2.2
 
   - id: CT-R4-006
@@ -106,7 +106,7 @@ vectors:
     input: Third-party verifier reproduces decision from manifest
     intended: Decision reproducible from Manifest
     expected: independently verifiable
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: "Signature verification alone does not reproduce the decision."
     reference: RFC-4 §4.3
@@ -118,7 +118,7 @@ vectors:
     input: Non-atomic external effects
     intended: Declared non-atomic; post-commit evidence required
     expected: declared
-    status: implemented
+    status: specified
     native: IMPLEMENTATION_GAP
     observed: "Declaration present; no evidence of external effect."
     reference: RFC-4 §1.1
