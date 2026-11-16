@@ -75,9 +75,10 @@ def yaml_vectors(include_candidates=False):
     out = []
     for name in VECTOR_FILES:
         d = ok.get(name, {})
-        out += d.get("vectors", [])
-        if include_candidates:
-            out += d.get("candidates", []) + d.get("non_validated", [])
+        if "vectors" in d:
+            out += d["vectors"]
+        elif include_candidates and "candidates" in d:
+            out += d["candidates"] + d.get("non_validated", [])
     return out
 
 
@@ -98,8 +99,16 @@ def v01():
 @check("COH-V02", "REG vectors", "The runner and the YAML sources register the same vectors")
 def v02():
     r = set(runner_module().VECTORS)
+    listed = [v["id"] for v in yaml_vectors(include_candidates=True)]
     y = {v["id"] for v in yaml_vectors()}
     out = []
+    twice = sorted({i for i in listed if listed.count(i) > 1})
+    if twice:
+        out.append(f"listed more than once in vectors/*.yaml: {few(twice)}")
+    published = [v.get("id") for v in json.loads(read("vectors/dist/vectors.json") or '{"vectors":[]}')["vectors"]]
+    twice = sorted({i for i in published if published.count(i) > 1})
+    if twice:
+        out.append(f"listed more than once in vectors/dist/vectors.json: {few(twice)}")
     if r - y: out.append(f"{len(r - y)} in runner.py, absent from readable vectors/*.yaml: {few(r - y)}")
     if y - r: out.append(f"{len(y - r)} in vectors/*.yaml, absent from runner.py: {few(y - r)}")
     return out
@@ -377,6 +386,25 @@ def p11():
     return out
 
 
+@check("COH-P15", "REG+", "A capability record is attached only to configurations inside the perimeter it declares")
+def p15():
+    perimeters = {d["capability_id"]: d["declaration"].get("deployment_perimeter") or {} for _, d in _capabilities()}
+    try:
+        configs = [c for c in json.loads(read("catalog/valid-configurations-v1.json"))["configurations"] if c.get("admissible_structural")]
+    except (ValueError, KeyError):
+        return None
+    out = []
+    for r in _catalogue().get("guarantee_records") or []:
+        when, perimeter = r.get("applies_when"), perimeters.get(r["id"], {})
+        if not when or not perimeter:
+            continue
+        matched = [c["config"] for c in configs if all(c["config"].get(k) == v for k, v in when.items())]
+        outside = [c for c in matched if any(c.get(k) != v for k, v in perimeter.items())]
+        if outside:
+            out.append(f"{r['id']} declares {perimeter} and is attached to {len(matched)} admissible configurations, {len(outside)} of them outside it")
+    return out
+
+
 @check("COH-P12", "REG+", "A capability's test command names files that exist in the declared target")
 def p12():
     source = os.environ.get("REG_TARGET_SOURCE")
@@ -442,15 +470,26 @@ def p08():
     target = (json.loads(read("conformance-target.json") or "{}").get("implementation") or {})
     if not target.get("version"):
         return ["conformance-target.json is absent or names no version: no revision is declared as the one under test"]
-    tv, older = target["version"], {}
+    tv, tc, older = target["version"], target.get("source_commit", ""), {}
     for p in _profiles():
-        for v in re.findall(r"tenir_governance[@ ](\d+\.\d+\.\d+)", p.read_text(encoding="utf-8")):
+        text = p.read_text(encoding="utf-8")
+        for v in re.findall(r"tenir_governance[@ ](\d+\.\d+\.\d+)", text):
             if v != tv:
                 older.setdefault(v, set()).add(f"profiles/{p.name}")
+        for c in re.findall(r"tenir_governance@([0-9a-f]{7,40})\b", text):
+            if not tc.startswith(c):
+                older.setdefault(c[:7], set()).add(f"profiles/{p.name}")
+    unbound = []
     for p, d in _capabilities():
-        v = d["evidence"].get("implementation_version")
+        v, c = d["evidence"].get("implementation_version"), d["evidence"].get("source_commit")
         if v and v != tv:
             older.setdefault(str(v), set()).add("capabilities/")
+        elif c and not tc.startswith(c):
+            older.setdefault(c[:7], set()).add("capabilities/")
+        elif v == tv and not c and d["validation"].get("effective_guarantee_demonstrated") is True:
+            unbound.append(d["capability_id"])
+    if unbound:
+        return [f"marked demonstrated on the target version without stating a source commit: {few(unbound)}"]
     if not older:
         return []
     return [f"the declared target is tenir-governance {tv}; evidence is bound to "
@@ -467,9 +506,10 @@ def p09():
     entries = set(re.findall(r"^## \[?(v\d+\.\d+\.\d+)", read("CHANGELOG.md"), re.M))
     if not releases or not entries:
         return None
-    newest = max(entries, key=lambda t: tuple(map(int, t[1:].split("."))))
-    late = [t for t in releases if t not in entries and tuple(map(int, t[1:].split("."))) > tuple(map(int, newest[1:].split(".")))]
-    return [f"released without a CHANGELOG entry: {few(late)} (CHANGELOG.md stops at {newest})"] if late else []
+    as_tuple = lambda t: tuple(map(int, t[1:].split(".")))
+    first = min(entries, key=as_tuple)
+    absent = [t for t in releases if t not in entries and as_tuple(t) >= as_tuple(first)]
+    return [f"released without a CHANGELOG entry: {few(absent)} (CHANGELOG.md starts at {first})"] if absent else []
 
 
 # ── across layers ────────────────────────────────────────────────────────────
@@ -495,6 +535,11 @@ def x01():
     return out
 
 
+def _vector_refs(row):
+    """The ids a row cites: the whole field is '—' or ids separated by ';'."""
+    return [t.strip() for t in row.get("vector_ref", "").split(";")]
+
+
 def crosswalk_rows():
     try:
         return json.loads(read("crosswalk/data/crosswalk.json") or "[]")
@@ -504,7 +549,9 @@ def crosswalk_rows():
 
 @check("COH-X02", "Across layers", "Something links REG vectors to REG+ properties")
 def x02():
-    rows = [r for r in crosswalk_rows() if r.get("framework", "").startswith("REG+")]
+    known = set(runner_module().VECTORS)
+    rows = [r for r in crosswalk_rows() if r.get("framework", "").startswith("REG+")
+            and any(t in known for t in _vector_refs(r))]
     if rows:
         return []
     return ["no crosswalk row relates a REG vector to a REG+ capability or invariant; no REG+ file cites a vector id "
@@ -524,9 +571,10 @@ def x05():
         return None
     known = set(runner_module().VECTORS)
     for r in rows:
-        for vid in re.findall(r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*", r.get("vector_ref", "")):
-            if vid not in known:
-                out.append(f"{r['id']} cites {vid}, which runner.py does not register")
+        refs = _vector_refs(r)
+        for vid in refs:
+            if vid not in known and not (vid == "—" and len(refs) == 1):
+                out.append(f"{r['id']} cites “{vid}”, which runner.py does not register")
         src = r.get("source") or {}
         m = re.match(r"https://github\.com/skiredj-prog/reg-conformance/blob/[0-9a-f]{40}/([^#]+)", src.get("url", ""))
         if m and src.get("official_wording") not in read(m.group(1)):

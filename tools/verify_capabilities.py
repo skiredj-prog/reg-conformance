@@ -81,7 +81,17 @@ def main():
     # --source DIR : arbre de l'implémentation épinglée (conformance-target.json).
     # Une capacité « démontrée » dont la commande nomme un fichier absent de cet
     # arbre est invalide ; pour les autres, l'absence est signalée sans bloquer.
-    source = sys.argv[sys.argv.index("--source") + 1] if "--source" in sys.argv else None
+    source = None
+    if "--source" in sys.argv:
+        position = sys.argv.index("--source") + 1
+        if position >= len(sys.argv):
+            print("ERROR: --source requires DIR")
+            sys.exit(2)
+        source = sys.argv[position]
+    try:
+        target_version = json.loads(Path("conformance-target.json").read_text(encoding="utf-8"))["implementation"]["version"]
+    except (OSError, KeyError, ValueError):
+        target_version = None
     not_runnable = []
     schema = load_schema()
     capabilities_dir = Path("capabilities/v1.0.0")
@@ -141,6 +151,9 @@ def main():
             continue
         if demo is True:
             print("✅ effective_guarantee_demonstrated = true (hash réel, horodatage cohérent)")
+            shown_on = cap["evidence"].get("implementation_version")
+            if target_version and shown_on != target_version:
+                print(f"⚠️  démontrée sur {shown_on} ; la cible déclarée est {target_version} : non rejouée sur la cible")
         elif demo is False:
             print("⚠️  effective_guarantee_demonstrated = false (réfuté)")
         else:

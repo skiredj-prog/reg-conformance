@@ -172,7 +172,7 @@ Recorded pinned run: [GitHub Actions #39206045440](https://github.com/skiredj-pr
 
 **`deployment.manifest` est une dépendance bloquante**, pas un détail. Sans ce manifeste, l'auditeur externe ne peut pas lier l'évidence à l'hypothèse de déploiement (`HOST_SCOPE = mono-host`). C'est le chaînon manquant pour tout audit indépendant. Seul l'opérateur peut le fournir (voir `evidence-type-specs-v1.md` §1 pour le schéma).
 
-Les logs de preuve sont conformes au format défini dans `evidence-type-specs-v1.md` (en-têtes structurées + sortie pytest brute). Ils sont liés au commit `342bc04` de `skiredj-prog/tenir_governance` (5.5.0), avec SHA-256 dans les attestations. Ils sont produits par l'auteur (sandbox), **non par un vérificateur indépendant**.
+Les logs de preuve sont conformes au format défini dans `evidence-type-specs-v1.md` (en-têtes structurées + sortie pytest brute). Les journaux mono-hôte (`SingleHostLockBackend`) sont liés au commit `342bc04` de `skiredj-prog/tenir_governance` (5.5.0) ; les journaux Raft (`evidence/test-raft-*.log`) au commit `334109f` (5.6.0). Les SHA-256 sont dans les attestations. Ils sont produits par l'auteur (sandbox), **non par un vérificateur indépendant**.
 
 ## Types de preuve (v1.0.0)
 

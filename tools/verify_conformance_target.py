@@ -12,14 +12,16 @@ TARGET_PATH = os.path.join(BASE, "conformance-target.json")
 CATALOG_PATH = os.path.join(BASE, "catalog", "valid-configurations-v1.json")
 RULES_PATH = os.path.join(BASE, "catalog", "compatibility-rules-v1.yaml")
 
-def check_target(target, catalog, rules, installed_version, module_version=None):
+def check_target(target, catalog, rules, installed_version, module_version):
     errors = []
     expected = target.get("implementation", {}).get("version")
     if not expected:
         errors.append("IMPLEMENTATION_VERSION_MISSING")
     elif installed_version != expected:
         errors.append(f"HARNESS_VERSION_MISMATCH:expected={expected},got={installed_version}")
-    if module_version is not None and module_version != expected:
+    if module_version is None:
+        errors.append("RUNTIME_VERSION_MISSING")
+    elif module_version != expected:
         errors.append(f"RUNTIME_VERSION_MISMATCH:expected={expected},got={module_version}")
     if catalog.get("catalog_version") != target.get("catalog_version"):
         errors.append("CATALOG_VERSION_MISMATCH")

@@ -304,7 +304,7 @@
     "framework": "REG+ catalogue v1.1.0",
     "normative_clause": "Invariant LIN (linearizability)",
     "reg_mechanism": "HARD_VETO when standing is revoked between verdict and commit",
-    "vector_ref": "C3",
+    "vector_ref": "C3; CT-R4-005",
     "conformance_type": "—",
     "verification_status": "unverified",
     "description": "C3 and CT-R4-005 are check-then-commit races; LIN is the ordering property that decides them when operations overlap. Limit: both vectors inject the change sequentially in one process and do not exercise concurrent histories.",
@@ -344,7 +344,7 @@
     "description": "No registered vector exercises an aggregate budget. BUD is evidenced through REG+ evidence types and capability files only.",
     "source": {
       "framework_version": "catalog/capabilities-v1.yaml, version 1.1.0",
-      "clause_id": "I8 (BUD from catalogue v1.2.0)",
+      "clause_id": "I8",
       "official_wording": "reserved + committed <= capacity",
       "url": "https://github.com/skiredj-prog/reg-conformance/blob/d279654c7b1bd526da7bf9dfe7a2ac4819616579/catalog/capabilities-v1.yaml#L19",
       "accessed": "2026-11-16"

@@ -124,3 +124,17 @@ def test_the_readme_evidence_table_is_checked_against_the_verifier(copy):
     readme = copy / "README.md"
     readme.write_text(readme.read_text(encoding="utf-8").replace("**`test.lock.cross-process`** (exigée par `cap.concurrency.file-lock`), ", ""), encoding="utf-8")
     assert "COH-P14" in findings(copy)
+
+
+def test_a_vector_listed_twice_is_caught(copy):
+    src = copy / "vectors/commit.yaml"
+    text = src.read_text(encoding="utf-8")
+    block = text[text.index("  - id: CT-R4-001"):text.index("  - id: CT-R4-002")]
+    src.write_text(text + "\n" + block, encoding="utf-8")
+    assert "COH-V02" in findings(copy)
+
+
+def test_a_malformed_vector_reference_is_caught(copy):
+    data = copy / "crosswalk/data/crosswalk.json"
+    data.write_text(data.read_text(encoding="utf-8").replace('"vector_ref": "C3; CT-R4-005"', '"vector_ref": "c3 and CT-R4-005"'), encoding="utf-8")
+    assert "COH-X05" in findings(copy)
