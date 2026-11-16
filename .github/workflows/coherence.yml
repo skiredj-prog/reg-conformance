@@ -1,0 +1,17 @@
+name: coherence
+on: { push: {}, pull_request: {} }
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt jsonschema pytest
+      - name: Report
+        run: python tools/check_coherence.py --markdown >> "$GITHUB_STEP_SUMMARY"
+      - name: No finding outside the baseline, no stale baseline entry
+        run: python tools/check_coherence.py
