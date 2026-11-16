@@ -334,17 +334,17 @@
     }
   },
   {
-    "id": "CW-REGPLUS-I8",
+    "id": "CW-REGPLUS-BUD",
     "framework": "REG+ catalogue v1.1.0",
-    "normative_clause": "Invariant I8 (budget-ceiling-aggregate)",
+    "normative_clause": "Invariant BUD (budget-ceiling-aggregate), named I8 up to catalogue v1.1.0",
     "reg_mechanism": "Not found in the registered vectors",
     "vector_ref": "—",
     "conformance_type": "—",
     "verification_status": "unverified",
-    "description": "No registered vector exercises an aggregate budget. I8 is evidenced through REG+ evidence types and capability files only. Note: the manuscript uses the identifier I8 for a different invariant (attempt-history permanence).",
+    "description": "No registered vector exercises an aggregate budget. BUD is evidenced through REG+ evidence types and capability files only.",
     "source": {
       "framework_version": "catalog/capabilities-v1.yaml, version 1.1.0",
-      "clause_id": "I8",
+      "clause_id": "I8 (BUD from catalogue v1.2.0)",
       "official_wording": "reserved + committed <= capacity",
       "url": "https://github.com/skiredj-prog/reg-conformance/blob/d279654c7b1bd526da7bf9dfe7a2ac4819616579/catalog/capabilities-v1.yaml#L19",
       "accessed": "2026-11-16"

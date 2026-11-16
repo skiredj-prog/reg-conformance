@@ -70,7 +70,19 @@ def check_effective_claim(cap):
     return errors
 
 
+def missing_test_files(cap, source):
+    """Fichiers de test nommés par test_command et absents de la source donnée."""
+    import re
+    files = re.findall(r"[\w./-]+\.py", cap["evidence"].get("test_command", ""))
+    return [f for f in files if not (Path(source) / f).is_file()]
+
+
 def main():
+    # --source DIR : arbre de l'implémentation épinglée (conformance-target.json).
+    # Une capacité « démontrée » dont la commande nomme un fichier absent de cet
+    # arbre est invalide ; pour les autres, l'absence est signalée sans bloquer.
+    source = sys.argv[sys.argv.index("--source") + 1] if "--source" in sys.argv else None
+    not_runnable = []
     schema = load_schema()
     capabilities_dir = Path("capabilities/v1.0.0")
 
@@ -134,9 +146,22 @@ def main():
         else:
             print("⚠️  effective_guarantee_demonstrated = null (non évalué)")
 
+        if source:
+            absent = missing_test_files(cap, source)
+            if absent and demo is True:
+                print(f"❌ démontrée, mais test_command nomme des fichiers absents de la source : {', '.join(absent)}")
+                all_valid = False
+                continue
+            if absent:
+                not_runnable.append((cap["capability_id"], absent))
+                print(f"⚠️  test_command non exécutable sur la source épinglée : {', '.join(absent)}")
+
         print(f"✅ Capacité lue: {cap['declaration']['name']}")
 
     print(f"\n{'='*60}")
+    if not_runnable:
+        print(f"⚠️  {len(not_runnable)} capacité(s) non démontrée(s) nomment une commande de test "
+              f"qui n'existe pas dans la source épinglée : {', '.join(sorted(c for c, _ in not_runnable))}")
     if all_valid:
         print("✅ Toutes les capacités sont structurellement valides")
         sys.exit(0)

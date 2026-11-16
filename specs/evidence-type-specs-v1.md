@@ -168,7 +168,7 @@ evidence: <text>                      # sortie de test ou capture
 
 ## 6. `test.consensus.safety`
 
-**Description** : Prouve que le backend de consensus maintient safety (linearizability, accord, validité, I8) sous concurrence et sous fautes déclarées.
+**Description** : Prouve que le backend de consensus maintient safety (linearizability, accord, validité, BUD) sous concurrence et sous fautes déclarées.
 
 **Schéma** (log structuré) :
 ```
@@ -194,13 +194,13 @@ evidence: <text>                      # sortie de test ou capture
 4. Injecter `f` crashs, `m` comportements byzantins, `o` omissions
 5. Vérifier :
    a. Linearizability : l'historique est sérialisable (Wing-Gong ou équivalent)
-   b. I8 : à chaque état intermédiaire, `reserved + committed ≤ capacity` par resource_id
+   b. BUD : à chaque état intermédiaire, `reserved + committed ≤ capacity` par resource_id
    c. Accord : au plus un commit par réservation
    d. Validité : pas d'opération fantôme
 
 **Critères d'acceptation** :
 - Linearizability checker : PASS (historique sérialisable)
-- I8 : 0 violation à chaque état intermédiaire
+- BUD : 0 violation à chaque état intermédiaire
 - Accord : 0 double-commit
 - Validité : 0 opération fantôme
 - Fault injection : `f` crashs, `m` byzantins, `o` omissions injectés et documentés
@@ -477,7 +477,7 @@ verified_date: <ISO-8601 date>
 | `test.idempotency.local` | cap.dedup.local-registry | Log pytest déduplication locale | Oui |
 | `test.idempotency.distributed` | cap.dedup.consensus-registry | Log pytest déduplication distribuée | Oui |
 | `test.idempotency.provider` | cap.dedup.provider-key | Test provider + référence contrat | Oui |
-| `test.consensus.safety` | cap.concurrency.consensus, cap.dedup.consensus-registry | Linearizability + I8 + accord + validité | Oui |
+| `test.consensus.safety` | cap.concurrency.consensus, cap.dedup.consensus-registry | Linearizability + BUD + accord + validité | Oui |
 | `test.consensus.liveness` | cap.concurrency.consensus, cap.dedup.consensus-registry | Terminaison sous quorum | Oui |
 | `test.fault-tolerance` | cap.concurrency.consensus | Safety sous fautes injectées | Oui |
 | `test.cross-host.communication` | cap.host.multi-host | Communication inter-hôtes | Oui |

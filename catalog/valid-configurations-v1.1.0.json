@@ -21,7 +21,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-inproc"
+        "cap-budget-inproc"
       ],
       "demonstration_scope": null
     },
@@ -36,7 +36,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-inproc"
+        "cap-budget-inproc"
       ],
       "demonstration_scope": null
     },
@@ -51,7 +51,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-inproc"
+        "cap-budget-inproc"
       ],
       "demonstration_scope": null
     },
@@ -234,7 +234,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-inproc",
+        "cap-budget-inproc",
         "cap-dedup-local-registry"
       ],
       "demonstration_scope": null
@@ -250,7 +250,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-inproc",
+        "cap-budget-inproc",
         "cap-dedup-local-registry"
       ],
       "demonstration_scope": null
@@ -266,7 +266,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-inproc",
+        "cap-budget-inproc",
         "cap-dedup-local-registry"
       ],
       "demonstration_scope": null
@@ -450,7 +450,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-inproc",
+        "cap-budget-inproc",
         "cap-dedup-provider-key"
       ],
       "demonstration_scope": null
@@ -466,7 +466,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-inproc",
+        "cap-budget-inproc",
         "cap-dedup-provider-key"
       ],
       "demonstration_scope": null
@@ -482,7 +482,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-inproc",
+        "cap-budget-inproc",
         "cap-dedup-provider-key"
       ],
       "demonstration_scope": null
@@ -1026,7 +1026,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-crossproc"
+        "cap-budget-crossproc"
       ],
       "demonstration_scope": null
     },
@@ -1041,7 +1041,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-crossproc"
+        "cap-budget-crossproc"
       ],
       "demonstration_scope": null
     },
@@ -1056,7 +1056,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-crossproc"
+        "cap-budget-crossproc"
       ],
       "demonstration_scope": null
     },
@@ -1071,7 +1071,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx"
+        "cap-budget-disttx"
       ],
       "demonstration_scope": null
     },
@@ -1086,7 +1086,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx"
+        "cap-budget-disttx"
       ],
       "demonstration_scope": null
     },
@@ -1101,7 +1101,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx"
+        "cap-budget-disttx"
       ],
       "demonstration_scope": null
     },
@@ -1233,7 +1233,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-crossproc",
+        "cap-budget-crossproc",
         "cap-dedup-local-registry"
       ],
       "demonstration_scope": null
@@ -1249,7 +1249,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-crossproc",
+        "cap-budget-crossproc",
         "cap-dedup-local-registry"
       ],
       "demonstration_scope": null
@@ -1265,7 +1265,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-crossproc",
+        "cap-budget-crossproc",
         "cap-dedup-local-registry"
       ],
       "demonstration_scope": null
@@ -1281,7 +1281,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx",
+        "cap-budget-disttx",
         "cap-dedup-local-registry"
       ],
       "demonstration_scope": null
@@ -1297,7 +1297,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx",
+        "cap-budget-disttx",
         "cap-dedup-local-registry"
       ],
       "demonstration_scope": null
@@ -1313,7 +1313,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx",
+        "cap-budget-disttx",
         "cap-dedup-local-registry"
       ],
       "demonstration_scope": null
@@ -1446,7 +1446,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-crossproc",
+        "cap-budget-crossproc",
         "cap-dedup-provider-key"
       ],
       "demonstration_scope": null
@@ -1462,7 +1462,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-crossproc",
+        "cap-budget-crossproc",
         "cap-dedup-provider-key"
       ],
       "demonstration_scope": null
@@ -1478,7 +1478,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-crossproc",
+        "cap-budget-crossproc",
         "cap-dedup-provider-key"
       ],
       "demonstration_scope": null
@@ -1494,7 +1494,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx",
+        "cap-budget-disttx",
         "cap-dedup-provider-key"
       ],
       "demonstration_scope": null
@@ -1510,7 +1510,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx",
+        "cap-budget-disttx",
         "cap-dedup-provider-key"
       ],
       "demonstration_scope": null
@@ -1526,7 +1526,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx",
+        "cap-budget-disttx",
         "cap-dedup-provider-key"
       ],
       "demonstration_scope": null
@@ -2004,7 +2004,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx"
+        "cap-budget-disttx"
       ],
       "demonstration_scope": null
     },
@@ -2019,7 +2019,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx"
+        "cap-budget-disttx"
       ],
       "demonstration_scope": null
     },
@@ -2034,7 +2034,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx"
+        "cap-budget-disttx"
       ],
       "demonstration_scope": null
     },
@@ -2049,7 +2049,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-raft",
+        "cap-budget-raft",
         "cap-deterministic-replication"
       ],
       "demonstration_scope": null
@@ -2065,7 +2065,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-raft",
+        "cap-budget-raft",
         "cap-deterministic-replication"
       ],
       "demonstration_scope": null
@@ -2081,7 +2081,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-raft",
+        "cap-budget-raft",
         "cap-deterministic-replication"
       ],
       "demonstration_scope": null
@@ -2433,7 +2433,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx",
+        "cap-budget-disttx",
         "cap-dedup-provider-key"
       ],
       "demonstration_scope": null
@@ -2449,7 +2449,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx",
+        "cap-budget-disttx",
         "cap-dedup-provider-key"
       ],
       "demonstration_scope": null
@@ -2465,7 +2465,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-disttx",
+        "cap-budget-disttx",
         "cap-dedup-provider-key"
       ],
       "demonstration_scope": null
@@ -2481,7 +2481,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-raft",
+        "cap-budget-raft",
         "cap-deterministic-replication",
         "cap-dedup-provider-key"
       ],
@@ -2498,7 +2498,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-raft",
+        "cap-budget-raft",
         "cap-deterministic-replication",
         "cap-dedup-provider-key"
       ],
@@ -2515,7 +2515,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-raft",
+        "cap-budget-raft",
         "cap-deterministic-replication",
         "cap-dedup-provider-key"
       ],
@@ -2715,7 +2715,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-raft",
+        "cap-budget-raft",
         "cap-deterministic-replication",
         "cap-dedup-consensus-registry"
       ],
@@ -2732,7 +2732,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-raft",
+        "cap-budget-raft",
         "cap-deterministic-replication",
         "cap-dedup-consensus-registry"
       ],
@@ -2749,7 +2749,7 @@
       "effective_guarantee_demonstrated": null,
       "violations": [],
       "capability_refs": [
-        "cap-i8-budget-raft",
+        "cap-budget-raft",
         "cap-deterministic-replication",
         "cap-dedup-consensus-registry"
       ],

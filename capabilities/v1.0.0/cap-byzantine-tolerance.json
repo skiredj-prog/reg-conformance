@@ -4,7 +4,7 @@
     "name": "Tolérance byzantine",
     "description": "Résistance aux nœuds malveillants.",
     "invariants_required": [
-      "I8"
+      "BUD"
     ],
     "deployment_perimeter": {
       "HOST_SCOPE": "multi-host",

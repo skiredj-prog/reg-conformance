@@ -13,17 +13,16 @@ def load_caps():
     return {json.loads(p.read_text())["capability_id"]: json.loads(p.read_text())
             for p in CAP_DIR.glob("*.json")}
 
+def load_records():
+    """Fiches de garantie et leur rattachement, tels que déclarés au catalogue."""
+    import yaml
+    return yaml.safe_load((ROOT / "catalog" / "capabilities-v1.yaml").read_text(encoding="utf-8"))["guarantee_records"]
+
+RECORDS = load_records()
+
 def match(cfg):
-    h, c, d = cfg["HOST_SCOPE"], cfg["CONCURRENCY"], cfg["DEDUP_LAYER"]
-    refs = []
-    if h == "mono-process" and c == "thread-lock": refs.append("cap-i8-budget-inproc")
-    if h == "mono-host" and c == "file-lock": refs.append("cap-i8-budget-crossproc")
-    if c == "distributed-consensus": refs += ["cap-i8-budget-raft", "cap-deterministic-replication"]
-    if c == "distributed-transaction": refs.append("cap-i8-budget-disttx")
-    if d == "local-registry": refs.append("cap-dedup-local-registry")
-    if d == "provider-idempotency-key": refs.append("cap-dedup-provider-key")
-    if d == "distributed-consensus-registry": refs.append("cap-dedup-consensus-registry")
-    return refs
+    return [r["id"] for r in RECORDS
+            if r.get("applies_when") and all(cfg.get(axis) == value for axis, value in r["applies_when"].items())]
 
 def status(refs, caps):
     sts = [caps[r]["validation"]["effective_guarantee_demonstrated"] for r in refs]

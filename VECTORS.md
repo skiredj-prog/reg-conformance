@@ -1,6 +1,6 @@
 # REG Vector Index
 
-This index points to normative properties in the RFCs; it does not replace them. `IMPLEMENTED` means a behavioral test exists in the current runner. `DECLARED` means the RFC specifies the property but the runner does not test it. `RESERVED` means the check is identified but the RFC does not specify it.
+This index points to normative properties in the RFCs; it does not replace them. A vector id is a stable label, not a pointer: the `CT-Rn` prefix records where the id was first filed, and the `rfc` column states the clause the vector rests on. `CT-R5` vectors rest on RFC-1 and RFC-4 clauses; `CT-R4-011` to `CT-R4-013` rest on the manuscript. `IMPLEMENTED` means a behavioral test exists in the current runner. `DECLARED` means the RFC specifies the property but the runner does not test it. `RESERVED` means the check is identified but the RFC does not specify it.
 
 The runner registers 56 vector IDs (18 core/commit, of which three lifecycle vectors, and 38 extended). Registration alone does not make a vector `IMPLEMENTED`: 36 extended entries currently return an implementation-gap result without exercising the property. The archived v0.3.1 reports also contain false PASS assessments for C3, CT-R4-005, CT-R4-009, and CT-R4-010; use corrected implementation and current report before making conformance claims.
 

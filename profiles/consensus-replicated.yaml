@@ -1,6 +1,6 @@
 # Profil multi-hôte avec consensus répliqué via Raft (pysyncobj).
-# Ce profil atteste C1 (safety), C2 (liveness), C3 (cross-host fault tolerance),
-# et I8 (budget conservation) avec RaftConsensusBackend (tenir_governance 5.6.0).
+# Ce profil atteste SAF (safety), LIV (liveness), FT (cross-host fault tolerance),
+# et BUD (budget conservation) avec RaftConsensusBackend (tenir_governance 5.6.0).
 #
 # ATTENTION : les preuves sont auto-attestées (sandbox de l'auteur, pas un
 # vérificateur indépendant). Le hash SHA-256 prouve que le fichier n'a pas
@@ -17,7 +17,7 @@ description: >
   Consensus distribué répliqué multi-hôte via Raft (pysyncobj).
   Déduplication par registre répliqué, réservations atomiques par consensus,
   UNKNOWN fail-closed. Backend: RaftConsensusBackend (tenir_governance 5.6.0).
-  Satisfait C1, C2, C3 (crash-stop), I8. Ne satisfait pas byzantine.
+  Satisfait SAF, LIV, FT (crash-stop), BUD. Ne satisfait pas byzantine.
 
 config:
   HOST_SCOPE: "multi-host"
@@ -39,7 +39,7 @@ fault_model:
 
 invariants:
   - "commit-binding"
-  - "budget-ceiling-aggregate"    # I8 : reserved + committed <= capacity
+  - "budget-ceiling-aggregate"    # BUD : reserved + committed <= capacity
   - "single-dispatch-per-reservation"
   - "linearizability"              # LIN : ordre linéarisable
   - "agreement"                   # AGR : au plus un commit par réservation
@@ -65,7 +65,7 @@ attestations:
     verifier: "sandbox-run tenir_governance@334109f (auteur, non indépendant)"
     verified_at: "2026-10-19"
     description: >
-      19 tests : multi-node reserve/commit/release (10), I8 invariant (5),
+      19 tests : multi-node reserve/commit/release (10), BUD invariant (5),
       linearizability via Wing-Gong (4). Opérations depuis leader et followers.
       Format conforme à evidence-type-specs-v1.md §6.
 
@@ -93,7 +93,7 @@ attestations:
     description: >
       5 tests : élection de leader, failover après crash (3-nœuds et 5-nœuds),
       un seul leader, préservation d'état après failover.
-      C3 (tolérance aux pannes cross-host) attestée pour modèle crash-stop.
+      FT (tolérance aux pannes cross-host) attestée pour modèle crash-stop.
       Format conforme à evidence-type-specs-v1.md §8.
 
   # cap.dedup.consensus-registry — test.idempotency.distributed

@@ -203,7 +203,7 @@
     },
     {
       "id": "CT-R4-011",
-      "rfc": "RFC-4 lifecycle T6",
+      "rfc": "Lifecycle T6 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)",
       "category": "core",
       "property": "UNKNOWN → RESOLVED (qualified)",
       "input": "Qualified receipt or explicit resolve under τ_K discipline",
@@ -212,11 +212,11 @@
       "status": "lab_validated",
       "native": "IMPLEMENTATION_GAP",
       "observed": "Validated in tenir-conformance-s1-g1 membrane (S2c); native runner adapter pending",
-      "reference": "RFC-4 attempt lifecycle T6"
+      "reference": "Manuscript v7.2 §4.4, transition T6"
     },
     {
       "id": "CT-R4-012",
-      "rfc": "RFC-4 lifecycle T7",
+      "rfc": "Lifecycle T7 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)",
       "category": "core",
       "property": "UNKNOWN → FAILED (evidence guard)",
       "input": "declare_failed without a verified attestation vs with a bound Ed25519 non-execution attestation",
@@ -225,11 +225,11 @@
       "status": "lab_validated",
       "native": "IMPLEMENTATION_GAP",
       "observed": "Validated in tenir-conformance-s1-g1 (test_t7_t8); native adapter pending",
-      "reference": "RFC-4 attempt lifecycle T7"
+      "reference": "Manuscript v7.2 §4.4, transition T7"
     },
     {
       "id": "CT-R4-013",
-      "rfc": "RFC-4 lifecycle T8",
+      "rfc": "Lifecycle T8 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)",
       "category": "core",
       "property": "FAILED + retry_eligible → new attempt",
       "input": "FAILED with verified non-execution, no observed effect, and retry_eligible true/false",
@@ -238,7 +238,7 @@
       "status": "lab_validated",
       "native": "IMPLEMENTATION_GAP",
       "observed": "Validated in tenir-conformance-s1-g1 (T8 tests); native adapter pending",
-      "reference": "RFC-4 attempt lifecycle T8"
+      "reference": "Manuscript v7.2 §4.4, transition T8"
     },
     {
       "id": "CT-R0-001",

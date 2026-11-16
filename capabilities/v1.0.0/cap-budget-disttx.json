@@ -1,29 +1,27 @@
 {
-  "capability_id": "cap-i8-budget-raft",
+  "capability_id": "cap-budget-disttx",
   "declaration": {
-    "name": "Conservation budget Raft",
-    "description": "I8 préservé sur cluster Raft répliqué.",
+    "name": "Conservation budget transaction distribuée",
+    "description": "BUD via backend distributed-transaction.",
     "invariants_required": [
-      "I8"
+      "BUD"
     ],
     "deployment_perimeter": {
       "HOST_SCOPE": "multi-host",
-      "CONCURRENCY": "distributed-consensus"
+      "CONCURRENCY": "distributed-transaction"
     }
   },
   "evidence": {
     "implementation_version": "5.6.1",
     "test_version": "0.6.0",
     "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-    "test_command": "pytest -q tests/raft/test_i8_raft.py"
+    "test_command": "n/a (aucune implémentation en 5.6.1)"
   },
   "demonstration_scope": null,
-  "status_note": "Déclaré (v5.6.1) : loopback uniquement. Non démontré : preuve non liée.",
+  "status_note": "NON évalué : aucun backend implémenté.",
   "limitations": {
     "known_limits": [
-      "FM-20 ouvert : transport PySyncObj non sécurisé",
-      "adresses loopback uniquement",
-      "déploiement multi-host physique NON supporté"
+      "slot structurel seulement"
     ]
   },
   "validation": {

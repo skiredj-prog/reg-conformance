@@ -4,7 +4,7 @@
     "name": "Réplication déterministe",
     "description": "Même log => même état : horloge logique, IDs client-side, Decimal.",
     "invariants_required": [
-      "I8"
+      "BUD"
     ],
     "deployment_perimeter": {
       "HOST_SCOPE": "multi-host",

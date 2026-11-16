@@ -17,7 +17,7 @@
         "description": { "type": "string" },
         "invariants_required": {
           "type": "array",
-          "items": { "type": "string", "pattern": "^I[0-9]+$" },
+          "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{1,7}$" },
           "minItems": 1
         },
         "deployment_perimeter": {

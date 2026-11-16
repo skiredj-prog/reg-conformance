@@ -17,16 +17,18 @@ Four things live here. They answer different questions and are versioned separat
 |---|---|---|---|
 | **REG** | What must a runtime do before, at and after it commits an action? | `reg-standards-baseline/rfc/` (RFC-0 to RFC-7) | frozen baseline |
 | **Conformance suite** | Does a given runtime do it? | `runner.py`, `vectors/`, [`VECTORS.md`](VECTORS.md), [`spec.md`](spec.md), `lifecycle/` ([status](LIFECYCLE_INTEGRATION.md)) | suite v0.3.2 |
-| **REG+** | In which deployment does a guarantee still hold, and what evidence shows it? | `catalog/`, `specs/`, `profiles/`, `capabilities/`, `tools/` | catalogue v1.1.0 |
+| **REG+** | In which deployment does a guarantee still hold, and what evidence shows it? | `catalog/`, `specs/`, `profiles/`, `capabilities/`, `tools/` | catalogue v1.2.0 |
 | **Crosswalk** | Which clause of another framework, or of another layer, does a mechanism relate to? | `crosswalk/` ([mapping policy](crosswalk/MAPPING_POLICY.md)) | — |
 
 `manuscript/` holds the research paper behind the membrane model (v7.2). REG-ARCH, the architecture model, is a v0.4.1 candidate: it is not ratified and is not on this branch (`draft/reg-arch-v0.4.1-candidate`).
 
 **Passing vectors and holding a REG+ capability are different claims.** A vector exercises one runtime through one interface. A REG+ profile states the deployment in which a property is claimed and the evidence required. Neither implies the other. The rows that relate them are in the crosswalk, each with its stated limit.
 
-**Counts today.** 56 vector ids are registered: 14 are exercised by the runner, 17 are specified by the RFCs and not yet tested, 25 are reserved (identified, but not specified by the frozen RFCs). REG+ enumerates 144 configurations, of which 42 are admissible.
+**Coverage today.** [`VECTORS.md`](VECTORS.md) indexes 59 properties that the frozen RFCs specify: 14 are exercised by the runner, 17 are registered and not yet tested, 28 are not yet registered. A further 25 registered ids are proposals that the frozen RFCs do not specify; three of them, the lifecycle vectors, rest on the manuscript and are validated in the laboratory only. REG+ enumerates 144 configurations, of which 42 are admissible; none is marked demonstrated yet.
 
-**Check that this page is still true.** `python tools/check_coherence.py` compares the registries, the documents and the published files, and lists what disagrees. Points that are known and open are in [`coherence-baseline.json`](coherence-baseline.json); two identifier families (C1–C3, I8) currently carry two meanings and are listed there.
+**Target.** [`conformance-target.json`](conformance-target.json) names the one implementation revision that CI exercises: `tenir-governance` 5.7.0. Evidence produced on an earlier revision says so and has not been replayed on the target.
+
+**Check that this page is still true.** `python tools/check_coherence.py` compares the registries, the documents and the published files, and lists what disagrees. Points that are known and open are in [`coherence-baseline.json`](coherence-baseline.json).
 
 **Explore.** [Vector lab](https://skiredj-prog.github.io/reg-conformance/lab/) · [Crosswalk](https://skiredj-prog.github.io/reg-conformance/crosswalk/)
 
@@ -35,7 +37,7 @@ Four things live here. They answer different questions and are versioned separat
 Standard de preuve runtime pour REG+. Séparation stricte : spécification (`specs/`),
 données déclaratives (`catalog/`), outils (`tools/`), profils (`profiles/`), tests (`tests/`).
 
-Le standard est **implementation-neutral** : il définit les propriétés (safety, liveness, fault tolerance, I8), pas le mécanisme. Tout backend qui implémente l'interface `ConsensusBackend` et satisfait les propriétés est conforme.
+Le standard est **implementation-neutral** : il définit les propriétés (safety, liveness, fault tolerance, BUD), pas le mécanisme. Tout backend qui implémente l'interface `ConsensusBackend` et satisfait les propriétés est conforme.
 
 ## Structure
 
@@ -49,7 +51,7 @@ reg-conformance/
 ├── specs/
 │   ├── evidence-contract-v1.json     # EvidenceRecord (JSON Schema 2020-12)
 │   ├── assure-contract-v1.md         # Modèle théorique Assure (P1/P4/P5)
-│   ├── consensus-contract-v1.md      # Contrat consensus : C1 safety, C2 liveness, C3 fault tolerance, I8
+│   ├── consensus-contract-v1.md      # Contrat consensus : SAF safety, LIV liveness, FT fault tolerance, BUD
 │   ├── consensus-interface-v1.json   # Interface ConsensusBackend (reserve/commit/release/reconcile/get_state)
 │   └── evidence-type-specs-v1.md     # Spécification des 16 evidence types (schéma, protocole, critères)
 ├── tools/
@@ -79,11 +81,13 @@ Le catalogue définit désormais des invariants normatifs que tout backend confo
 
 | ID | Nom | Propriété | Périmètre |
 |---|---|---|---|
-| **I8** | budget-ceiling-aggregate | `reserved + committed ≤ capacity` | par resource_id |
+| **BUD** | budget-ceiling-aggregate | `reserved + committed ≤ capacity` | par resource_id |
 | **LIN** | linearizability | ordre linéarisable respectant la précédence | toutes opérations |
 | **AGR** | agreement | au plus un commit par réservation | tous commits |
 
 Voir `consensus-contract-v1.md` pour les définitions formelles.
+
+`BUD` s'appelait `I8` jusqu'au catalogue v1.1.0. Le manuscrit emploie `I8` pour un autre invariant ; `tenir_governance` et les journaux de preuve antérieurs disent toujours `I8`. Les propriétés du contrat de consensus s'appelaient `C1`, `C2`, `C3` ; elles s'appellent `SAF`, `LIV`, `FT`, parce que `C1` à `C5` désignent des vecteurs de la suite.
 
 ## Modèle de faute paramétrique (v1.1.0)
 
@@ -138,7 +142,7 @@ pytest -q tenir-governance/tests/test_raft_backend.py
 ### Included
 - Structural profile validation and crash-stop/quorum consistency checks.
 - Exact implementation, catalog, and rules version checks.
-- Local Raft integration, I8 regression, idempotent replay, amount validation, logical-clock replication, and resource re-registration tests.
+- Local Raft integration, BUD regression, idempotent replay, amount validation, logical-clock replication, and resource re-registration tests.
 
 ### Excluded / not established
 - Physical multi-host network or partition testing (the current Raft suite uses `localhost` and separate ports).
@@ -176,11 +180,11 @@ Les logs de preuve sont conformes au format défini dans `evidence-type-specs-v1
 
 ## Correctifs clés
 
-### v1.1.0 — Consensus, I8, fault model
+### v1.1.0 — Consensus, BUD, fault model
 
-- **Consensus contract** : `consensus-contract-v1.md` définit formellement safety (C1), liveness (C2), fault tolerance (C3), et I8 (conservation du budget agrégé). Implementation-neutral.
+- **Consensus contract** : `consensus-contract-v1.md` définit formellement safety (SAF), liveness (LIV), fault tolerance (FT), et BUD (conservation du budget agrégé). Implementation-neutral.
 - **Interface ConsensusBackend** : `consensus-interface-v1.json` définit l'API que tout backend doit implémenter. Le standard ne nomme aucune technologie.
-- **I8 normatif** : I8 est désormais un invariant du standard (`normative_invariants` dans `capabilities-v1.yaml`), pas seulement un détail d'implémentation de `tenir_governance`.
+- **BUD normatif** : BUD est désormais un invariant du standard (`normative_invariants` dans `capabilities-v1.yaml`), pas seulement un détail d'implémentation de `tenir_governance`.
 - **Fault model paramétrique** : `fault_model_schema` et `resilience_bounds` dans le catalogue. Le vérificateur de profil rejette les configurations violant les bornes (Raft, PBFT).
 - **Asymétrie corrigée** : `test.fault-tolerance` désormais requis pour `cap.dedup.consensus-registry` (symmetry avec `cap.concurrency.consensus`).
 - **Evidence type specs** : `evidence-type-specs-v1.md` définit les 16 types de preuve avec schéma, protocole, et critères d'acceptation.

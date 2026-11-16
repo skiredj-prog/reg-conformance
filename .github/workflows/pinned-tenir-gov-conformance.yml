@@ -24,11 +24,13 @@ jobs:
       - name: Install exact target and test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ./tenir-governance "pytest>=8,<9" PyYAML "pysyncobj==0.3.17"
+          python -m pip install -e "./tenir-governance[raft]" "pytest>=8,<9" PyYAML
       - name: Verify pinned package, catalog and rules
         run: python tools/verify_conformance_target.py
       - name: Validate structural profiles
         run: python tools/validate_profiles.py
+      - name: Capability claims name tests that exist in the pinned source
+        run: python tools/verify_capabilities.py --source tenir-governance
       - name: Test profile validator and quorum fault cases
         run: python tests/test_profile_admissibility.py
       - name: Test target and catalog version guards

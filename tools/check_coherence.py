@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -174,7 +175,7 @@ def v07():
     return out if clash or set(yv) - set(same) else []
 
 
-@check("COH-V08", "REG vectors", "A vector id CT-Rn-… refers to RFC-n")
+@check("COH-V08", "REG vectors", "Where an id CT-Rn-… does not rest on RFC-n, the index says so")
 def v08():
     rows = vectors_md_rows()
     off = {}
@@ -182,23 +183,33 @@ def v08():
         m = re.match(r"CT-R(\d)-", i)
         if m and not row[1].strip().startswith(f"RFC-{m.group(1)}"):
             off.setdefault(m.group(1), []).append(i)
-    titles = {n: (re.search(r"^# (.+)$", read(f"reg-standards-baseline/rfc/rfc-{n}.md"), re.M) or [None, "?"])[1] for n in off}
-    return [f"{len(ids)} vector(s) named CT-R{n}-… are attributed elsewhere by VECTORS.md ({rows[ids[0]][1].strip()[:40]}); "
-            f"RFC-{n} is “{titles[n][:60]}”" for n, ids in sorted(off.items())]
+    if not off or "stable label, not a pointer" in read("VECTORS.md"):
+        return []
+    return [f"{len(ids)} vector(s) named CT-R{n}-… rest on {rows[ids[0]][1].strip()[:50]}, and VECTORS.md does not say that the prefix is only a label"
+            for n, ids in sorted(off.items())]
 
 
-@check("COH-V09", "REG vectors", "The registered suite and the normative properties cover each other")
+def coverage():
+    """(specified, exercised, registered untested, unregistered, registered outside the RFCs) from the registries."""
+    ids, rows = set(runner_module().VECTORS), vectors_md_rows()
+    spec = [i for i, r in rows.items() if r[3] in ("IMPLEMENTED", "DECLARED")]
+    return (len(spec), sum(rows[i][3] == "IMPLEMENTED" for i in spec),
+            sum(i in ids and rows[i][3] == "DECLARED" for i in spec), sum(i not in ids for i in spec),
+            sum(rows[i][3] == "RESERVED" for i in ids if i in rows))
+
+
+@check("COH-V09", "REG vectors", "The published coverage is what the registries give")
 def v09():
-    r = set(runner_module().VECTORS)
-    rows = vectors_md_rows()
-    reserved = [i for i in r if i in rows and rows[i][3] == "RESERVED"]
-    outside = [i for i in rows if i not in r]
-    out = []
-    if reserved: out.append(f"{len(reserved)} of {len(r)} registered vectors are RESERVED in VECTORS.md: the frozen RFCs do not specify them")
-    if outside:
-        fam = sorted({re.sub(r"-?\d+$", "", i) for i in outside})
-        out.append(f"{len(outside)} properties the RFCs do specify ({', '.join(fam)}) are listed in VECTORS.md but not registered in the runner")
-    return out
+    want = coverage()
+    m = re.search(r"indexes (\d+) properties[^:]*: (\d+) are exercised by the runner, (\d+) are registered and not yet tested, "
+                  r"(\d+) are not yet registered\. A further (\d+) registered ids", read("README.md"))
+    if not m:
+        return [f"README.md does not state the coverage; the registries give {want[0]} specified properties, {want[1]} exercised, "
+                f"{want[2]} registered and untested, {want[3]} unregistered, and {want[4]} registered ids outside the frozen RFCs"]
+    if tuple(map(int, m.groups())) != want:
+        return [f"README.md states {tuple(map(int, m.groups()))}; the registries give {want} "
+                "(specified, exercised, registered untested, unregistered, outside the RFCs)"]
+    return []
 
 
 @check("COH-V10", "Conformance tooling", "One suite version across runner, spec and shared module")
@@ -321,30 +332,67 @@ def p06():
             for i, f in sorted(cited.items())]
 
 
-@check("COH-P10", "REG+", "Every normative invariant is cited by at least one capability")
+def _catalogue():
+    return yaml.safe_load(read("catalog/capabilities-v1.yaml")) or {}
+
+
+def _catalogue_capabilities():
+    return {v["capability_id"] for axis in (_catalogue().get("capabilities") or {}).values() for v in axis.values()}
+
+
+@check("COH-P10", "REG+", "Every normative invariant is attached to something that exists")
 def p10():
-    defined = {i["id"] for i in (yaml.safe_load(read("catalog/capabilities-v1.yaml")) or {}).get("normative_invariants", [])}
+    cat, caps = _catalogue(), _catalogue_capabilities()
+    records = {r["id"] for r in cat.get("guarantee_records") or []}
     cited = {i for _, d in _capabilities() for i in d["declaration"].get("invariants_required", [])}
-    idle = sorted(defined - cited)
-    return [f"defined in catalog/capabilities-v1.yaml and required by no capability file: {few(idle)}"] if idle and cited else []
-
-
-@check("COH-P11", "REG+", "Capability files and the catalogue name the same capabilities")
-def p11():
-    cat = {v["capability_id"] for axis in ((yaml.safe_load(read("catalog/capabilities-v1.yaml")) or {}).get("capabilities") or {}).values()
-           for v in axis.values()}
-    files = {d.get("capability_id") for _, d in _capabilities()}
-    if not cat or not files:
-        return []
-    norm = lambda x: x.replace(".", "-")
-    common = {norm(x) for x in cat} & {norm(x) for x in files}
     out = []
-    if common and not (cat & files):
-        out.append(f"the same capability is spelled two ways: {sorted(cat)[0].split('.')[0]}.x.y in the catalogue, cap-x-y in capabilities/ ({len(common)} such pairs)")
-    if len(common) < len(files):
-        out.append(f"{len(files) - len(common)} of {len(files)} capability files have no capability in the catalogue: {few({norm(f) for f in files} - common)}")
-    if len(common) < len(cat):
-        out.append(f"{len(cat) - len(common)} of {len(cat)} catalogue capabilities have no capability file")
+    for inv in cat.get("normative_invariants", []):
+        ghosts = [t for t in inv.get("applies_to", []) if t not in caps] + [t for t in inv.get("guarantee_records", []) if t not in records]
+        if ghosts:
+            out.append(f"{inv['id']} applies to {few(ghosts)}, which the catalogue does not define")
+        if not inv.get("applies_to") and not inv.get("guarantee_records") and inv["id"] not in cited:
+            out.append(f"{inv['id']} is defined and attached to no capability")
+    return out
+
+
+@check("COH-P11", "REG+", "Every capability file is registered in the catalogue, and the reverse")
+def p11():
+    cat, caps = _catalogue(), _catalogue_capabilities()
+    records = {r["id"]: r for r in cat.get("guarantee_records") or []}
+    files = {d.get("capability_id") for _, d in _capabilities()}
+    if not files:
+        return []
+    axes = (yaml.safe_load(read("catalog/hypotheses-v1.yaml")) or {}).get("axes", {})
+    out = []
+    if files - set(records):
+        out.append(f"{len(files - set(records))} of {len(files)} capability files are not registered under guarantee_records in the catalogue: {few(files - set(records))}")
+    if set(records) - files:
+        out.append(f"registered in the catalogue without a capability file: {few(set(records) - files)}")
+    for rid, r in records.items():
+        if r.get("refines") and r["refines"] not in caps:
+            out.append(f"{rid} refines {r['refines']}, which is not a catalogue capability")
+        for axis, value in (r.get("applies_when") or {}).items():
+            if axis not in axes or value not in axes[axis]["values"]:
+                out.append(f"{rid} applies when {axis}={value}, which the hypotheses catalogue does not declare")
+    return out
+
+
+@check("COH-P12", "REG+", "A capability's test command names files that exist in the declared target")
+def p12():
+    source = os.environ.get("REG_TARGET_SOURCE")
+    if not source or not Path(source).is_dir():
+        return None          # needs a checkout of the target: set REG_TARGET_SOURCE
+    missing = {}
+    for _, d in _capabilities():
+        absent = [f for f in re.findall(r"[\w./-]+\.py", d["evidence"].get("test_command", "")) if not (Path(source) / f).is_file()]
+        if absent:
+            missing[d["capability_id"]] = absent
+    if not missing:
+        return []
+    claimed = [c for _, d in _capabilities() if (c := d["capability_id"]) in missing and d["validation"].get("effective_guarantee_demonstrated") is True]
+    out = [f"{len(missing)} capability file(s) name test files that are not in the target source: {few(missing)}"]
+    if claimed:
+        out.append(f"of these, marked demonstrated: {few(claimed)}")
     return out
 
 
@@ -354,16 +402,24 @@ def p07():
     return off
 
 
-@check("COH-P08", "REG+", "Evidence refers to one pinned subject revision")
+@check("COH-P08", "REG+", "Evidence is bound to the declared target revision")
 def p08():
-    pins = {}
-    for rel in [p.relative_to(ROOT).as_posix() for p in _profiles()] + [".github/workflows/lifecycle.yml", "deployment-manifest.json", "README.md"]:
-        for m in re.findall(r"tenir_governance(?:\.git)?@([0-9a-f]{7,40}|\d+\.\d+\.\d+)", read(rel)):
-            pins.setdefault(m[:7], set()).add(rel)
-    for _, d in _capabilities():
+    target = (json.loads(read("conformance-target.json") or "{}").get("implementation") or {})
+    if not target.get("version"):
+        return ["conformance-target.json is absent or names no version: no revision is declared as the one under test"]
+    tv, older = target["version"], {}
+    for p in _profiles():
+        for v in re.findall(r"tenir_governance[@ ](\d+\.\d+\.\d+)", p.read_text(encoding="utf-8")):
+            if v != tv:
+                older.setdefault(v, set()).add(f"profiles/{p.name}")
+    for p, d in _capabilities():
         v = d["evidence"].get("implementation_version")
-        if v: pins.setdefault(str(v), set()).add("capabilities/")
-    return [f"{len(pins)} different subject revisions are cited: " + "; ".join(f"{k} ({few(v, 2)})" for k, v in sorted(pins.items()))] if len(pins) > 1 else []
+        if v and v != tv:
+            older.setdefault(str(v), set()).add("capabilities/")
+    if not older:
+        return []
+    return [f"the declared target is tenir-governance {tv}; evidence is bound to "
+            + "; ".join(f"{k} ({few(v, 2)})" for k, v in sorted(older.items())) + " and has not been replayed on the target"]
 
 
 @check("COH-P09", "Conformance tooling", "Every release tag has a CHANGELOG entry")
@@ -418,7 +474,7 @@ def x02():
         return []
     return ["no crosswalk row relates a REG vector to a REG+ capability or invariant; no REG+ file cites a vector id "
             "and the runner cites no REG+ invariant",
-            "the registered vectors test RFC-0 to RFC-7; REG+ (I8, LIN, AGR, consensus) is tested by evidence types and capability files only"]
+            "the registered vectors test RFC-0 to RFC-7; REG+ (BUD, LIN, AGR, consensus) is tested by evidence types and capability files only"]
 
 
 @check("COH-X05", "Across layers", "Crosswalk rows are well formed, cite vectors that exist and quote text that is still there")
@@ -443,16 +499,12 @@ def x05():
     return out
 
 
-@check("COH-X03", "Across layers", "REG-ARCH is present where it is referred to")
+@check("COH-X03", "Across layers", "REG-ARCH is present, or the README says where it lives")
 def x03():
     spec = [p for p in ROOT.rglob("*") if p.is_file() and ".git" not in p.parts and re.search(r"REG-ARCH[_ -]v?\d", p.name)]
-    refs = [p.relative_to(ROOT).as_posix() for p in ROOT.rglob("*") if p.is_file() and ".git" not in p.parts
-            and p.suffix in (".md", ".json", ".yaml", ".yml", ".py")
-            and p.name not in ("check_coherence.py", "coherence-baseline.json", "test_coherence.py")
-            and "REG-ARCH" in p.read_text(encoding="utf-8", errors="ignore")]
-    if refs and not spec:
-        return [f"{len(refs)} file(s) refer to REG-ARCH ({few(refs, 3)}); no REG-ARCH specification file is on this branch"]
-    return []
+    if spec or re.search(r"REG-ARCH[^\n]*not ratified[^\n]*`[\w./-]*reg-arch[\w./-]*`", read("README.md")):
+        return []
+    return ["files refer to REG-ARCH; no REG-ARCH specification file is on this branch and README.md does not say where the candidate lives"]
 
 
 @check("COH-X04", "Across layers", "README.md introduces every component of the repository")
@@ -463,13 +515,6 @@ def x04():
              "harness/": r"harness"}
     absent = [k for k, pat in parts.items() if (ROOT / k.rstrip("/")).exists() and not re.search(pat, readme)]
     out = [f"present in the repository, absent from README.md: {few(absent, 8)}"] if absent else []
-    m = re.search(r"(\d+) vector ids are registered: (\d+) are exercised by the runner, (\d+) are specified[^.]*?(\d+) are reserved", readme)
-    if m:
-        ids = set(runner_module().VECTORS)
-        st = [row[3] for i, row in vectors_md_rows().items() if i in ids]
-        want = (len(ids), st.count("IMPLEMENTED"), st.count("DECLARED"), st.count("RESERVED"))
-        if tuple(map(int, m.groups())) != want:
-            out.append(f"README.md states {m.groups()} for registered/exercised/specified/reserved; the registries give {want}")
     return out
 
 

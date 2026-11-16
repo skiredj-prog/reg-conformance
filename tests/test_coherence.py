@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 TRACKED = ["tools", "vectors", "catalog", "crosswalk", "capabilities", "profiles", "specs", "manuscript", "registry",
            "reg-standards-baseline", "kernel", "lifecycle", "runner.py", "reg_common.py", "shim.py", "spec.md",
            "VECTORS.md", "README.md", "CHANGELOG.md", "validate_profiles.py", "compatibility-rules-v2.yaml",
-           "coherence-baseline.json", "policy.json", "requirements.txt"]
+           "coherence-baseline.json", "policy.json", "requirements.txt", "conformance-target.json",
+           "capability-evidence-contract-v1.json"]
 
 
 def run(root, *args):
@@ -96,8 +97,15 @@ def test_a_crosswalk_row_citing_an_unknown_vector_is_caught(copy):
     assert "COH-X05" in findings(copy)
 
 
-def test_readme_counts_are_checked(copy):
-    assert "COH-X04" not in findings(copy)
+def test_published_coverage_is_checked(copy):
+    assert "COH-V09" not in findings(copy)
     readme = copy / "README.md"
-    readme.write_text(readme.read_text(encoding="utf-8").replace("56 vector ids are registered", "53 vector ids are registered"), encoding="utf-8")
-    assert "COH-X04" in findings(copy)
+    readme.write_text(readme.read_text(encoding="utf-8").replace("indexes 59 properties", "indexes 31 properties"), encoding="utf-8")
+    assert "COH-V09" in findings(copy)
+
+
+def test_an_unregistered_capability_file_is_caught(copy):
+    assert "COH-P11" not in findings(copy)
+    cat = copy / "catalog/capabilities-v1.yaml"
+    cat.write_text(cat.read_text(encoding="utf-8").replace('  - id: "cap-byzantine-tolerance"\n', ""), encoding="utf-8")
+    assert "COH-P11" in findings(copy)
