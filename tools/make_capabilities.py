@@ -6,8 +6,8 @@ from pathlib import Path
 
 OUT = Path(__file__).resolve().parents[1] / "capabilities" / "v1.0.0"
 IMPL, TEST = "5.6.1", "0.6.0"
-TS = "2026-10-21T07:29:00Z"  # horodatage release v5.6.1 (déterministe)
-PH = "0" * 64  # placeholder : sera lié au hash CI réel en v0.6.1
+TS = "2026-10-20T21:55:30Z"  # horodatage de la vérification v0.6.0 (fail-closed)
+PH = "0" * 64  # placeholder : aucune preuve liée ; une capacité démontrée exige un hash réel
 
 def cap(cid, name, desc, inv, perimeter, demo, scope, cmd, limits, note):
     return {
@@ -37,33 +37,33 @@ MX = {"HOST_SCOPE": "multi-host", "CONCURRENCY": "distributed-consensus"}
 CAPS = [
     cap("cap-i8-budget-inproc", "Conservation budget mono-process",
         "reserved + committed <= capacity sous concurrence threadée.", ["I8"], MP,
-        True, "production-equivalent",
+        None, None,
         "pytest -q tests/test_budget_i8.py tests/test_hold_budget_regression.py",
-        ["single-process only"], "Démontré : 9 chemins I8 (v5.4.2) + régressions v5.6.1."),
+        ["single-process only"], "Déclaré (v5.6.1) : 9 chemins I8 + régressions. Non démontré : preuve non liée."),
     cap("cap-i8-budget-crossproc", "Conservation budget cross-process",
         "I8 préservé entre processus via fcntl.flock + état durable.", ["I8"], MH,
-        True, "production-equivalent",
+        None, None,
         "pytest -q tests/test_cross_process_i8.py",
-        ["single-host only (flock ne traverse pas les hôtes)"], "Démontré : 10 tests I8 cross-process (v5.5.0)."),
+        ["single-host only (flock ne traverse pas les hôtes)"], "Déclaré (v5.5.0) : 10 tests I8 cross-process. Non démontré : preuve non liée."),
     cap("cap-i8-budget-raft", "Conservation budget Raft",
         "I8 préservé sur cluster Raft répliqué.", ["I8"], MX,
-        True, "loopback-test-only",
+        None, None,
         "pytest -q tests/raft/test_i8_raft.py",
         ["FM-20 ouvert : transport PySyncObj non sécurisé",
          "adresses loopback uniquement",
          "déploiement multi-host physique NON supporté"],
-        "Démontré UNIQUEMENT en périmètre de test loopback (v5.6.1)."),
+        "Déclaré (v5.6.1) : loopback uniquement. Non démontré : preuve non liée."),
     cap("cap-deterministic-replication", "Réplication déterministe",
         "Même log => même état : horloge logique, IDs client-side, Decimal.", ["I8"], MX,
-        True, "loopback-test-only",
+        None, None,
         "pytest -q tests/raft/test_determinism.py",
-        ["périmètre loopback"], "E1 corrigé : plus de time.time() répliqué."),
+        ["périmètre loopback"], "Déclaré : E1 corrigé (horloge logique). Non démontré : preuve non liée."),
     cap("cap-dedup-local-registry", "Déduplication registre local",
         "Clé idempotente réclamée durablement avant évaluation ; replay = état réel.", ["I2"],
         {"HOST_SCOPE": "mono-host", "CONCURRENCY": "file-lock"},
-        True, "production-equivalent",
+        None, None,
         "pytest -q tests/test_idempotency.py",
-        ["single-host"], "E5 corrigé : replay retourne RESERVED/COMMITTED/RELEASED réel."),
+        ["single-host"], "Déclaré : E5 corrigé (replay réel). Non démontré : preuve non liée."),
     cap("cap-dedup-provider-key", "Déduplication par clé provider",
         "Idempotence déléguée au provider externe.", ["I2"],
         {"HOST_SCOPE": "mono-host", "CONCURRENCY": "file-lock"},
@@ -72,9 +72,9 @@ CAPS = [
         ["dépend des sémantiques du provider"], "NON évalué : exactement-once externe non prouvé."),
     cap("cap-dedup-consensus-registry", "Déduplication registre consensus",
         "Registre de déduplication répliqué via Raft.", ["I2"], MX,
-        True, "loopback-test-only",
+        None, None,
         "pytest -q tests/raft/test_registry.py",
-        ["périmètre loopback", "FM-20"], "Démontré en test loopback."),
+        ["périmètre loopback", "FM-20"], "Déclaré : test loopback. Non démontré : preuve non liée."),
     cap("cap-i8-budget-disttx", "Conservation budget transaction distribuée",
         "I8 via backend distributed-transaction.", ["I8"],
         {"HOST_SCOPE": "multi-host", "CONCURRENCY": "distributed-transaction"},

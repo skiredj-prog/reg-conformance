@@ -17,8 +17,8 @@
     "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
     "test_command": "pytest -q tests/test_idempotency.py"
   },
-  "demonstration_scope": "production-equivalent",
-  "status_note": "E5 corrigé : replay retourne RESERVED/COMMITTED/RELEASED réel.",
+  "demonstration_scope": null,
+  "status_note": "Déclaré : E5 corrigé (replay réel). Non démontré : preuve non liée.",
   "limitations": {
     "known_limits": [
       "single-host"
@@ -26,7 +26,7 @@
   },
   "validation": {
     "structural_admissibility": true,
-    "effective_guarantee_demonstrated": true,
-    "verification_timestamp": "2026-10-21T07:29:00Z"
+    "effective_guarantee_demonstrated": null,
+    "verification_timestamp": "2026-10-20T21:55:30Z"
   }
 }
