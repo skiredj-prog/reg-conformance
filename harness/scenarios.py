@@ -19,6 +19,7 @@ class Scenario:
     vector_id: str
     requires: frozenset
     run: Callable
+    intents: frozenset = frozenset()
     normative: bool = True      # False = harness probe, outside the REG vector set
 
 
@@ -161,15 +162,24 @@ def r2_003(rt):
 # -- harness probes: observe the effect, not only the verdict -----------------
 # These are NOT REG vectors. They are reported under their own ids and never
 # counted in the 56-vector totals.
+#
+# Some runtimes decide and dispatch in one step. For those, `evaluate` IS the
+# boundary crossing and there is no separate commit: the probes only call
+# `commit` when the port declares it.
+
+def _cross(rt, d):
+    if P.COMMIT in rt.capabilities:
+        try:
+            rt.commit(d)
+        except P.Refused:
+            pass
+
 
 def hx_refusal_zero_effects(rt):
-    d = rt.evaluate(P.NO_STANDING, principal=_principal("u"), action_type="count")
+    d = rt.evaluate(P.DENIED, principal=_principal("a"), action_type="count")
     if d.disposition not in ("HARD_VETO", "HOLD"):
         return INCONCLUSIVE, f"no refusal to observe (disposition={d.disposition})"
-    try:
-        rt.commit(d)
-    except P.Refused:
-        pass
+    _cross(rt, d)
     n = rt.observed_effects(d)
     return (PASS, "refusal matched zero observed effects") if n == 0 \
         else (FAIL, f"refusal matched {n} observed effect(s)")
@@ -179,35 +189,59 @@ def hx_allow_exactly_one_effect(rt):
     d = rt.evaluate(P.ADMISSIBLE, principal="a", action_type="count")
     if d.disposition != "PASS":
         return INCONCLUSIVE, f"no allow to observe (disposition={d.disposition})"
-    rt.commit(d)
-    try:
-        rt.commit(d)            # second attempt on the same grant
-    except P.Refused:
-        pass
+    _cross(rt, d)
+    _cross(rt, d)               # a second attempt on the same grant, where one exists
     n = rt.observed_effects(d)
     return (PASS, "allow matched exactly one observed effect") if n == 1 \
         else (FAIL, f"allow matched {n} observed effect(s)")
 
 
+def hx_unanswered_approval_zero_effects(rt):
+    d = rt.evaluate(P.NEEDS_APPROVAL, principal="a", action_type="count")
+    if d.disposition == "PASS":
+        return FAIL, "call needing approval was allowed without one"
+    _cross(rt, d)
+    n = rt.observed_effects(d)
+    return (PASS, f"unanswered approval gave {d.disposition} and zero observed effects") if n == 0 \
+        else (FAIL, f"unanswered approval matched {n} observed effect(s)")
+
+
+def hx_allow_after_refusal(rt):
+    refused = rt.evaluate(P.DENIED, principal="a", action_type="count")
+    allowed = rt.evaluate(P.ADMISSIBLE, principal="a", action_type="count")
+    if allowed.disposition != "PASS":
+        return INCONCLUSIVE, f"no allow after the refusal (disposition={allowed.disposition})"
+    _cross(rt, allowed)
+    a, b = rt.observed_effects(refused), rt.observed_effects(allowed)
+    return (PASS, "a refusal left the next allowed call intact: 0 then 1 effect") if (a, b) == (0, 1) \
+        else (FAIL, f"effects after refusal then allow: {a}, {b}")
+
+
 _E, _C = P.EVALUATE, P.COMMIT
+_A, _I, _N, _H, _D = (frozenset({x}) for x in (P.ADMISSIBLE, P.INADMISSIBLE, P.NO_STANDING,
+                                               P.NEEDS_APPROVAL, P.DENIED))
+_none = frozenset()
 SCENARIOS = {s.vector_id: s for s in [
-    Scenario("C1", frozenset({_E}), c1),
-    Scenario("C2", frozenset({_E}), c2),
-    Scenario("C3", frozenset({_E, _C, P.REVOKE}), c3),
-    Scenario("C5", frozenset({_E, P.NONCE}), _replay("C5")),
-    Scenario("CT-R4-001", frozenset({_E, _C}), r4_001),
-    Scenario("CT-R4-002", frozenset({_E, _C}), r4_002),
-    Scenario("CT-R4-003", frozenset({_E, P.NONCE}), _replay("CT-R4-003")),
-    Scenario("CT-R4-004", frozenset({_C, P.STALE_GRANT}), r4_004),
-    Scenario("CT-R4-005", frozenset({_E, _C, P.STATE_DRIFT}), r4_005),
-    Scenario("CT-R4-006", frozenset({_E, _C}), r4_006),
-    Scenario("CT-R4-007", frozenset({_E, P.RECEIPTS}), r4_007),
-    Scenario("CT-R4-008", frozenset({_E, P.MANIFEST}), r4_008),
-    Scenario("CT-R2-002", frozenset({P.TENIR_SCORE}), r2_002),
-    Scenario("CT-R2-003", frozenset({P.TENIR_SCORE}), r2_003),
+    Scenario("C1", frozenset({_E}), c1, _N),
+    Scenario("C2", frozenset({_E}), c2, _I),
+    Scenario("C3", frozenset({_E, _C, P.REVOKE}), c3, _A),
+    Scenario("C5", frozenset({_E, P.NONCE}), _replay("C5"), _A),
+    Scenario("CT-R4-001", frozenset({_E, _C}), r4_001, _A),
+    Scenario("CT-R4-002", frozenset({_E, _C}), r4_002, _A),
+    Scenario("CT-R4-003", frozenset({_E, P.NONCE}), _replay("CT-R4-003"), _A),
+    Scenario("CT-R4-004", frozenset({_C, P.STALE_GRANT}), r4_004, _none),
+    Scenario("CT-R4-005", frozenset({_E, _C, P.STATE_DRIFT}), r4_005, _A),
+    Scenario("CT-R4-006", frozenset({_E, _C}), r4_006, _N),
+    Scenario("CT-R4-007", frozenset({_E, P.RECEIPTS}), r4_007, _N),
+    Scenario("CT-R4-008", frozenset({_E, P.MANIFEST}), r4_008, _A),
+    Scenario("CT-R2-002", frozenset({P.TENIR_SCORE}), r2_002, _none),
+    Scenario("CT-R2-003", frozenset({P.TENIR_SCORE}), r2_003, _none),
 ]}
 
+_EF = frozenset({_E, P.EFFECTS})
 PROBES = {s.vector_id: s for s in [
-    Scenario("HX-EFFECT-001", frozenset({_E, _C, P.EFFECTS}), hx_refusal_zero_effects, normative=False),
-    Scenario("HX-EFFECT-002", frozenset({_E, _C, P.EFFECTS}), hx_allow_exactly_one_effect, normative=False),
+    Scenario("HX-EFFECT-001", _EF, hx_refusal_zero_effects, _D, normative=False),
+    Scenario("HX-EFFECT-002", _EF, hx_allow_exactly_one_effect, _A, normative=False),
+    Scenario("HX-EFFECT-003", _EF, hx_unanswered_approval_zero_effects, _H, normative=False),
+    Scenario("HX-EFFECT-004", _EF, hx_allow_after_refusal, _A | _D, normative=False),
 ]}

@@ -18,6 +18,7 @@ _INPUTS = {                       # intent -> (credential, P, V, K)
     P.ADMISSIBLE:   ("valid", 0.2, 0.2, 0.90),
     P.INADMISSIBLE: ("valid", 0.95, 0.90, 0.10),
     P.NO_STANDING:  ("none", 0.3, 0.3, 0.85),
+    P.DENIED:       ("none", 0.3, 0.3, 0.85),
 }
 _CODES = [("STANDING_REVOKED", P.R_STANDING_REVOKED), ("STATE_DRIFT", P.R_STATE_DRIFT),
           ("EXPIRED", P.R_EXPIRED), ("BINDING_VIOLATION", P.R_BINDING),
@@ -38,6 +39,7 @@ class ReferencePort(P.RuntimePort):
     evidence_level = 1
     capabilities = frozenset({P.EVALUATE, P.COMMIT, P.REVOKE, P.STATE_DRIFT, P.STALE_GRANT,
                               P.NONCE, P.RECEIPTS, P.MANIFEST, P.TENIR_SCORE})
+    intents = frozenset({P.ADMISSIBLE, P.INADMISSIBLE, P.NO_STANDING, P.DENIED})
     not_applicable = {"C4": "No transport layer in in-process kernel."}
     declared_gaps = dict(R.EXTENDED_GAP_NOTES)
 

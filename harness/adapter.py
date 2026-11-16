@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib
 
 import runner as R
-from .port import ALL_CAPABILITIES, RuntimePort
+from .port import ALL_CAPABILITIES, ALL_INTENTS, RuntimePort
 from .scenarios import PROBES, SCENARIOS
 
 HARNESS_GAP = ("HARNESS_GAP: no runtime-neutral scenario exists for this vector yet; "
@@ -17,6 +17,9 @@ class PortAdapter(R.BaseAdapter):
         unknown = set(port.capabilities) - ALL_CAPABILITIES
         if unknown:
             raise ValueError(f"port declares unknown capabilities: {sorted(unknown)}")
+        unknown = set(port.intents) - ALL_INTENTS
+        if unknown:
+            raise ValueError(f"port declares unknown intents: {sorted(unknown)}")
         self.port = port
         self.interface_mode = port.interface_mode
         # A port is a translation layer: it can never report native conformance.
@@ -27,6 +30,9 @@ class PortAdapter(R.BaseAdapter):
         missing = sorted(scenario.requires - set(self.port.capabilities))
         if missing:
             return self._ar(vid, "port does not declare: " + ", ".join(missing))
+        missing = sorted(scenario.intents - set(self.port.intents))
+        if missing:
+            return self._ar(vid, "port cannot produce intent: " + ", ".join(missing))
         try:
             self.port.reset()
             state, details = scenario.run(self.port)

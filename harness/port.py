@@ -33,6 +33,13 @@ ALL_CAPABILITIES = frozenset({
 ADMISSIBLE = "admissible"            # standing valid, structure comfortably inside bounds
 INADMISSIBLE = "inadmissible"        # standing valid, structure outside bounds
 NO_STANDING = "no_standing"          # caller has no valid standing
+NEEDS_APPROVAL = "needs_approval"    # the runtime must obtain a human approval first
+# Refused by the runtime's own policy, for whatever reason it has. Deliberately
+# distinct from INADMISSIBLE: a policy refusal is not evidence of REG structural
+# admissibility, and must never satisfy a vector about it.
+DENIED = "denied"
+
+ALL_INTENTS = frozenset({ADMISSIBLE, INADMISSIBLE, NO_STANDING, NEEDS_APPROVAL, DENIED})
 
 # Normalised refusal codes.
 R_STANDING_REVOKED = "STANDING_REVOKED"
@@ -81,6 +88,8 @@ class RuntimePort:
     # 1 = semantic mapping, 2 = adapter-tested. A port can never claim 3.
     evidence_level: int = 2
     capabilities: frozenset = frozenset()
+    # Intents the port can produce on demand. A scenario needing another one is not run.
+    intents: frozenset = frozenset()
     # vector_id -> reason. Vectors that cannot apply to this runtime by construction.
     not_applicable: dict = {}
     # vector_id -> note. Gaps the implementer declares about its own runtime.
