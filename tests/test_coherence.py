@@ -12,7 +12,7 @@ TRACKED = ["tools", "vectors", "catalog", "crosswalk", "capabilities", "profiles
            "reg-standards-baseline", "kernel", "lifecycle", "runner.py", "reg_common.py", "shim.py", "spec.md",
            "VECTORS.md", "README.md", "CHANGELOG.md", "validate_profiles.py", "compatibility-rules-v2.yaml",
            "coherence-baseline.json", "policy.json", "requirements.txt", "conformance-target.json",
-           "capability-evidence-contract-v1.json"]
+           "capability-evidence-contract-v1.json", "evidence"]
 
 
 def run(root, *args):
@@ -109,3 +109,18 @@ def test_an_unregistered_capability_file_is_caught(copy):
     cat = copy / "catalog/capabilities-v1.yaml"
     cat.write_text(cat.read_text(encoding="utf-8").replace('  - id: "cap-byzantine-tolerance"\n', ""), encoding="utf-8")
     assert "COH-P11" in findings(copy)
+
+
+def test_a_vector_file_the_compiler_reads_is_read_by_the_check(copy):
+    (copy / "vectors/extra.yaml").write_text(
+        "meta:\n  name: extra\n  version: 1.0.0\nvectors:\n  - id: CT-R9-001\n    rfc: RFC-9\n    category: extended\n"
+        "    property: x\n    intended: y\n    status: proposal\n", encoding="utf-8")
+    found = findings(copy)
+    assert "COH-V02" in found and "COH-V03" in found
+
+
+def test_the_readme_evidence_table_is_checked_against_the_verifier(copy):
+    assert "COH-P14" not in findings(copy)
+    readme = copy / "README.md"
+    readme.write_text(readme.read_text(encoding="utf-8").replace("**`test.lock.cross-process`** (exigée par `cap.concurrency.file-lock`), ", ""), encoding="utf-8")
+    assert "COH-P14" in findings(copy)

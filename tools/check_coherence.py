@@ -56,7 +56,7 @@ def runner_module():
     return runner
 
 
-VECTOR_FILES = ("commit", "core", "extended", "proposals")   # compile.py order (sorted)
+VECTOR_FILES = tuple(sorted(p.stem for p in (ROOT / "vectors").glob("*.yaml")))   # the files compile.py reads, in its order
 
 
 def load_vector_yaml():
@@ -393,6 +393,41 @@ def p12():
     out = [f"{len(missing)} capability file(s) name test files that are not in the target source: {few(missing)}"]
     if claimed:
         out.append(f"of these, marked demonstrated: {few(claimed)}")
+    return out
+
+
+def _effective():
+    """{profile name: (errors, warnings)} from tools/verify_effective_guarantees.py."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import verify_effective_guarantees as veg
+    caps = veg.load_capabilities()
+    return {p.name: veg.check_profile(str(p), caps) for p in _profiles()}
+
+
+@check("COH-P13", "REG+", "An attestation cites a capability that its profile's configuration claims")
+def p13():
+    out = []
+    for name, (_, warnings) in _effective().items():
+        loose = sorted(set(re.findall(r"attestation ([\w.\-]+)/([\w.\-]+) non réclamée", " ".join(warnings))))
+        if loose:
+            cfg = (yaml.safe_load(read(f"profiles/{name}")) or {}).get("config", {})
+            out.append(f"profiles/{name} (CONCURRENCY={cfg.get('CONCURRENCY')}) carries {len(loose)} attestation(s) for "
+                       f"{few({c for c, _ in loose})}, which that configuration does not claim: {few({e for _, e in loose})}")
+    return out
+
+
+@check("COH-P14", "REG+", "README's evidence table names what the verifier reports missing")
+def p14():
+    rows = dict(re.findall(r"^\| `([\w.\-]+\.yaml)` \|.*\|([^|]*)\|\s*$", read("README.md"), re.M))
+    out = []
+    for name, (errors, _) in _effective().items():
+        missing = sorted(set(re.findall(r"preuve ([\w.\-]+) manquante", " ".join(errors))))
+        if name not in rows:
+            out.append(f"profiles/{name} has no row in README's evidence table")
+        elif "toutes" not in rows[name]:
+            unnamed = [m for m in missing if m not in rows[name]]
+            if unnamed:
+                out.append(f"README's row for {name} does not name {few(unnamed)}, which tools/verify_effective_guarantees.py reports missing")
     return out
 
 

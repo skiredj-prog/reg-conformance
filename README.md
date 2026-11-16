@@ -161,14 +161,14 @@ Recorded pinned run: [GitHub Actions #39206045440](https://github.com/skiredj-pr
 5. `python3 tools/verify_effective_guarantees.py` — rejette tout profil réclamant une capacité sans preuve **réelle** : fichier présent, SHA-256 égal à `evidence_sha256`, chemin relatif sans `..` (fail-closed). Test : `test_effective_guarantees.py` (13 scénarios dont altération et traversée).
    **Attendu** : les profils exemple et consensus-replicated échouent (exit 1) car les preuves manquent. C'est le comportement voulu, pas une erreur de build.
 
-## Preuves réelles (état au 2026-10-19)
+## Preuves réelles (état au 2026-11-16, d'après `tools/verify_effective_guarantees.py`)
 
 | Profil | Config | Preuves obtenues | Manquant |
 |---|---|---|---|
-| `consensus-reference-single-host.yaml` | mono-host / local-registry / file-lock / fail-closed | `test.consensus.safety` (`evidence/test-consensus-safety.log`), `test.consensus.liveness` (`evidence/test-consensus-liveness.log`), `test.fault-tolerance` (`evidence/test-fault-tolerance.log`), `test.idempotency.local` (`evidence/test-idempotency-local.log`), `test.unknown-outcome.blocks` (`evidence/unknown-outcome-run.log`) | **`deployment.manifest`** (dépendance bloquante pour l'audit externe) |
+| `consensus-reference-single-host.yaml` | mono-host / local-registry / file-lock / fail-closed | `test.idempotency.local` (`evidence/test-idempotency-local.log`), `test.unknown-outcome.blocks` (`evidence/unknown-outcome-run.log`). **Non comptées** : `test.consensus.safety`, `test.consensus.liveness`, `test.fault-tolerance`, attestées pour `cap.concurrency.consensus-reference`, que la configuration `file-lock` ne réclame pas | **`test.lock.cross-process`** (exigée par `cap.concurrency.file-lock`), **`deployment.manifest`** (dépendance bloquante pour l'audit externe) |
 | `example-aggregate-budget-single-host.yaml` | mono-host / local-registry / file-lock / fail-closed | `test.lock.cross-process`, `test.idempotency.local` (`evidence/cross-process-run.log`), `test.unknown-outcome.blocks` (`evidence/unknown-outcome-run.log`) | **`deployment.manifest`** (dépendance bloquante pour l'audit externe) |
 | `example-aggregate-budget.yaml` | multi-host / distributed-consensus | aucune | toutes : **aucune implémentation de consensus multi-hôte n'existe** |
-| `consensus-replicated.yaml` | multi-host / distributed-consensus / fail-closed | aucune | toutes : modèle pour déploiement futur, adapter requis |
+| `consensus-replicated.yaml` | multi-host / distributed-consensus-registry / distributed-consensus / fail-closed | `test.consensus.safety`, `test.consensus.liveness`, `test.fault-tolerance`, `test.idempotency.distributed`, `test.cross-host.communication` (`evidence/test-raft-*.log`), `test.unknown-outcome.blocks` : 3 nœuds Raft, `tenir_governance` 5.6.0, bac à sable de l'auteur (non indépendant) | **`deployment.manifest`** |
 
 **`deployment.manifest` est une dépendance bloquante**, pas un détail. Sans ce manifeste, l'auditeur externe ne peut pas lier l'évidence à l'hypothèse de déploiement (`HOST_SCOPE = mono-host`). C'est le chaînon manquant pour tout audit indépendant. Seul l'opérateur peut le fournir (voir `evidence-type-specs-v1.md` §1 pour le schéma).
 
