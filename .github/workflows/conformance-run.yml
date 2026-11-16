@@ -1,0 +1,147 @@
+name: REG Conformance - Run
+
+# One run = one subject revision, one evidence bundle.
+#
+# Three ways in:
+#   - "Run workflow" button on this repository (workflow_dispatch)
+#   - `uses:` from another repository (workflow_call), so a runtime owner runs
+#     the suite from their own repository without write access to this one
+#   - push to the harness branch, which runs both targets as a self-check
+#
+# A green run is not a certification. FAIL makes the job fail; gaps and
+# ADAPTER_REQUIRED do not, and are listed in the bundle.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "What to run the vectors against"
+        type: choice
+        options: [reference, prismor]
+        default: reference
+      subject_repository:
+        description: "Subject repository (prismor target)"
+        default: "PrismorSec/prismor"
+      subject_ref:
+        description: "Subject commit, full 40-character SHA (prismor target)"
+        default: "29a40785f7bedd06a50a174d29ff9a3f0c9ac739"
+  workflow_call:
+    inputs:
+      target: {type: string, default: prismor}
+      subject_repository: {type: string, default: "PrismorSec/prismor"}
+      subject_ref: {type: string, required: true}
+      harness_ref:
+        description: "reg-conformance commit to run"
+        type: string
+        required: true
+  push:
+    branches: [feat/neutral-harness]
+    paths: ["harness/**", "tools/make_evidence_bundle.py", ".github/workflows/conformance-run.yml", "tests/test_harness.py"]
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(github.event_name == 'push' && '["reference","prismor"]' || format('["{0}"]', inputs.target)) }}
+    env:
+      SUBJECT_REPOSITORY: ${{ inputs.subject_repository || 'PrismorSec/prismor' }}
+      SUBJECT_REF: ${{ inputs.subject_ref || '29a40785f7bedd06a50a174d29ff9a3f0c9ac739' }}
+    steps:
+      - name: Check out the harness
+        uses: actions/checkout@v4
+        with:
+          repository: skiredj-prog/reg-conformance
+          ref: ${{ inputs.harness_ref || github.sha }}
+          path: harness-src
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install harness dependencies
+        run: python -m pip install -r harness-src/requirements.txt pytest
+
+      - name: Check out the subject at the pinned commit
+        if: matrix.target == 'prismor'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SUBJECT_REPOSITORY }}
+          ref: ${{ env.SUBJECT_REF }}
+          path: subject
+          persist-credentials: false
+
+      - name: Install the subject in its own environment
+        if: matrix.target == 'prismor'
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SUBJECT_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "subject_ref must be a full commit SHA"; exit 1; }
+          actual=$(git -C subject rev-parse HEAD)
+          [[ "$actual" == "$SUBJECT_REF" ]] || { echo "checked out $actual, expected $SUBJECT_REF"; exit 1; }
+          python -m venv "$RUNNER_TEMP/subject-venv"
+          "$RUNNER_TEMP/subject-venv/bin/pip" install --quiet ./subject
+          echo "PRISMOR_BIN=$RUNNER_TEMP/subject-venv/bin/prismor" >> "$GITHUB_ENV"
+          echo "SUBJECT_VERSION=$("$RUNNER_TEMP/subject-venv/bin/prismor" --version | awk '{print $NF}')" >> "$GITHUB_ENV"
+
+      - name: Check the instrument
+        working-directory: harness-src
+        run: python -m pytest tests/test_harness.py -q
+
+      - name: Run
+        id: run
+        working-directory: harness-src
+        shell: bash
+        run: |
+          set -uo pipefail
+          out="$RUNNER_TEMP/run"; mkdir -p "$out"
+          if [[ "${{ matrix.target }}" == "prismor" ]]; then
+            args=(--port harness.ports.prismor.port:PrismorGatewayPort
+                  --subject-repository "$SUBJECT_REPOSITORY" --subject-revision "$SUBJECT_REF"
+                  --subject-version "${SUBJECT_VERSION:-}" --subject-worktree-state clean)
+          else
+            args=(--port harness.ports.reference:ReferencePort)
+          fi
+          python -m harness "${args[@]}" --probes --output "$out/report.json" 2>&1 | tee "$out/run.log"
+          code=${PIPESTATUS[0]}
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Build the evidence bundle
+        working-directory: harness-src
+        shell: bash
+        run: |
+          python tools/make_evidence_bundle.py --report "$RUNNER_TEMP/run/report.json" \
+            --log "$RUNNER_TEMP/run/run.log" --out "$RUNNER_TEMP/evidence" \
+            --zip "$RUNNER_TEMP/reg-evidence-${{ matrix.target }}.zip" | tee "$RUNNER_TEMP/bundle.txt"
+          {
+            echo "### REG Conformance run: ${{ matrix.target }}"
+            echo
+            echo "Not a certification. One subject revision, one run."
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/bundle.txt"
+            echo
+            cat "$RUNNER_TEMP/evidence/SHA256SUMS"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reg-evidence-${{ matrix.target }}
+          path: ${{ runner.temp }}/evidence/
+          if-no-files-found: error
+
+      - name: Fail on FAIL only
+        shell: bash
+        run: |
+          case "${{ steps.run.outputs.code }}" in
+            0|2) echo "no FAIL (code ${{ steps.run.outputs.code }}: 2 means gaps or adapter required)";;
+            3)   echo "INCONCLUSIVE results present"; exit 1;;
+            *)   echo "FAIL results present"; exit 1;;
+          esac
