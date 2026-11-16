@@ -247,5 +247,107 @@
     "verification_status": "planned",
     "description": "Planned: functional equivalence of results across execution adapters.",
     "source": null
+  },
+  {
+    "id": "CW-REGPLUS-DEDUP-LOCAL",
+    "framework": "REG+ catalogue v1.1.0",
+    "normative_clause": "DEDUP_LAYER local-registry (cap.dedup.local-registry)",
+    "reg_mechanism": "REJECT on a reused nonce",
+    "vector_ref": "C5",
+    "conformance_type": "—",
+    "verification_status": "unverified",
+    "description": "Same subject, two scopes. C5 checks that one kernel rejects a duplicate nonce. The capability states where a local registry is enough (one process or host) and asks for test.idempotency.local. Limit: a C5 PASS does not establish the capability, and the capability does not replace C5.",
+    "source": {
+      "framework_version": "catalog/capabilities-v1.yaml, version 1.1.0",
+      "clause_id": "cap.dedup.local-registry",
+      "official_wording": "Registre d'idempotence local au processus/hôte.",
+      "url": "https://github.com/skiredj-prog/reg-conformance/blob/d279654c7b1bd526da7bf9dfe7a2ac4819616579/catalog/capabilities-v1.yaml#L126",
+      "accessed": "2026-11-16"
+    }
+  },
+  {
+    "id": "CW-REGPLUS-DEDUP-CONSENSUS",
+    "framework": "REG+ catalogue v1.1.0",
+    "normative_clause": "DEDUP_LAYER distributed-consensus-registry (cap.dedup.consensus-registry)",
+    "reg_mechanism": "REJECT / REPLAY_DETECTED on a consumed nonce",
+    "vector_ref": "CT-R4-003",
+    "conformance_type": "—",
+    "verification_status": "unverified",
+    "description": "Same subject across hosts. CT-R4-003 checks that a consumed nonce cannot be committed again on one kernel. Limit: no registered vector runs more than one host, so the vector says nothing about a replicated registry.",
+    "source": {
+      "framework_version": "catalog/capabilities-v1.yaml, version 1.1.0",
+      "clause_id": "cap.dedup.consensus-registry",
+      "official_wording": "Registre de déduplication répliqué par consensus distribué.",
+      "url": "https://github.com/skiredj-prog/reg-conformance/blob/d279654c7b1bd526da7bf9dfe7a2ac4819616579/catalog/capabilities-v1.yaml#L134",
+      "accessed": "2026-11-16"
+    }
+  },
+  {
+    "id": "CW-REGPLUS-AGR",
+    "framework": "REG+ catalogue v1.1.0",
+    "normative_clause": "Invariant AGR (agreement)",
+    "reg_mechanism": "REJECT / REPLAY_DETECTED on a consumed nonce",
+    "vector_ref": "CT-R4-003",
+    "conformance_type": "—",
+    "verification_status": "unverified",
+    "description": "AGR forbids two commits of one reservation by two nodes; CT-R4-003 forbids two commits of one grant on one kernel. Limit: the vector has a single committer and does not exercise competing nodes.",
+    "source": {
+      "framework_version": "catalog/capabilities-v1.yaml, version 1.1.0",
+      "clause_id": "AGR",
+      "official_wording": "at most one commit per reservation",
+      "url": "https://github.com/skiredj-prog/reg-conformance/blob/d279654c7b1bd526da7bf9dfe7a2ac4819616579/catalog/capabilities-v1.yaml#L49",
+      "accessed": "2026-11-16"
+    }
+  },
+  {
+    "id": "CW-REGPLUS-LIN",
+    "framework": "REG+ catalogue v1.1.0",
+    "normative_clause": "Invariant LIN (linearizability)",
+    "reg_mechanism": "HARD_VETO when standing is revoked between verdict and commit",
+    "vector_ref": "C3",
+    "conformance_type": "—",
+    "verification_status": "unverified",
+    "description": "C3 and CT-R4-005 are check-then-commit races; LIN is the ordering property that decides them when operations overlap. Limit: both vectors inject the change sequentially in one process and do not exercise concurrent histories.",
+    "source": {
+      "framework_version": "catalog/capabilities-v1.yaml, version 1.1.0",
+      "clause_id": "LIN",
+      "official_wording": "linearizable history exists",
+      "url": "https://github.com/skiredj-prog/reg-conformance/blob/d279654c7b1bd526da7bf9dfe7a2ac4819616579/catalog/capabilities-v1.yaml#L36",
+      "accessed": "2026-11-16"
+    }
+  },
+  {
+    "id": "CW-REGPLUS-UNCERTAINTY",
+    "framework": "REG+ catalogue v1.1.0",
+    "normative_clause": "UNCERTAINTY fail-closed (cap.uncertainty.fail-closed)",
+    "reg_mechanism": "No execution on transport fault",
+    "vector_ref": "C4",
+    "conformance_type": "—",
+    "verification_status": "unverified",
+    "description": "Same subject: an unknown outcome must not let the action proceed. Limit: C4 is NOT_APPLICABLE on the in-process reference kernel and ADAPTER_REQUIRED over HTTP, so no executed vector covers it today; the capability is evidenced by test.unknown-outcome.blocks only.",
+    "source": {
+      "framework_version": "catalog/capabilities-v1.yaml, version 1.1.0",
+      "clause_id": "cap.uncertainty.fail-closed",
+      "official_wording": "Résultat UNKNOWN bloque la transition.",
+      "url": "https://github.com/skiredj-prog/reg-conformance/blob/d279654c7b1bd526da7bf9dfe7a2ac4819616579/catalog/capabilities-v1.yaml#L180",
+      "accessed": "2026-11-16"
+    }
+  },
+  {
+    "id": "CW-REGPLUS-I8",
+    "framework": "REG+ catalogue v1.1.0",
+    "normative_clause": "Invariant I8 (budget-ceiling-aggregate)",
+    "reg_mechanism": "Not found in the registered vectors",
+    "vector_ref": "—",
+    "conformance_type": "—",
+    "verification_status": "unverified",
+    "description": "No registered vector exercises an aggregate budget. I8 is evidenced through REG+ evidence types and capability files only. Note: the manuscript uses the identifier I8 for a different invariant (attempt-history permanence).",
+    "source": {
+      "framework_version": "catalog/capabilities-v1.yaml, version 1.1.0",
+      "clause_id": "I8",
+      "official_wording": "reserved + committed <= capacity",
+      "url": "https://github.com/skiredj-prog/reg-conformance/blob/d279654c7b1bd526da7bf9dfe7a2ac4819616579/catalog/capabilities-v1.yaml#L19",
+      "accessed": "2026-11-16"
+    }
   }
 ]

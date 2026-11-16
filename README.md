@@ -9,6 +9,29 @@
 > real runtime adapter and external outcome evidence exist.
 > See [lifecycle integration](LIFECYCLE_INTEGRATION.md).
 
+## What is in this repository
+
+Four things live here. They answer different questions and are versioned separately.
+
+| Layer | Question it answers | Where | Version |
+|---|---|---|---|
+| **REG** | What must a runtime do before, at and after it commits an action? | `reg-standards-baseline/rfc/` (RFC-0 to RFC-7) | frozen baseline |
+| **Conformance suite** | Does a given runtime do it? | `runner.py`, `vectors/`, [`VECTORS.md`](VECTORS.md), [`spec.md`](spec.md), `lifecycle/` ([status](LIFECYCLE_INTEGRATION.md)) | suite v0.3.2 |
+| **REG+** | In which deployment does a guarantee still hold, and what evidence shows it? | `catalog/`, `specs/`, `profiles/`, `capabilities/`, `tools/` | catalogue v1.1.0 |
+| **Crosswalk** | Which clause of another framework, or of another layer, does a mechanism relate to? | `crosswalk/` ([mapping policy](crosswalk/MAPPING_POLICY.md)) | — |
+
+`manuscript/` holds the research paper behind the membrane model (v7.2). REG-ARCH, the architecture model, is a v0.4.1 candidate: it is not ratified and is not on this branch (`draft/reg-arch-v0.4.1-candidate`).
+
+**Passing vectors and holding a REG+ capability are different claims.** A vector exercises one runtime through one interface. A REG+ profile states the deployment in which a property is claimed and the evidence required. Neither implies the other. The rows that relate them are in the crosswalk, each with its stated limit.
+
+**Counts today.** 56 vector ids are registered: 14 are exercised by the runner, 17 are specified by the RFCs and not yet tested, 25 are reserved (identified, but not specified by the frozen RFCs). REG+ enumerates 144 configurations, of which 42 are admissible.
+
+**Check that this page is still true.** `python tools/check_coherence.py` compares the registries, the documents and the published files, and lists what disagrees. Points that are known and open are in [`coherence-baseline.json`](coherence-baseline.json); two identifier families (C1–C3, I8) currently carry two meanings and are listed there.
+
+**Explore.** [Vector lab](https://skiredj-prog.github.io/reg-conformance/lab/) · [Crosswalk](https://skiredj-prog.github.io/reg-conformance/crosswalk/)
+
+## REG+
+
 Standard de preuve runtime pour REG+. Séparation stricte : spécification (`specs/`),
 données déclaratives (`catalog/`), outils (`tools/`), profils (`profiles/`), tests (`tests/`).
 

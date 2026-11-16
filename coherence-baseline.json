@@ -1,6 +1,4 @@
 {
-  "COH-V08": "Author's decision: the lifecycle vectors CT-R4-011..013 rest on the manuscript, not on the frozen RFC-4 text; CT-R5 ids test RFC-1 and RFC-4 clauses. Keep the ids and say so, or renumber.",
-  "COH-V09": "Author's decision: how the 25 reserved ids are reported, and whether the 28 specified properties enter the suite.",
   "COH-P01": "Author's decision: which profile validator is kept.",
   "COH-P02": "Author's decision: which rule set is kept.",
   "COH-P03": "Author's decision: the fix sits on fix/list-1-quorum-profile-harness, which edits the consensus contract.",
@@ -10,8 +8,9 @@
   "COH-P08": "Author's decision: evidence must be re-run to move a pin; it cannot be edited.",
   "COH-P09": "Author's: write the v0.6.0 and v0.6.1 entries.",
   "COH-P10": "Author's decision: which capabilities require LIN and AGR.",
+  "COH-P11": "Author's decision: one capability list and one spelling, or a stated relation between the two lists.",
+  "COH-V08": "Author's decision: the lifecycle vectors CT-R4-011..013 rest on the manuscript, not on the frozen RFC-4 text; CT-R5 ids test RFC-1 and RFC-4 clauses. Keep the ids and say so, or renumber.",
+  "COH-V09": "Author's decision: how the 25 reserved ids are reported, and whether the 28 specified properties enter the suite.",
   "COH-X01": "Author's decision: rename one side of each pair.",
-  "COH-X02": "Author's decision: accept, amend or reject each proposed correspondence.",
-  "COH-X03": "Author's decision: where the REG-ARCH candidate lives while it is not ratified.",
-  "COH-X04": "Mechanical: add a map of the repository to README.md."
+  "COH-X03": "Author's decision: where the REG-ARCH candidate lives while it is not ratified."
 }

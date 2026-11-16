@@ -7,7 +7,8 @@
     python tools/check_coherence.py --json
 
 Each check has a stable id and returns evidence lines; no evidence means the
-check holds. `coherence-baseline.json` lists the findings that are known and
+check holds. A check that cannot be evaluated here (no git tags, a missing
+optional package) is reported as skipped and counts neither way. `coherence-baseline.json` lists the findings that are known and
 awaiting a decision. A finding outside the baseline fails the build, so the
 list can shrink but cannot grow unnoticed. A baseline entry whose check now
 holds also fails, so the baseline is never left stale.
@@ -123,7 +124,7 @@ def v04():
     try:
         import jsonschema
     except ImportError:
-        return ["jsonschema is not installed: this check did not run"]
+        return None
     schema = json.loads(read("vectors/schema.json"))
     ok, _ = load_vector_yaml()
     out = []
@@ -328,6 +329,25 @@ def p10():
     return [f"defined in catalog/capabilities-v1.yaml and required by no capability file: {few(idle)}"] if idle and cited else []
 
 
+@check("COH-P11", "REG+", "Capability files and the catalogue name the same capabilities")
+def p11():
+    cat = {v["capability_id"] for axis in ((yaml.safe_load(read("catalog/capabilities-v1.yaml")) or {}).get("capabilities") or {}).values()
+           for v in axis.values()}
+    files = {d.get("capability_id") for _, d in _capabilities()}
+    if not cat or not files:
+        return []
+    norm = lambda x: x.replace(".", "-")
+    common = {norm(x) for x in cat} & {norm(x) for x in files}
+    out = []
+    if common and not (cat & files):
+        out.append(f"the same capability is spelled two ways: {sorted(cat)[0].split('.')[0]}.x.y in the catalogue, cap-x-y in capabilities/ ({len(common)} such pairs)")
+    if len(common) < len(files):
+        out.append(f"{len(files) - len(common)} of {len(files)} capability files have no capability in the catalogue: {few({norm(f) for f in files} - common)}")
+    if len(common) < len(cat):
+        out.append(f"{len(cat) - len(common)} of {len(cat)} catalogue capabilities have no capability file")
+    return out
+
+
 @check("COH-P07", "REG+", "Capability file names match their ids")
 def p07():
     off = [f"{p.name} holds id {d.get('capability_id')}" for p, d in _capabilities() if p.stem != d.get("capability_id")]
@@ -355,7 +375,7 @@ def p09():
     releases = sorted((t for t in tags if re.fullmatch(r"v\d+\.\d+\.\d+", t)), key=lambda t: tuple(map(int, t[1:].split("."))))
     entries = set(re.findall(r"^## \[?(v\d+\.\d+\.\d+)", read("CHANGELOG.md"), re.M))
     if not releases or not entries:
-        return []
+        return None
     newest = max(entries, key=lambda t: tuple(map(int, t[1:].split("."))))
     late = [t for t in releases if t not in entries and tuple(map(int, t[1:].split("."))) > tuple(map(int, newest[1:].split(".")))]
     return [f"released without a CHANGELOG entry: {few(late)} (CHANGELOG.md stops at {newest})"] if late else []
@@ -371,7 +391,10 @@ def x01():
     if manuscripts:
         text = manuscripts[-1].read_text(encoding="utf-8")
         paper = {f"I{n}": name.strip() for n, name in re.findall(r"\*\*\$?I_?(\d)\$? — ([^*]+)\*\*", text)}
+        same = lambda x, y: re.sub(r"[^a-z0-9]", "", x.lower()) == re.sub(r"[^a-z0-9]", "", (y or "").lower())
         for i in sorted(set(paper) & set(reg_plus)):
+            if same(paper[i], reg_plus[i]):
+                continue
             out.append(f"{i} is “{paper[i]}” in manuscript/{manuscripts[-1].name} and “{reg_plus[i]}” in catalog/capabilities-v1.yaml")
     consensus = dict(re.findall(r"^## \d+\. ([^(\n]+?) \((C[1-9])\)", read("specs/consensus-contract-v1.md"), re.M))
     vectors = runner_module().CORE_VECTORS
@@ -381,17 +404,43 @@ def x01():
     return out
 
 
+def crosswalk_rows():
+    try:
+        return json.loads(read("crosswalk/data/crosswalk.json") or "[]")
+    except json.JSONDecodeError:
+        return []
+
+
 @check("COH-X02", "Across layers", "Something links REG vectors to REG+ properties")
 def x02():
-    r_src = read("runner.py") + "".join(read(f"vectors/{n}.yaml") for n in VECTOR_FILES)
-    v_in_plus = sum(len(re.findall(r"CT-R\d-\d{3}", p.read_text(encoding="utf-8", errors="ignore")))
-                    for d in ("catalog", "specs", "capabilities", "profiles") for p in (ROOT / d).rglob("*") if p.is_file())
-    plus_in_v = len(re.findall(r"\bI8\b|\bLIN\b|\bAGR\b|aggregate budget|quorum", r_src))
-    mapping = [f for f in ("registry/coverage.yaml", "catalog/vector-coverage.yaml") if (ROOT / f).is_file()]
-    if v_in_plus == 0 and plus_in_v == 0 and not mapping:
-        return ["no REG+ file cites a vector id, the runner and vector sources cite no REG+ invariant, and no mapping file exists",
-                "the registered vectors test RFC-0 to RFC-7; REG+ (I8, LIN, AGR, consensus) is tested by evidence types and capability files only"]
-    return []
+    rows = [r for r in crosswalk_rows() if r.get("framework", "").startswith("REG+")]
+    if rows:
+        return []
+    return ["no crosswalk row relates a REG vector to a REG+ capability or invariant; no REG+ file cites a vector id "
+            "and the runner cites no REG+ invariant",
+            "the registered vectors test RFC-0 to RFC-7; REG+ (I8, LIN, AGR, consensus) is tested by evidence types and capability files only"]
+
+
+@check("COH-X05", "Across layers", "Crosswalk rows are well formed, cite vectors that exist and quote text that is still there")
+def x05():
+    rows, out = crosswalk_rows(), []
+    try:
+        import jsonschema
+        errs = list(jsonschema.Draft202012Validator(json.loads(read("crosswalk/schema.json"))).iter_errors(rows))
+        if errs:
+            out.append(f"{len(errs)} schema error(s), e.g. {errs[0].message[:90]}")
+    except ImportError:
+        return None
+    known = set(runner_module().VECTORS)
+    for r in rows:
+        for vid in re.findall(r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*", r.get("vector_ref", "")):
+            if vid not in known:
+                out.append(f"{r['id']} cites {vid}, which runner.py does not register")
+        src = r.get("source") or {}
+        m = re.match(r"https://github\.com/skiredj-prog/reg-conformance/blob/[0-9a-f]{40}/([^#]+)", src.get("url", ""))
+        if m and src.get("official_wording") not in read(m.group(1)):
+            out.append(f"{r['id']} quotes “{src['official_wording'][:50]}”, which is no longer in {m.group(1)}")
+    return out
 
 
 @check("COH-X03", "Across layers", "REG-ARCH is present where it is referred to")
@@ -413,7 +462,15 @@ def x04():
              "crosswalk/": r"crosswalk", "lifecycle/": r"lifecycle/|LIFECYCLE", "capabilities/": r"capabilities/",
              "harness/": r"harness"}
     absent = [k for k, pat in parts.items() if (ROOT / k.rstrip("/")).exists() and not re.search(pat, readme)]
-    return [f"present in the repository, absent from README.md: {few(absent, 8)}"] if absent else []
+    out = [f"present in the repository, absent from README.md: {few(absent, 8)}"] if absent else []
+    m = re.search(r"(\d+) vector ids are registered: (\d+) are exercised by the runner, (\d+) are specified[^.]*?(\d+) are reserved", readme)
+    if m:
+        ids = set(runner_module().VECTORS)
+        st = [row[3] for i, row in vectors_md_rows().items() if i in ids]
+        want = (len(ids), st.count("IMPLEMENTED"), st.count("DECLARED"), st.count("RESERVED"))
+        if tuple(map(int, m.groups())) != want:
+            out.append(f"README.md states {m.groups()} for registered/exercised/specified/reserved; the registries give {want}")
+    return out
 
 
 # ── driver ───────────────────────────────────────────────────────────────────
@@ -439,10 +496,11 @@ def main(argv=None):
     results = run_all()
     baseline = json.loads(BASELINE.read_text(encoding="utf-8")) if BASELINE.is_file() else {}
     findings = {r["id"] for r in results if r["evidence"]}
-    new, healed = sorted(findings - set(baseline)), sorted(set(baseline) - findings)
+    skipped = {r["id"] for r in results if r["evidence"] is None}
+    new, healed = sorted(findings - set(baseline)), sorted(set(baseline) - findings - skipped)
 
     if args.json:
-        print(json.dumps({"results": results, "new": new, "healed": healed}, indent=2, ensure_ascii=False))
+        print(json.dumps({"results": results, "new": new, "healed": healed, "skipped": sorted(skipped)}, indent=2, ensure_ascii=False))
     elif args.markdown:
         print("# Coherence report\n")
         print("Generated by `python tools/check_coherence.py --markdown`. Do not edit by hand.\n")
@@ -452,19 +510,20 @@ def main(argv=None):
         for r in results:
             if r["layer"] != layer:
                 layer = r["layer"]; print(f"\n## {layer}\n")
-            mark = "FINDING" if r["evidence"] else "holds"
+            mark = "FINDING" if r["evidence"] else ("skipped" if r["evidence"] is None else "holds")
             print(f"### {r['id']} — {r['title']}: {mark}\n")
-            for e in r["evidence"]:
+            for e in r["evidence"] or []:
                 print(f"- {e}")
             if r["id"] in baseline and r["evidence"]:
                 print(f"\nAwaiting: {baseline[r['id']]}")
             print()
     else:
         for r in results:
-            print(f"{'✗' if r['evidence'] else '✓'} {r['id']}  {r['title']}")
-            for e in r["evidence"]:
+            print(f"{'✗' if r['evidence'] else ('–' if r['evidence'] is None else '✓')} {r['id']}  {r['title']}")
+            for e in r["evidence"] or []:
                 print(f"      {e}")
-        print(f"\n{len(findings)} finding(s) in {len(results)} checks | new: {new or 'none'} | fixed but still in baseline: {healed or 'none'}")
+        print(f"\n{len(findings)} finding(s) in {len(results)} checks | new: {new or 'none'} | fixed but still in baseline: {healed or 'none'}"
+              + (f" | skipped: {sorted(skipped)}" if skipped else ""))
 
     if args.strict:
         return 1 if findings else 0
