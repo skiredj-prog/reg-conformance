@@ -1,0 +1,31 @@
+flowchart TD
+    A[Client choisit sa pile interne et son profil] --> G0[G0 · Épingler standard, profil, vecteurs, runner et versions]
+    G0 --> P1[G1a · Préflight de l’interface client]
+    G0 --> P2[G1b · Sécurité et isolation du test]
+    P1 --> READY{Préconditions satisfaites ?}
+    P2 --> READY
+    READY -->|Non| BLOCK[Stop · corriger configuration ou garde de sécurité]
+    READY -->|Oui| DAG[G2 · Construire et exécuter le DAG selon les dépendances explicites]
+
+    DAG --> INDEP[Vecteurs indépendants · parallèles si fixtures/espaces de noms isolés]
+    DAG --> ORDER[Scénario stateful · sériel seulement le long des arêtes causales]
+    DAG --> RACE[Test de concurrence · appels synchronisés intentionnellement]
+
+    INDEP --> COLLECT[Agréger réponses, états, traces et preuves]
+    ORDER --> COLLECT
+    RACE --> COLLECT
+
+    COLLECT --> G3[G3 · Vérifier la couverture requise]
+    COLLECT --> G4[G4 · Vérifier les assertions par vecteur]
+    COLLECT --> G5[G5 · Vérifier la liaison et l’intégrité de l’évidence]
+    G3 --> FINAL[Verdict qualifié pour le profil + rapport explicatif]
+    G4 --> FINAL
+    G5 --> FINAL
+    FINAL --> OUT[JSON + HTML/JUnit + manifeste de preuves, sans secrets]
+
+    classDef existing fill:#e7f1ff,stroke:#2c5f9a,color:#10243a;
+    classDef proposed fill:#fff2cc,stroke:#b87900,color:#3b2a00;
+    classDef stop fill:#fde2e2,stroke:#a52a2a,color:#4a1111;
+    class A,COLLECT existing;
+    class G0,G1a,G1b,P1,P2,READY,DAG,INDEP,ORDER,RACE,G3,G4,G5,FINAL,OUT proposed;
+    class BLOCK stop;

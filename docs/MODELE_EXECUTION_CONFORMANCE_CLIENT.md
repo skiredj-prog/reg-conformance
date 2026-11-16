@@ -51,7 +51,11 @@ flowchart TB
   LAB["Membrane de laboratoire"] -. "LAB_REFERENCE seulement" .-> REPORT
 ```
 
-Source éditable complète : [diagramme de crosswalk](REG_Layered_Crosswalk.mmd). Les cases REG-ARCH, REG Core et REG+ n’ont volontairement aucune arête directe entre elles.
+Source éditable : [diagramme de crosswalk](REG_Layered_Crosswalk.mmd). Rendu PNG : [REG_Layered_Crosswalk.png](diagrams/REG_Layered_Crosswalk.png).
+
+![Crosswalk visuel des couches documentaires REG](diagrams/REG_Layered_Crosswalk.png)
+
+Les cases REG-ARCH, REG Core et REG+ n’ont volontairement aucune arête directe entre elles.
 
 ## Cross-reference de l’ordre illustré par REG-ARCH
 
@@ -85,6 +89,10 @@ flowchart TD
     G4 --> FINAL
     G5 --> FINAL
 ```
+
+![Flux client et gates REG](diagrams/REG_Client_Conformance_Flow_Gates.png)
+
+Source éditable : [REG_Client_Conformance_Flow_Gates.mmd](diagrams/REG_Client_Conformance_Flow_Gates.mmd).
 
 G0–G5 sont des **gates du produit d’essai proposés ici**, pas des IDs de gate normatifs du standard. G2 est la gate de scheduling/exécution. G3–G5 peuvent être calculés en parallèle une fois le jeu complet des résultats rassemblé; le verdict final attend leur agrégation.
 
