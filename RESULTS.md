@@ -7,7 +7,9 @@ evidence bundle. Read [`CLAIMS.md`](CLAIMS.md) before quoting any of it. No
 line here is a certification.
 
 REG vectors and effect probes are counted apart. The suite has 56 REG vectors
-and 4 effect probes.
+and 4 effect probes. From the next published run on, each line will also give
+the reading by candidate property family described in `CLAIMS.md`. The run
+below predates it.
 
 | Subject | Revision | Level | REG vectors | Effect probes | Run |
 |---|---|---|---|---|---|
@@ -46,6 +48,7 @@ python -m harness --port harness.ports.reference:ReferencePort --probes
 python -m pytest tests/test_harness.py
 ```
 
-The first command should end with `PASS: 14  NOT_APPLICABLE: 1  IMPLEMENTATION_GAP: 41`.
-The second checks the instrument: each effect probe is run against a
-deliberately faulty test double and must report `FAIL`.
+The first command should print `PASS: 14  NOT_APPLICABLE: 1  IMPLEMENTATION_GAP: 41`,
+then the reading by candidate property family. The second checks the
+instrument: each effect probe is run against a deliberately faulty test double
+and must report `FAIL`.

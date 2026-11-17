@@ -7,7 +7,9 @@ import os
 import sys
 
 import runner as R
+from . import properties
 from .adapter import PortAdapter, load_port
+from .scenarios import PROBES, SCENARIOS
 
 
 def main(argv=None):
@@ -34,15 +36,38 @@ def main(argv=None):
     report = R.generate_report(adapter, results, "", R.build_evidence_binding(adapter, args))
     report["port"] = {"spec": args.port, "name": adapter.port.name,
                       "capabilities": sorted(adapter.port.capabilities)}
+    probes = []
     if args.probes:
         probes = adapter.run_probes()
         print("\n  Harness probes (not REG vectors)")
         for r in probes:
             print(f"  {R.MARKS.get(r.status.value, '?')}  {r.vector_id:<16}  {r.status.value:<22}  {r.details or r.gap_note}")
         report["harness_probes"] = {
-            "note": "Not REG vectors. Excluded from every summary and from conformance_status.",
+            "note": ("Not REG vectors. Excluded from every vector summary and from "
+                     "conformance_status. The property view counts them, as probes."),
             "results": [R.asdict(r) for r in probes]}
     print("\n  " + "  ".join(f"{k}: {v}" for k, v in report["summary"].items() if v))
+
+    # A second reading of the same results, by candidate property family.
+    view = properties.view(results, probes, registered=R.VECTORS,
+                           executable=set(SCENARIOS) | set(PROBES))
+    report["property_view"] = view
+    print("\n" + "\n".join(properties.render(view)))
+
+    # Which checks went forward on a FLAG, and whether its condition was observed.
+    on_flag = sorted(c for c, f in adapter.facts.items() if f.get("admitted_on") == "FLAG")
+    observed = {c: bool(adapter.facts[c].get("flag_conditions")) for c in on_flag}
+    report["admission"] = {
+        "rule": ("RFC-0 §4: PASS (ALLOW) and FLAG (ALLOW_WITH_MONITORING) both let execution "
+                 "proceed. A FLAG proceeds only under an explicit condition or supervision."),
+        "checks_admitted_on_flag": on_flag,
+        "flag_condition_observed": observed,
+        "facts": adapter.facts}
+    if on_flag:
+        print(f"\n  {len(on_flag)} check(s) went forward on FLAG (ALLOW_WITH_MONITORING, RFC-0 §4): "
+              + ", ".join(on_flag))
+        print(f"  Condition or supervision observed through the port: "
+              f"{sum(observed.values())} of {len(on_flag)}")
 
     s = report["summary"]
     code = 1 if s["FAIL"] else 3 if s["INCONCLUSIVE"] else \

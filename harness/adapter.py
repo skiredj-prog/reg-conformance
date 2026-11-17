@@ -25,8 +25,12 @@ class PortAdapter(R.BaseAdapter):
         # A port is a translation layer: it can never report native conformance.
         self.evidence_level = R.EvidenceLevel(min(int(port.evidence_level),
                                                   int(R.EvidenceLevel.ADAPTER_TESTED)))
+        # check id -> facts a scenario recorded beside its result (for example
+        # that it went forward on a FLAG). Kept apart from the result type.
+        self.facts = {}
 
     def _run_scenario(self, vid, scenario):
+        self.facts.pop(vid, None)
         missing = sorted(scenario.requires - set(self.port.capabilities))
         if missing:
             return self._ar(vid, "port does not declare: " + ", ".join(missing))
@@ -35,7 +39,10 @@ class PortAdapter(R.BaseAdapter):
             return self._ar(vid, "port cannot produce intent: " + ", ".join(missing))
         try:
             self.port.reset()
-            state, details = scenario.run(self.port)
+            outcome = scenario.run(self.port)
+            state, details = outcome[0], outcome[1]
+            if len(outcome) > 2 and outcome[2]:
+                self.facts[vid] = outcome[2]
         except NotImplementedError as e:
             # Declared but not implemented: the port's claim is wrong, not the subject.
             return self._inconclusive(vid, f"declared capability not implemented: {e}")

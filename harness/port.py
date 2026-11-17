@@ -49,6 +49,13 @@ R_BINDING = "BINDING_VIOLATION"
 R_INVALID_DISPOSITION = "INVALID_DISPOSITION"
 R_REPLAY = "NONCE_REPLAY"
 
+# Dispositions that let execution proceed (RFC-0 §4). PASS is ALLOW. FLAG is
+# ALLOW_WITH_MONITORING: "execution may proceed only under an explicitly
+# defined additional condition or supervision" and is "never a bare ALLOW".
+# A port reports the condition it observes in `Decision.conditions`.
+# HOLD (SUSPEND) and HARD_VETO (BLOCK) never admit.
+ADMISSION_DISPOSITIONS = frozenset({"PASS", "FLAG"})
+
 
 class Refused(Exception):
     """The runtime refused an operation.
@@ -72,6 +79,9 @@ class Decision:
     action_type: str
     principal: str
     raw: dict = field(default_factory=dict)   # opaque to scenarios
+    # For a FLAG: the additional condition or supervision the runtime attaches,
+    # as the port observes it. Empty when the port observes none.
+    conditions: tuple = ()
 
 
 @dataclass

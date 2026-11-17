@@ -18,7 +18,37 @@ python -m harness --port harness.ports.reference:ReferencePort --probes
 - A refusal by the runtime's own policy (`DENIED`) never satisfies a vector
   about REG structural admissibility (`INADMISSIBLE`).
 - Effect probes (`HX-EFFECT-*`) are not REG vectors. They are reported apart
-  and never enter a summary or `conformance_status`.
+  and never enter a vector summary or `conformance_status`.
+
+## What counts as an admission
+
+RFC-0 §4 gives each disposition an execution instruction: `PASS` is ALLOW and
+`FLAG` is ALLOW_WITH_MONITORING. Both let execution proceed, so a scenario
+that needs an admitted action accepts either. `HOLD` and `HARD_VETO` never do.
+
+A `FLAG` proceeds "only under an explicitly defined additional condition or
+supervision". A port reports the condition it observes in
+`Decision.conditions`. The run lists every check that went forward on a
+`FLAG` and says for how many of them a condition was observed.
+
+## Reading a run by property
+
+After the vector list, a run prints a second reading of the same results,
+grouped by candidate property family (`properties.yaml`):
+
+```
+EGP-06 A refusal or a suspension produces no governed effect   PASS 2  FAIL 0  not run 1
+```
+
+- The families are candidates. They are not part of the frozen RFCs.
+- The view counts executed checks, vectors and probes alike, under the family
+  each one exercises. It changes no result and no tally: the 56-vector summary
+  is computed exactly as before.
+- `not run` counts checks that exist and could not be run on this subject.
+  `no vector` counts properties indexed in `VECTORS.md` that have no registered
+  vector yet.
+- A family with a passing check is not a family satisfied. One check observed
+  one behaviour.
 
 ## Hooking a runtime
 

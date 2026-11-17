@@ -1,6 +1,7 @@
 """Runtime-neutral scenarios, one per executable vector.
 
-A scenario returns (state, details). State is one of the runner's reporting
+A scenario returns (state, details), or (state, details, facts) when it has
+something to record beside the result. State is one of the runner's reporting
 states. A scenario never names a runtime and never reads runtime internals.
 """
 from __future__ import annotations
@@ -31,6 +32,26 @@ def _principal(tag: str) -> str:
     return f"{tag}-{uuid.uuid4().hex[:8]}"
 
 
+# -- admission ---------------------------------------------------------------
+# RFC-0 §4 gives each disposition an execution instruction. PASS is ALLOW and
+# FLAG is ALLOW_WITH_MONITORING: both let execution proceed, FLAG only under an
+# explicit condition or supervision. A scenario that needs "an admitted action"
+# therefore accepts either, and records which one it went forward on.
+
+def _admitted(d) -> bool:
+    return d.disposition in P.ADMISSION_DISPOSITIONS
+
+
+def _admission(d) -> dict:
+    """Facts kept beside a result when the check went forward on this decision."""
+    return {"admitted_on": d.disposition,
+            "flag_conditions": [str(c) for c in (getattr(d, "conditions", ()) or ())]}
+
+
+def _via(d) -> str:
+    return " (admitted on FLAG)" if d.disposition == "FLAG" else ""
+
+
 def c1(rt):
     d = rt.evaluate(P.NO_STANDING, principal=_principal("u"), action_type="wire_transfer")
     return (PASS, "HARD_VETO on standing failure") if d.disposition == "HARD_VETO" \
@@ -46,16 +67,17 @@ def c2(rt):
 def c3(rt):
     who = _principal("race")
     d = rt.evaluate(P.ADMISSIBLE, principal=who, action_type="wire_transfer")
-    if d.disposition != "PASS":
+    if not _admitted(d):
         return INCONCLUSIVE, "could not establish the valid-verdict precondition"
     rt.revoke(who)
     try:
         rt.commit(d)
     except P.Refused as e:
         if e.code == P.R_STANDING_REVOKED and e.disposition == "HARD_VETO":
-            return PASS, "post-verdict revocation produced HARD_VETO; commit blocked"
-        return INCONCLUSIVE, f"commit refused without establishing HARD_VETO: {e}"
-    return FAIL, "commit accepted after revocation"
+            return (PASS, "post-verdict revocation produced HARD_VETO; commit blocked" + _via(d),
+                    _admission(d))
+        return INCONCLUSIVE, f"commit refused without establishing HARD_VETO: {e}", _admission(d)
+    return FAIL, "commit accepted after revocation", _admission(d)
 
 
 def _replay(vector_id):
@@ -72,21 +94,23 @@ def _replay(vector_id):
 
 def r4_001(rt):
     d = rt.evaluate(P.ADMISSIBLE, principal="a", action_type="wire_transfer")
-    if d.disposition != "PASS":
-        return FAIL, f"disposition={d.disposition}"
+    if not _admitted(d):
+        return FAIL, f"no admission (disposition={d.disposition})"
     rt.commit(d, action_type="wire_transfer")
-    return PASS, "valid grant bound and committed"
+    return PASS, "valid grant bound and committed" + _via(d), _admission(d)
 
 
 def r4_002(rt):
     d = rt.evaluate(P.ADMISSIBLE, principal="a", action_type="wire_transfer")
-    if d.disposition != "PASS":
-        return FAIL, "no PASS"
+    if not _admitted(d):
+        return FAIL, f"no admission (disposition={d.disposition})"
     try:
         rt.commit(d, action_type="account_deletion")
     except P.Refused as e:
-        return (PASS, "payload binding violation refused") if e.code == P.R_BINDING else (FAIL, str(e))
-    return FAIL, "binding violation not detected"
+        if e.code == P.R_BINDING:
+            return PASS, "payload binding violation refused" + _via(d), _admission(d)
+        return FAIL, str(e), _admission(d)
+    return FAIL, "binding violation not detected", _admission(d)
 
 
 def r4_004(rt):
@@ -100,16 +124,16 @@ def r4_004(rt):
 
 def r4_005(rt):
     d = rt.evaluate(P.ADMISSIBLE, principal="a", action_type="wire_transfer")
-    if d.disposition != "PASS":
-        return FAIL, "no PASS"
+    if not _admitted(d):
+        return FAIL, f"no admission (disposition={d.disposition})"
     change = rt.drift_state()
     try:
         rt.commit(d)
     except P.Refused as e:
         if e.code == P.R_STATE_DRIFT and e.disposition == "HARD_VETO":
-            return PASS, f"state drift produced HARD_VETO ({change})"
-        return FAIL, str(e)
-    return FAIL, "state drift not detected"
+            return PASS, f"state drift produced HARD_VETO ({change})" + _via(d), _admission(d)
+        return FAIL, str(e), _admission(d)
+    return FAIL, "state drift not detected", _admission(d)
 
 
 def r4_006(rt):
@@ -161,7 +185,8 @@ def r2_003(rt):
 
 # -- harness probes: observe the effect, not only the verdict -----------------
 # These are NOT REG vectors. They are reported under their own ids and never
-# counted in the 56-vector totals.
+# counted in the 56-vector totals. The property view (properties.py) counts
+# them, as probes, under the candidate family they exercise.
 #
 # Some runtimes decide and dispatch in one step. For those, `evaluate` IS the
 # boundary crossing and there is no separate commit: the probes only call
@@ -187,13 +212,14 @@ def hx_refusal_zero_effects(rt):
 
 def hx_allow_exactly_one_effect(rt):
     d = rt.evaluate(P.ADMISSIBLE, principal="a", action_type="count")
-    if d.disposition != "PASS":
+    if not _admitted(d):
         return INCONCLUSIVE, f"no allow to observe (disposition={d.disposition})"
     _cross(rt, d)
     _cross(rt, d)               # a second attempt on the same grant, where one exists
     n = rt.observed_effects(d)
-    return (PASS, "allow matched exactly one observed effect") if n == 1 \
-        else (FAIL, f"allow matched {n} observed effect(s)")
+    if n == 1:
+        return PASS, "allow matched exactly one observed effect" + _via(d), _admission(d)
+    return FAIL, f"allow matched {n} observed effect(s)", _admission(d)
 
 
 def hx_unanswered_approval_zero_effects(rt):
@@ -209,12 +235,14 @@ def hx_unanswered_approval_zero_effects(rt):
 def hx_allow_after_refusal(rt):
     refused = rt.evaluate(P.DENIED, principal="a", action_type="count")
     allowed = rt.evaluate(P.ADMISSIBLE, principal="a", action_type="count")
-    if allowed.disposition != "PASS":
+    if not _admitted(allowed):
         return INCONCLUSIVE, f"no allow after the refusal (disposition={allowed.disposition})"
     _cross(rt, allowed)
     a, b = rt.observed_effects(refused), rt.observed_effects(allowed)
-    return (PASS, "a refusal left the next allowed call intact: 0 then 1 effect") if (a, b) == (0, 1) \
-        else (FAIL, f"effects after refusal then allow: {a}, {b}")
+    if (a, b) == (0, 1):
+        return (PASS, "a refusal left the next allowed call intact: 0 then 1 effect" + _via(allowed),
+                _admission(allowed))
+    return FAIL, f"effects after refusal then allow: {a}, {b}", _admission(allowed)
 
 
 _E, _C = P.EVALUATE, P.COMMIT

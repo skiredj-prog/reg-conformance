@@ -38,6 +38,18 @@ the REG RFCs. Effect probes (`HX-EFFECT-*`) check that a refusal matches zero
 downstream effects and an allowed call exactly one. Probes are listed apart
 and are never counted among the vectors.
 
+**The reading by property.** A run also groups its results by candidate
+property family: the vectors and the probes that exercise the same property
+are counted together, each under its own kind. The families are candidates
+and are not part of the frozen RFCs. The grouping changes no outcome and no
+vector count. It shows which properties were observed on a subject whose
+shape does not fit the vectors as written.
+
+**What counts as an admission.** RFC-0 §4 lets execution proceed on `PASS`
+and on `FLAG`, the latter only under an explicit condition or supervision.
+A test that needs an admitted action accepts either. The run lists the tests
+that went forward on a `FLAG` and says whether the condition was observed.
+
 ## How to quote a result
 
 A statement about a result names all of the following:
@@ -50,9 +62,15 @@ A statement about a result names all of the following:
 
 Example:
 
-> `<subject>` `<version>` at commit `<commit>`, run with reg-conformance at `<commit>`,
-> evidence level 2: 0 of 56 REG vectors executed (56 adapter required);
-> 4 of 4 effect probes passed. Bundle: `<link>`.
+> `<subject>` `<version>` at commit `<commit>`, run with reg-conformance at
+> `<commit>`, evidence level 2: 0 of 56 REG vectors executed (56 adapter
+> required); 4 of 4 effect probes passed. By property: 2 of 14 candidate
+> families with a passing check, none with a failing check, 12 not exercised.
+> Bundle: `<link>`.
+
+A count of families is quoted with the words "candidate families" and with
+the number not exercised. If a test went forward on a `FLAG` whose condition
+was not observed, the quote says so.
 
 ## What must not be said
 
@@ -67,6 +85,8 @@ Example:
 - That a result maps to a regulation or to another framework. The crosswalk
   states such relations one by one, each with its limit.
 - That an effect probe is a REG vector, or the reverse.
+- That a family with a passing check is satisfied, or that a subject
+  "satisfies" a number of families. One check observed one behaviour.
 
 ## Mappings written by someone other than the runtime's owner
 
