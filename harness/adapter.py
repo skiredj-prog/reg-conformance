@@ -5,7 +5,8 @@ from __future__ import annotations
 import importlib
 
 import runner as R
-from .port import ALL_BOUNDS, ALL_CAPABILITIES, ALL_INTENTS, CLOCK, RuntimePort
+from .port import (ALL_BOUNDS, ALL_CAPABILITIES, ALL_EPISTEMIC, ALL_INTENTS, CLOCK,
+                   CONFIDENCE, RuntimePort)
 from .scenarios import CHECKS, PROBES, SCENARIOS
 
 HARNESS_GAP = ("HARNESS_GAP: no runtime-neutral scenario exists for this vector yet; "
@@ -37,6 +38,14 @@ class PortAdapter(R.BaseAdapter):
             raise ValueError("a port that declares an effect window must be able to let it pass")
         if port.exhaustion_policy not in (None, "fail-closed", "fail-degraded"):
             raise ValueError("exhaustion_policy is fail-closed, fail-degraded or None")
+        unknown = set(port.degradations) - ALL_EPISTEMIC
+        if unknown:
+            raise ValueError(f"port declares unknown epistemic states: {sorted(unknown)}")
+        for state, names in port.degradations.items():
+            if not names or not all(isinstance(n, str) and n for n in names):
+                raise ValueError(f"{state}: name at least one measurement the port can degrade")
+        if CONFIDENCE in port.capabilities and port.confidence_steps < 2:
+            raise ValueError("a port that declares confidence submits at two levels or more")
         self.port = port
         self.interface_mode = port.interface_mode
         # A port is a translation layer: it can never report native conformance.
@@ -54,7 +63,8 @@ class PortAdapter(R.BaseAdapter):
         lacking = [(label, sorted(wanted - set(have))) for label, wanted, have in (
             ("port does not declare: ", scenario.requires, self.port.capabilities),
             ("port cannot produce intent: ", scenario.intents, self.port.intents),
-            ("no bound declared for: ", scenario.bounds, self.port.bounds))]
+            ("no bound declared for: ", scenario.bounds, self.port.bounds),
+            ("port cannot make evidence: ", scenario.degradations, self.port.degradations))]
         lacking = [label + ", ".join(names) for label, names in lacking if names]
         if lacking:
             return self._ar(vid, "; ".join(lacking))

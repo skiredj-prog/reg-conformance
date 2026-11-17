@@ -161,6 +161,12 @@ def test_tenir_gov_port_on_the_property_checks():
     assert got["PX-CT-R3-007"] in ("PASS", "FAIL")
     # The default path declares no bound: a HOLD it enters carries no tau_k.
     assert {got[c] for c in _AT_A_BOUND} == {"ADAPTER_REQUIRED"}
+    # Unreadable evidence is held, and lower confidence widens nothing.
+    assert got["PX-REG-STATE-001"] == got["PX-REG-STATE-013"] == got["PX-REG-STATE-015"] == "PASS"
+    # Missing evidence: the check runs on every input; its outcome belongs to the version.
+    assert got["PX-REG-STATE-010"] in ("PASS", "FAIL")
+    # One value per measurement, no age: stale and contradictory cannot be produced.
+    assert got["PX-REG-STATE-002"] == got["PX-REG-STATE-004"] == "ADAPTER_REQUIRED"
 
 
 # -- admission class (RFC-0 §4: PASS is ALLOW, FLAG is ALLOW_WITH_MONITORING) --
@@ -294,7 +300,13 @@ def test_bundle_verdict_carries_the_property_summary_and_never_certifies():
 class _Governed(P.RuntimePort):
     """Two-phase test double with standing, a scope, a hard invariant, keys,
     revocation, a clock and declared bounds. `fault` selects the defect."""
-    capabilities = frozenset({P.EVALUATE, P.COMMIT, P.REVOKE, P.NONCE, P.COMBINE, P.CLOCK})
+    capabilities = frozenset({P.EVALUATE, P.COMMIT, P.REVOKE, P.NONCE, P.COMBINE, P.CLOCK,
+                              P.DEGRADE, P.CONFIDENCE})
+    degradations = {P.E_UNKNOWN: ("load",), P.E_STALE: ("load",),
+                    P.E_MISSING: ("load", "limit"), P.E_CONTRADICTORY: ("load",)}
+    degraded = {P.E_UNKNOWN: "HOLD", P.E_STALE: "HARD_VETO", P.E_MISSING: "HARD_VETO",
+                P.E_CONTRADICTORY: "HOLD"}
+    confidence_steps = 4
     intents = frozenset({P.ADMISSIBLE, P.NO_STANDING, P.NEEDS_APPROVAL, P.MALFORMED_CREDENTIAL,
                          P.OUT_OF_SCOPE, P.INVARIANT_VIOLATED, P.EXPIRING_CREDENTIAL,
                          P.STALE_REQUEST, P.REVOKED_KEY})
@@ -354,9 +366,32 @@ class _Governed(P.RuntimePort):
         landed = self._landed()
         if principal in landed or (landed and self.fault == "revocation_spills"):
             verdict = "HARD_VETO"
+        return self._decide(verdict, principal, action_type)
+
+    def _decide(self, verdict, principal, action_type):
         decision = P.Decision(uuid.uuid4().hex, verdict, action_type, principal, {})
         self.made[decision.decision_id] = (verdict, self.now)
         return decision
+
+    def evaluate_degraded(self, state, measurement, *, principal, action_type):
+        verdict = self.degraded[state]
+        if (self.fault, state) in (("admits_unknown", P.E_UNKNOWN), ("admits_stale", P.E_STALE),
+                                   ("admits_contradiction", P.E_CONTRADICTORY)):
+            verdict = "FLAG"
+        if self.fault == "vetoes_contradiction" and state == P.E_CONTRADICTORY:
+            verdict = "HARD_VETO"
+        if self.fault == "defaults_a_missing_limit" and (state, measurement) == (P.E_MISSING, "limit"):
+            verdict = "PASS"            # a default stood in for the measurement
+        return self._decide(verdict, principal, action_type)
+
+    def evaluate_at_confidence(self, intent, step, *, principal, action_type):
+        base = self._verdict(intent, principal)
+        ladder = ("PASS", "PASS", "FLAG", "HOLD") if base == "PASS" else (base,) * 4
+        if self.fault == "confidence_widens" and intent == P.ADMISSIBLE:
+            ladder = ("PASS", "FLAG", "PASS", "PASS")
+        if self.fault == "low_confidence_rescues" and intent == P.NEEDS_APPROVAL:
+            ladder = ("HOLD", "HOLD", "FLAG", "FLAG")
+        return self._decide(ladder[step], principal, action_type)
 
     def commit(self, decision, *, action_type=None):
         verdict, born = self.made[decision.decision_id]
@@ -403,6 +438,12 @@ def test_property_checks_pass_on_a_correct_runtime():
     ("accepts_stale_request", "PX-VEC-6-03"),
     ("accepts_revoked_key", "PX-VEC-6-04"),
     ("hold_executes_after_window", "PX-REG-STATE-024"),
+    ("admits_unknown", "PX-REG-STATE-001"),
+    ("admits_stale", "PX-REG-STATE-002"),
+    ("admits_contradiction", "PX-REG-STATE-004"),
+    ("defaults_a_missing_limit", "PX-REG-STATE-010"),
+    ("confidence_widens", "PX-REG-STATE-013"),
+    ("low_confidence_rescues", "PX-REG-STATE-015"),
 ])
 def test_each_property_check_detects_its_fault_and_only_that_one(fault, check):
     got = _checks(fault)
@@ -414,9 +455,59 @@ def test_each_property_check_detects_its_fault_and_only_that_one(fault, check):
     ("holds_malformed", "PX-CT-R3-001"),                 # suspended is not rejected
     ("revocation_inert", "PX-CT-R3-003"),                # nothing to isolate
     ("hold_never_ends", "PX-REG-STATE-024"),             # not executable is not rejected
+    ("vetoes_contradiction", "PX-REG-STATE-004"),        # RFC-2 §2.5 names HOLD, not a veto
 ])
 def test_a_property_check_does_not_conclude_on_a_half_observation(fault, check):
     assert _checks(fault)[check] == "INCONCLUSIVE"
+
+
+# -- degraded evidence: read the disposition, not how it was reached -----------
+
+_ON_EVIDENCE = {"PX-REG-STATE-001", "PX-REG-STATE-002", "PX-REG-STATE-004", "PX-REG-STATE-010"}
+
+
+def test_the_missing_check_reports_each_measurement():
+    class F(_Governed): pass
+    F.fault = "defaults_a_missing_limit"
+    got = {r.vector_id: r for r in PortAdapter(F()).run_checks()}["PX-REG-STATE-010"]
+    # One measurement defaulted is enough to fail, and the result says which.
+    assert got.status.value == "FAIL"
+    assert "limit (PASS)" in got.details and "load (HARD_VETO)" in got.details
+
+
+def test_a_declared_resolution_lifts_the_hold_on_contradiction():
+    class Resolved(_Governed):
+        contradiction_resolution = True
+    assert _checks(base=Resolved)["PX-REG-STATE-004"] == "INCONCLUSIVE"
+
+
+def test_a_check_on_evidence_does_not_run_when_the_port_cannot_degrade_it():
+    class Partial(_Governed):
+        degradations = {P.E_MISSING: ("load",)}
+    got = {r.vector_id: r for r in PortAdapter(Partial()).run_checks()}
+    assert {c for c in _ON_EVIDENCE if got[c].status.value == "ADAPTER_REQUIRED"} \
+        == _ON_EVIDENCE - {"PX-REG-STATE-010"}
+    assert "port cannot make evidence: stale" in got["PX-REG-STATE-002"].gap_note
+
+
+def test_an_unchanged_disposition_passes_the_ladder_and_says_so():
+    class Deaf(_Governed):
+        def evaluate_at_confidence(self, intent, step, **kw):
+            return self._decide(self._verdict(intent, kw["principal"]), kw["principal"],
+                                kw["action_type"])
+    got = {r.vector_id: r for r in PortAdapter(Deaf()).run_checks()}["PX-REG-STATE-013"]
+    assert got.status.value == "PASS" and "it did not change" in got.details
+
+
+@pytest.mark.parametrize("change", [
+    dict(degradations={"rumour": ("load",)}),             # not an epistemic state of RFC-2 §2.5
+    dict(degradations={P.E_STALE: ()}),                   # no measurement named
+    dict(confidence_steps=1),                             # one level is not a ladder
+])
+def test_a_port_says_precisely_what_evidence_it_can_degrade(change):
+    Bad = type("Bad", (_Governed,), change)
+    with pytest.raises(ValueError):
+        PortAdapter(Bad())
 
 
 # -- declared bounds: the harness sets no duration -----------------------------
@@ -646,7 +737,10 @@ def test_reference_kernel_on_the_property_checks():
     adapter, _, checks, view = _view_with_checks(ReferencePort())
     got = {r.vector_id: r for r in checks}
     ran = {k: r.status.value for k, r in got.items() if r.status.value != "ADAPTER_REQUIRED"}
-    assert ran == {"PX-CT-R3-001": "FAIL", "PX-CT-R3-003": "PASS", "PX-VEC-6-02": "PASS"}
+    assert ran == {"PX-CT-R3-001": "FAIL", "PX-CT-R3-003": "PASS", "PX-VEC-6-02": "PASS",
+                   "PX-REG-STATE-001": "FAIL", "PX-REG-STATE-010": "PASS"}
+    # The kernel admits an attempt whose measurement is not a number.
+    assert "capacity (PASS)" in got["PX-REG-STATE-001"].details
     # The kernel declares no bound: none of the checks at a bound runs on it.
     assert _AT_A_BOUND <= set(got) - set(ran)
     assert "Revocation propagation latency not declared" in got["PX-CT-R3-002"].gap_note
@@ -655,7 +749,7 @@ def test_reference_kernel_on_the_property_checks():
     # A failing check marks the family, whatever else passes in it.
     assert view["families"]["EGP-01"]["PASS"] == 1
     assert view["families"]["EGP-01"]["state"] == "has_fail"
-    assert (view["index"]["PASS"], view["index"]["FAIL"]) == (16, 1)
+    assert (view["index"]["PASS"], view["index"]["FAIL"]) == (17, 2)
 
 
 def test_bundle_verdict_lists_property_checks_apart_from_the_vectors():

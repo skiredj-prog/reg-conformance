@@ -25,10 +25,12 @@ TENIR_SCORE = "tenir_score"      # exposes the TENIR S = K/(P*V+eps) computation
 EFFECTS = "effects"              # effects observable independently of the runtime
 COMBINE = "combine"              # one attempt that meets several conditions at once
 CLOCK = "clock"                  # let a declared bound pass for the runtime
+DEGRADE = "degrade"              # submit the admissible attempt with one measurement degraded
+CONFIDENCE = "confidence"        # submit an attempt at several levels of confidence in its evidence
 
 ALL_CAPABILITIES = frozenset({
     EVALUATE, COMMIT, REVOKE, STATE_DRIFT, STALE_GRANT, NONCE,
-    RECEIPTS, MANIFEST, TENIR_SCORE, EFFECTS, COMBINE, CLOCK,
+    RECEIPTS, MANIFEST, TENIR_SCORE, EFFECTS, COMBINE, CLOCK, DEGRADE, CONFIDENCE,
 })
 
 # Intents the harness asks for. The port maps each one to its own inputs.
@@ -68,6 +70,14 @@ ALL_BOUNDS = frozenset({B_REVOCATION, B_CREDENTIAL, B_FRESHNESS, B_TAU_K})
 # Not a policy bound but a condition of observation: how long after a call an
 # effect may still appear. "No effect" is read once it has passed.
 EFFECT_WINDOW = "effect_window"
+
+# Epistemic states a measurement can be put in (RFC-2 §2.5). LOW CONFIDENCE is
+# not here: it is a matter of degree, submitted through CONFIDENCE.
+E_UNKNOWN = "unknown"                # it arrives and establishes nothing
+E_STALE = "stale"                    # older than its freshness window
+E_MISSING = "missing"                # absent from the request
+E_CONTRADICTORY = "contradictory"    # two valid measurements of it disagree
+ALL_EPISTEMIC = frozenset({E_UNKNOWN, E_STALE, E_MISSING, E_CONTRADICTORY})
 
 # Normalised refusal codes.
 R_STANDING_REVOKED = "STANDING_REVOKED"
@@ -151,6 +161,17 @@ class RuntimePort:
     # How the port lets time pass: "real" (it waits) or "simulated" (it moves
     # the clock the runtime reads). Required with CLOCK.
     clock_mode: str = ""
+    # epistemic state (E_*) -> the measurements the port can put in that state
+    # on the admissible attempt, under the runtime's own names. List every
+    # measurement the decision reads: a port that lists only the safe ones
+    # hides what the check is for.
+    degradations: dict = {}
+    # Levels of confidence the port can submit an attempt at: step 0 is full
+    # confidence, each next step is lower. Two or more with CONFIDENCE.
+    confidence_steps: int = 0
+    # True when the deployment pre-declares a deterministic resolution for
+    # contradictory measurements. RFC-2 §2.5 then does not require a HOLD.
+    contradiction_resolution: bool = False
     # What the deployment pre-declares for a HOLD nobody answers within tau_k:
     # "fail-closed", "fail-degraded", or None when it declares nothing, in
     # which case the default of RFC-5 §2.1 applies: fail-closed.
@@ -171,6 +192,17 @@ class RuntimePort:
                           nonce: Optional[str] = None) -> Decision:
         """Submit one attempt that meets every listed condition at once, in
         the order given where the runtime's input has an order."""
+        raise NotImplementedError
+
+    def evaluate_degraded(self, state: str, measurement: str, *, principal: str,
+                          action_type: str) -> Decision:
+        """Submit the admissible attempt with one measurement put in the given
+        epistemic state. Everything else is as for ADMISSIBLE."""
+        raise NotImplementedError
+
+    def evaluate_at_confidence(self, intent: str, step: int, *, principal: str,
+                               action_type: str) -> Decision:
+        """Submit the attempt for `intent` at confidence level `step`."""
         raise NotImplementedError
 
     def elapse_past(self, bound: str) -> float:

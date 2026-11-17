@@ -25,6 +25,8 @@ class TemplatePort(P.RuntimePort):
     bounds = {}                         # bound -> seconds, as your deployment declares it; never a guess
     effect_window = 0.0                 # seconds an effect may lag behind a call; zero if synchronous
     clock_mode = ""                     # "real" or "simulated", once you declare CLOCK
+    degradations = {}                   # epistemic state -> every measurement you can put in it (DEGRADE)
+    confidence_steps = 0                # levels of confidence you can submit at (CONFIDENCE)
     not_applicable = {}                 # vector_id -> why it cannot apply
     declared_gaps = {}                  # vector_id -> gap you already know about
 

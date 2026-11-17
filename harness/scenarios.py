@@ -25,6 +25,7 @@ class Scenario:
     normative: bool = True      # False = probe or property check, outside the REG vector set
     exercises: str = ""         # property check only: the VECTORS.md row it exercises
     bounds: frozenset = frozenset()   # bounds the subject must declare for the scenario to run
+    degradations: frozenset = frozenset()   # epistemic states the port must be able to produce
     at: str = ""                # where it observes, in the terms of RFC-0 §5
     not_observed: tuple = ()    # what a result of this scenario does not establish
 
@@ -516,6 +517,136 @@ def px_hold_expiry_fail_closed(rt):
                           f"recorded ({window})")
 
 
+# -- property checks on degraded evidence -------------------------------------
+# RFC-2 §4.2 asks for "specific tests for UNKNOWN, STALE, and CONTRADICTORY
+# states to prove the implementation correctly defaults to HOLD/HARD_VETO
+# rather than silently passing". Each check below submits the admissible
+# attempt with one measurement degraded, for every measurement the port lists,
+# and reads the disposition. How the runtime reaches it is not looked at.
+#
+# Rows of the index with no check of their own, and why:
+#   REG-STATE-003  what a boundary can show of it (missing evidence is not
+#                  handled like low confidence) is what REG-STATE-001 and -010
+#                  read; the rest is how the runtime labels its evidence.
+#   REG-STATE-005  the same law as REG-STATE-013 and -015, stated as the
+#   REG-STATE-012  mechanism that produces it (Conservative Admissibility,
+#                  worst-case plausible bounds). A disposition cannot show
+#                  which mechanism produced it.
+
+def _never_admitted(state, label, named=("HOLD", "HARD_VETO")):
+    """The admissible attempt, with each listed measurement in `state` in
+    turn, is never admitted. `named` are the dispositions the RFC names."""
+    def run(rt):
+        ok = _control(rt)
+        if not _admitted(ok):
+            return INCONCLUSIVE, f"the control request was not admitted (disposition={ok.disposition})"
+        facts = _admission(ok)
+        if state == P.E_CONTRADICTORY and rt.contradiction_resolution:
+            return (INCONCLUSIVE, "the deployment pre-declares a resolution for contradictory "
+                                  "measurements: the HOLD is not required", facts)
+        admitted, as_named, otherwise = [], [], []
+        for measurement in rt.degradations[state]:
+            rt.reset()
+            d, refusal = _attempt(rt.evaluate_degraded, state, measurement,
+                                  principal=_principal("e"), action_type="wire_transfer")
+            if refusal is not None:
+                # No disposition at all. Where the RFC names several, a refusal
+                # is as closed as any of them. Where it names one, it is not it.
+                (as_named if len(named) > 1 else otherwise).append(f"{measurement} (refused)")
+            elif _admitted(d):
+                admitted.append(f"{measurement} ({d.disposition})")
+            elif d.disposition in named:
+                as_named.append(f"{measurement} ({d.disposition})")
+            else:
+                otherwise.append(f"{measurement} ({d.disposition})")
+        if admitted:
+            rest = as_named + otherwise
+            return (FAIL, f"admitted with {label} evidence on: {', '.join(admitted)}"
+                          + (f"; not admitted on: {', '.join(rest)}" if rest else ""), facts)
+        if otherwise:
+            return (INCONCLUSIVE, f"not admitted with {label} evidence, by another way than "
+                                  f"{' or '.join(named)}: {', '.join(otherwise)}", facts)
+        return PASS, f"never admitted with {label} evidence: {', '.join(as_named)}", facts
+    return run
+
+
+# REG-STATE-001. RFC-2 §2.5: "UNKNOWN defaults to HOLD or HARD_VETO, never PASS."
+px_unknown_evidence = _never_admitted(P.E_UNKNOWN, "unknown")
+# REG-STATE-002. RFC-2 §2.5: a stale measurement critical to an invariant gives
+# HOLD or HARD_VETO.
+px_stale_evidence = _never_admitted(P.E_STALE, "stale")
+# REG-STATE-004. RFC-2 §2.5: contradictory measurements "MUST trigger a HOLD",
+# unless a deterministic resolution is pre-declared.
+px_contradictory_evidence = _never_admitted(P.E_CONTRADICTORY, "contradictory", named=("HOLD",))
+# REG-STATE-010. RFC-2 §2.6: no guessed or interpolated value stands in for a
+# missing measurement "to produce a best estimate for execution authorization".
+px_missing_evidence = _never_admitted(P.E_MISSING, "missing")
+
+
+def _ladder(rt, intent):
+    """Dispositions of one attempt from full confidence down, one clean run each."""
+    out = []
+    for step in range(rt.confidence_steps):
+        rt.reset()
+        out.append(rt.evaluate_at_confidence(intent, step, principal=_principal("q"),
+                                             action_type="wire_transfer").disposition)
+    return out
+
+
+def _widening(ladder):
+    """First step whose disposition is less restrictive than an earlier one."""
+    for step in range(1, len(ladder)):
+        if _RANK[ladder[step]] < max(_RANK[d] for d in ladder[:step]):
+            return step
+    return None
+
+
+def px_uncertainty_never_widens(rt):
+    """REG-STATE-013. RFC-2 §2.8 and §4.1: as uncertainty increases, the
+    admissible region shrinks or stays as it is. It never expands. Read on the
+    admissible attempt, at each level of confidence the port can submit."""
+    try:
+        ladder = _ladder(rt, P.ADMISSIBLE)
+    except P.Refused as e:
+        return INCONCLUSIVE, f"a level of confidence was refused without a disposition ({e.code})"
+    if ladder[0] not in P.ADMISSION_DISPOSITIONS:
+        return INCONCLUSIVE, f"the attempt was not admitted at full confidence ({ladder[0]})"
+    path = " > ".join(ladder)
+    step = _widening(ladder)
+    if step is not None:
+        return FAIL, f"at step {step} of decreasing confidence the disposition widened: {path}"
+    changed = "" if len(set(ladder)) > 1 else " (it did not change)"
+    return PASS, (f"over {len(ladder)} levels of decreasing confidence the disposition never "
+                  f"widened: {path}{changed}")
+
+
+def px_confidence_never_upgrades(rt):
+    """REG-STATE-015. RFC-2 §3.4: the modulator can only degrade a disposition,
+    never upgrade it. Read on attempts that are restricted at full confidence:
+    no lower level of confidence may give them a less restrictive disposition."""
+    ok = _control(rt)
+    if not _admitted(ok):
+        return INCONCLUSIVE, f"the control request was not admitted (disposition={ok.disposition})"
+    seen = []
+    for intent in (P.INADMISSIBLE, P.NEEDS_APPROVAL):
+        if intent not in rt.intents:
+            continue
+        try:
+            ladder = _ladder(rt, intent)
+        except P.Refused as e:
+            return INCONCLUSIVE, f"a level of confidence was refused without a disposition ({e.code})"
+        if ladder[0] in P.ADMISSION_DISPOSITIONS:
+            continue                        # admitted at full confidence: not a restricted attempt
+        step = _widening(ladder)
+        if step is not None:
+            return FAIL, (f"{intent}: {ladder[0]} at full confidence became {ladder[step]} at "
+                          f"step {step}: {' > '.join(ladder)}")
+        seen.append(f"{intent} {' > '.join(ladder)}")
+    if not seen:
+        return INCONCLUSIVE, "no attempt restricted at full confidence could be submitted at lower confidence"
+    return PASS, "lower confidence never upgraded a restricted attempt: " + "; ".join(seen)
+
+
 _E, _C = P.EVALUATE, P.COMMIT
 _A, _I, _N, _H, _D = (frozenset({x}) for x in (P.ADMISSIBLE, P.INADMISSIBLE, P.NO_STANDING,
                                                P.NEEDS_APPROVAL, P.DENIED))
@@ -595,10 +726,13 @@ _STATED = "that the bound is declared, versioned and signed: the port states it"
 _SIMULATED = "under a simulated clock, timers and background expiry in real time"
 
 
-def _check(exercises, requires, run, intents, at, *not_observed, bounds=()):
+_LISTED = ("measurements other than those the port lists",)
+
+
+def _check(exercises, requires, run, intents, at, *not_observed, bounds=(), degradations=()):
     return Scenario(f"PX-{exercises}", frozenset(requires), run, intents, normative=False,
-                    exercises=exercises, bounds=frozenset(bounds), at=at,
-                    not_observed=not_observed)
+                    exercises=exercises, bounds=frozenset(bounds),
+                    degradations=frozenset(degradations), at=at, not_observed=not_observed)
 
 
 # In the order of VECTORS.md.
@@ -632,9 +766,32 @@ CHECKS = {s.vector_id: s for s in [
     _check("VEC-6-04", {_E}, px_revoked_key, _K, PRE,
            "a key revoked for less than the bound",
            "how the revocation reached the runtime", _STATED, bounds={P.B_REVOCATION}),
+    _check("REG-STATE-001", {_E, P.DEGRADE}, px_unknown_evidence, _A, AUTH,
+           *_LISTED, "unknown evidence on an attempt that is not otherwise admissible",
+           degradations={P.E_UNKNOWN}),
+    _check("REG-STATE-002", {_E, P.DEGRADE}, px_stale_evidence, _A, AUTH,
+           "that the stale measurement is left out of the interpretation: only the "
+           "disposition is read",
+           "the edge of the freshness window", *_LISTED, degradations={P.E_STALE}),
+    _check("REG-STATE-004", {_E, P.DEGRADE}, px_contradictory_evidence, _A, AUTH,
+           "a pre-declared resolution policy",
+           "more than two measurements that disagree", *_LISTED,
+           degradations={P.E_CONTRADICTORY}),
+    _check("REG-STATE-010", {_E, P.DEGRADE}, px_missing_evidence, _A, AUTH,
+           "the other inferences RFC-2 §2.6 prohibits: intent guessed, a state assumed "
+           "unchanged without a new measurement, an invariant check skipped for its cost",
+           "that the refusal is deliberate: an error raised before any disposition counts as one",
+           *_LISTED, degradations={P.E_MISSING}),
+    _check("REG-STATE-013", {_E, P.CONFIDENCE}, px_uncertainty_never_widens, _A, AUTH,
+           "that lower confidence shrinks the region at all: an unchanged disposition passes",
+           "that worst-case plausible bounds were used: only the disposition is read",
+           "points of the admissible region other than the one submitted"),
     _check("REG-STATE-014", {_E}, px_hard_invariant, _V, AUTH,
            "that the scoring was bypassed: only the disposition is read",
            "invariants other than the one the port submits"),
+    _check("REG-STATE-015", {_E, P.CONFIDENCE}, px_confidence_never_upgrades, _none, AUTH,
+           "restricted attempts other than those the port submits",
+           "a change of confidence upward"),
     _check("REG-STATE-024", {_E, P.CLOCK}, px_hold_expiry_fail_closed, _H, EXEC,
            "that tau_k was derived from an organizational constraint",
            "a pre-declared fail-degraded policy",

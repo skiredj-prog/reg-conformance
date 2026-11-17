@@ -54,7 +54,13 @@ a ratification decision. Adding one is not.
 | `PX-VEC-6-02` | RFC-6 §3.1, §6.2 | A key already used, presented again with another action, is rejected. | `nonce` |
 | `PX-VEC-6-03` | RFC-6 §3.2, §6.2 | A request submitted outside the declared freshness window is rejected. | intent `stale_request`, bound `freshness` |
 | `PX-VEC-6-04` | RFC-3 §4.2; RFC-6 §4.2, §6.2 | A credential signed by a key revoked for longer than the declared bound is rejected. | intent `revoked_key`, bound `revocation` |
+| `PX-REG-STATE-001` | RFC-2 §2.5 | With a measurement unknown, the admissible attempt is never admitted. | `degrade`, state `unknown` |
+| `PX-REG-STATE-002` | RFC-2 §2.5 | With a critical measurement stale, the admissible attempt is never admitted. | `degrade`, state `stale` |
+| `PX-REG-STATE-004` | RFC-2 §2.5 | With two measurements that disagree, the admissible attempt gets `HOLD`. | `degrade`, state `contradictory` |
+| `PX-REG-STATE-010` | RFC-2 §2.6 | With a measurement missing, the admissible attempt is never admitted: no value stands in for it. | `degrade`, state `missing` |
+| `PX-REG-STATE-013` | RFC-2 §2.8 | From full confidence down, the disposition of the admissible attempt never becomes less restrictive. | `confidence` |
 | `PX-REG-STATE-014` | RFC-2 §3.3 | A hard invariant violation gets `HARD_VETO` on measurements that are admitted without it. | intent `invariant_violated` |
+| `PX-REG-STATE-015` | RFC-2 §3.4 | From full confidence down, an attempt that is restricted never gets a less restrictive disposition. | `confidence` |
 | `PX-REG-STATE-024` | RFC-5 §1–3 | A `HOLD` nobody answers within the declared window is rejected with `HARD_VETO`, and produces no effect. | intent `needs_approval`, `clock`, bound `tau_k` |
 
 How a check concludes:
@@ -72,6 +78,31 @@ How a check concludes:
 - A port declares an intent only if the runtime has the notion: a credential
   that can be malformed, a scope a caller can hold, an invariant that can be
   declared. Otherwise the check is not run on that subject.
+
+## Degraded evidence
+
+Six checks read what a runtime does when its evidence is degraded. They
+submit the admissible attempt with one measurement unknown, stale, missing or
+contradictory, or the same attempt at several levels of confidence, and read
+the disposition. They do not look at how the runtime reached it.
+
+- The port lists, in `degradations`, every measurement it can put in each
+  state, under the runtime's own names. A check runs on all of them and its
+  result names each one: `capacity (FLAG)`, `authority (HARD_VETO)`. A port
+  that lists only the measurements the runtime guards hides what the check is
+  for.
+- Unknown, stale and missing evidence pass on `HOLD`, on `HARD_VETO` and on an
+  outright refusal. An admission fails, `FLAG` included. Contradictory
+  evidence passes on `HOLD` only, because RFC-2 §2.5 names it, and does not
+  conclude where the deployment pre-declares a resolution.
+- The two confidence checks pass when nothing widens. A disposition that does
+  not change at all also passes, and the result says so.
+
+Three rows of the index have no check of their own. `REG-STATE-003`: what a
+boundary can show of it is read by `PX-REG-STATE-001` and `-010`; the rest is
+how the runtime labels its evidence. `REG-STATE-005` and `REG-STATE-012`
+state the law of `-013` and `-015` as the mechanism that produces it, and a
+disposition cannot show which mechanism produced it.
 
 ## Declared bounds and the clock
 

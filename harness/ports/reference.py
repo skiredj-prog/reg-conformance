@@ -41,7 +41,13 @@ class ReferencePort(P.RuntimePort):
     interface_mode = "native"            # invocation style, not a certification claim
     evidence_level = 1
     capabilities = frozenset({P.EVALUATE, P.COMMIT, P.REVOKE, P.STATE_DRIFT, P.STALE_GRANT,
-                              P.NONCE, P.RECEIPTS, P.MANIFEST, P.TENIR_SCORE})
+                              P.NONCE, P.RECEIPTS, P.MANIFEST, P.TENIR_SCORE, P.DEGRADE})
+    # The three measurements the kernel reads. UNKNOWN is a value that is not
+    # a number (NaN): it arrives and says nothing of the state. MISSING is no
+    # value at all (None). The kernel takes no age, no second measurement and
+    # no confidence: STALE, CONTRADICTORY and CONFIDENCE are not declared.
+    _MEASUREMENTS = ("pressure", "velocity", "capacity")
+    degradations = {P.E_UNKNOWN: _MEASUREMENTS, P.E_MISSING: _MEASUREMENTS}
     # Not declared: OUT_OF_SCOPE and INVARIANT_VIOLATED. The kernel has no way
     # to give a principal a scope or to declare a hard invariant. COMBINE is
     # not declared either: its two refusals are both HARD_VETO, so no pair of
@@ -68,6 +74,21 @@ class ReferencePort(P.RuntimePort):
             g = self._k._evaluate(principal, cred, action_type, Pv, V, K, nonce or uuid.uuid4().hex)
         except ValueError as e:
             raise _refused(e) from e
+        return P.Decision(g["evaluation_id"], g["final_disposition"], action_type, principal, g)
+
+    def evaluate_degraded(self, state, measurement, *, principal, action_type):
+        cred, Pv, V, K = _INPUTS[P.ADMISSIBLE]
+        values = {"pressure": Pv, "velocity": V, "capacity": K}
+        values[measurement] = float("nan") if state == P.E_UNKNOWN else None
+        try:
+            g = self._k._evaluate(principal, cred, action_type, values["pressure"],
+                                  values["velocity"], values["capacity"], uuid.uuid4().hex)
+        except ValueError as e:
+            raise _refused(e) from e
+        except TypeError as e:
+            # The kernel stops on a value it cannot compute with. No grant
+            # exists: for the caller this is a refusal, though not a recorded one.
+            raise P.Refused("INPUT_REJECTED", None, str(e)) from e
         return P.Decision(g["evaluation_id"], g["final_disposition"], action_type, principal, g)
 
     def commit(self, decision, *, action_type=None):

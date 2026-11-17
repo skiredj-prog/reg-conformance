@@ -31,6 +31,19 @@ own behaviour; to be confirmed or corrected by the runtime's author):
     OUT_OF_SCOPE    best-case inputs, from an agent registered with a
                     capability set that does not contain the requested action
 
+Degraded evidence (DEGRADE), on each of the seven measurements this port
+supplies to `adjudicate` (pressure, velocity, capacity, option_space,
+authority, context_fit, evidence_quality), same PROVISIONAL caveat:
+    MISSING         the measurement is not supplied
+    UNKNOWN         the measurement is supplied as a value that is not a
+                    number (NaN): it arrives and says nothing of the state
+`irreversibility_materiality` is never supplied by this port: the governor
+takes its own default for it.
+
+Confidence (CONFIDENCE): `evidence_quality` at 1.0, 0.75, 0.5, 0.25, 0.0, the
+other inputs unchanged. `adjudicate` takes one value per measurement, with no
+age and no second reading: STALE and CONTRADICTORY are not declared.
+
 Combinations (COMBINE), each on two independent inputs of one adjudication:
     NO_STANDING + NEEDS_APPROVAL    authority at 0.0 and 90 % of the budget
     INADMISSIBLE + NEEDS_APPROVAL   structure outside bounds and 90 % of the budget
@@ -81,6 +94,8 @@ _INPUTS = {
 }
 # The scope given to the agent of an OUT_OF_SCOPE attempt.
 _SCOPE = frozenset({"read"})
+# Levels of confidence in the evidence, from full down.
+_QUALITY = (1.0, 0.75, 0.5, 0.25, 0.0)
 _NOT_ADMITTED = ("failed", "hold", "escalated", "created")
 
 
@@ -106,8 +121,10 @@ class TenirGovPort(P.RuntimePort):
     interface_mode = "port:tenir-governance"
     evidence_level = 2
     capabilities = frozenset({P.EVALUATE, P.COMMIT, P.NONCE, P.MANIFEST,
-                              P.TENIR_SCORE, P.EFFECTS, P.COMBINE})
+                              P.TENIR_SCORE, P.EFFECTS, P.COMBINE, P.DEGRADE, P.CONFIDENCE})
     intents = frozenset(_INPUTS)
+    degradations = {P.E_MISSING: tuple(_BEST), P.E_UNKNOWN: tuple(_BEST)}
+    confidence_steps = len(_QUALITY)
     combinations = frozenset({frozenset({P.NO_STANDING, P.NEEDS_APPROVAL}),
                               frozenset({P.INADMISSIBLE, P.NEEDS_APPROVAL})})
     not_applicable = {"C4": "No transport layer: the runtime is driven in process."}
@@ -136,7 +153,7 @@ class TenirGovPort(P.RuntimePort):
                                       action_type=action_type, nonce=nonce)
 
     def evaluate_combined(self, intents, *, principal, action_type, nonce=None):
-        from tenir_governance.objects import Agent, Passage
+        from tenir_governance.objects import Agent
 
         overrides, amounts = {}, []
         for intent in intents:
@@ -151,12 +168,31 @@ class TenirGovPort(P.RuntimePort):
             if action_type in _SCOPE:
                 raise ValueError(f"{action_type!r} is inside the scope used for OUT_OF_SCOPE")
             self._state.register_agent(Agent(agent_id=principal, capabilities=_SCOPE))
+        return self._adjudicate({**_BEST, **overrides}, amount, principal=principal,
+                                action_type=action_type, nonce=nonce)
+
+    def evaluate_degraded(self, state, measurement, *, principal, action_type):
+        measured = dict(_BEST)
+        if state == P.E_MISSING:
+            del measured[measurement]
+        else:
+            measured[measurement] = float("nan")
+        return self._adjudicate(measured, None, principal=principal, action_type=action_type)
+
+    def evaluate_at_confidence(self, intent, step, *, principal, action_type):
+        overrides, amount = _INPUTS[intent]
+        measured = {**_BEST, **overrides, "evidence_quality": _QUALITY[step]}
+        return self._adjudicate(measured, amount, principal=principal, action_type=action_type)
+
+    def _adjudicate(self, measured, amount, *, principal, action_type, nonce=None):
+        from tenir_governance.objects import Passage
+
         key = nonce or f"op-{uuid.uuid4().hex}"
         passage = Passage(agent_id=principal, action_type=action_type,
                           amount=amount or 0.0, idempotency_key=key)
         budget = dict(resource_id=_BUDGET, amount=amount) if amount else {}
         result = self._gov.adjudicate(passage, payload={"action_type": action_type},
-                                      **{**_BEST, **overrides}, **budget)
+                                      **measured, **budget)
         if str(result.get("composed_rationale", "")).startswith("Duplicate operation blocked"):
             raise P.Refused(P.R_REPLAY, result.get("composed_decision"),
                             result["composed_rationale"])
