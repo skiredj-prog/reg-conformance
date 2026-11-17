@@ -15,7 +15,8 @@
     "implementation_version": "5.6.1",
     "test_version": "0.6.0",
     "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-    "test_command": "pytest -q tests/test_idempotency.py"
+    "test_command": "pytest -q tests/test_idempotency.py",
+    "test_command_note": "test_idempotency.py is in the Magertron partner perimeter, not in public tenir_governance"
   },
   "demonstration_scope": null,
   "status_note": "Déclaré : E5 corrigé (replay réel). Non démontré : preuve non liée.",
