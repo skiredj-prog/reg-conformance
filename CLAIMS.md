@@ -1,0 +1,93 @@
+# What a REG conformance result lets you say
+
+Draft for the author's review. Not yet in force.
+
+REG Conformance runs a fixed set of tests against a runtime and reports what
+passed, what failed and what could not be tested. It tests behaviour. It does
+not prove or certify anything.
+
+## What a run establishes
+
+One run covers one revision of one subject, reached in one way, on the cases
+the suite contains. Three things are reported separately and must stay
+separate when a result is quoted.
+
+**How the subject was reached**
+
+| Level | Name | Meaning |
+|---|---|---|
+| 1 | Semantic mapping | A documented correspondence. No product behaviour demonstrated. |
+| 2 | Adapter-tested | Real product behaviour, observed through a port. |
+| 3 | Native-conformant | The runtime satisfies the properties natively. No run reaches this today. |
+
+**The outcome of each test**
+
+| Outcome | Meaning |
+|---|---|
+| `PASS` | The behaviour was observed. |
+| `FAIL` | The opposite behaviour was observed. |
+| `INCONCLUSIVE` | The test could not reach a determinate result. |
+| `NOT_APPLICABLE` | The property cannot apply to this runtime. |
+| `ADAPTER_REQUIRED` | Not tested: the port or the harness cannot test it yet. |
+| `IMPLEMENTATION_GAP` | The implementer declares the capability missing. |
+
+Only `PASS` counts as a pass.
+
+**Which set the test belongs to.** REG vectors test properties specified by
+the REG RFCs. Effect probes (`HX-EFFECT-*`) check that a refusal matches zero
+downstream effects and an allowed call exactly one. Probes are listed apart
+and are never counted among the vectors.
+
+## How to quote a result
+
+A statement about a result names all of the following:
+
+1. the subject and its exact revision (commit),
+2. the `reg-conformance` commit that ran,
+3. the evidence level,
+4. the counts per outcome, vectors and probes apart,
+5. where the evidence bundle is, with its checksums.
+
+Example:
+
+> `<subject>` `<version>` at commit `<commit>`, run with reg-conformance at `<commit>`,
+> evidence level 2: 0 of 56 REG vectors executed (56 adapter required);
+> 4 of 4 effect probes passed. Bundle: `<link>`.
+
+## What must not be said
+
+- That a subject is "REG-conformant", "REG-certified" or "REG-compliant" on the
+  strength of a run. `verdict.json` always carries `certifying: false`.
+- That a result at level 1 describes a product. The 14 passes of the bundled
+  reference kernel are not results of any runtime.
+- That a result holds for another revision of the subject. Another commit is
+  another run.
+- That a pass count is a score. Tests that were not executed are not passes
+  and are not failures.
+- That a result maps to a regulation or to another framework. The crosswalk
+  states such relations one by one, each with its limit.
+- That an effect probe is a REG vector, or the reverse.
+
+## Mappings written by someone other than the runtime's owner
+
+A port translates a runtime's verdicts and refusals into REG terms. When the
+port was not written or reviewed by the runtime's owner, the result is
+provisional and is quoted as such until the owner has confirmed or corrected
+the mapping.
+
+## Assessments built on REG
+
+A third party may run the suite and report its results under the terms above.
+A third party's own requirement identifiers, scoring or labels are that
+party's work. REG neither defines nor endorses them. An assessment report
+keeps the two apart: what the REG run observed, and what the assessor
+concluded from it.
+
+## Name and licence
+
+The code and the vectors are under the Apache License 2.0. That licence covers
+use, modification and redistribution of the files. It does not grant permission
+to use the licensor's trade names, trademarks, service marks or product names,
+except to describe the origin of the work (Apache-2.0, section 6).
+
+Questions about a wording not covered here: open an issue.
