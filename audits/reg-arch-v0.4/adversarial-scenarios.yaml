@@ -1,0 +1,68 @@
+schema: reg-arch-audit-scenario-v1
+source_basis:
+  requested: REG-ARCH-v0.4
+  available: REG-ARCH_v0_4 (1).pdf
+  sha256: 4BE9D68CA8DCE3557655905467C0975758E82AB2888F974B0B9439D59620B939
+  corroborating_docx_sha256: 46752A0E1CD7AAE430742878C14C6B5C28FE1DA8167C9A81D78B23D9BAA7D3C2
+  normative_status: proposal-autonomous-document
+scenarios:
+  - id: A-01
+    name: ghost-rule-version
+    setup: {rule_id: R1, rule_version: "1", evidence_id: P1}
+    mutation: replace_rule_content_without_changing_rule_id
+    expected: reject_stale_evidence
+    verdict_if_unhandled: GAP
+  - id: A-02
+    name: configuration-drift
+    setup: {config_id: C1, hypothesis: H1, evidence_id: P1}
+    mutation: change_timeout_or_topology_keep_config_id: true
+    expected: emit_impact_and_suspend_verdict
+    verdict_if_unhandled: GAP
+  - id: A-03
+    name: proof-after-sha-change
+    setup: {subject_sha: S1, evidence_id: P1}
+    mutation: subject_sha: S2
+    expected: mark_P1_stale_and_require_requalification
+    verdict_if_unhandled: GAP
+  - id: A-04
+    name: decided-applied-race
+    setup: {object_revision: 7, decision: ACCEPTED}
+    mutation: object_revision: 8
+    expected: refuse_application_and_require_new_decision
+    verdict_if_unhandled: GAP
+  - id: A-05
+    name: dispatch-then-lost-receipt
+    setup: {external_effect: possible, receipt: lost, retry_key: new}
+    mutation: retry_before_reconciliation
+    expected: HOLD_and_no_blind_replay
+    verdict_if_unhandled: GAP
+  - id: A-06
+    name: false-nonexecution-attestation
+    setup: {attestation: nonexecution, trust_basis: unspecified}
+    mutation: attestation_is_false
+    expected: reject_as_unqualified_or_expose_explicit_assumption
+    verdict_if_unhandled: UNVERIFIABLE
+  - id: A-07
+    name: causal-cycle
+    setup: {claim: G1, evidence: P1}
+    mutation: make_verdict_for_G1_depend_on_P1_and_P1_depend_on_G1: true
+    expected: reject_cycle
+    verdict_if_unhandled: GAP
+  - id: A-08
+    name: bounded-provider-ack
+    setup: {provider_response: ACK, external_effect_proof: absent}
+    mutation: promote_ack_to_external_success: true
+    expected: retain_bounded_receipt_only
+    verdict_if_unhandled: CONTRADICTED
+  - id: A-09
+    name: revoked-authority
+    setup: {mandate: M1, decision: ACCEPTED}
+    mutation: revoke_mandate_before_promotion: true
+    expected: refuse_promotion
+    verdict_if_unhandled: GAP
+  - id: A-10
+    name: superseded-output
+    setup: {output_id: O1, source_config: C1, status: QUALIFIED}
+    mutation: source_config: C2
+    expected: mark_output_superseded_or_block_delivery
+    verdict_if_unhandled: GAP
