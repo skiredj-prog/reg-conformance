@@ -20,7 +20,7 @@ Four things live here. They answer different questions and are versioned separat
 | **REG+** | In which deployment does a guarantee still hold, and what evidence shows it? | `catalog/`, `specs/`, `profiles/`, `capabilities/`, `tools/` | catalogue v1.2.0 |
 | **Crosswalk** | Which clause of another framework, or of another layer, does a mechanism relate to? | `crosswalk/` ([mapping policy](crosswalk/MAPPING_POLICY.md)) | — |
 
-`manuscript/` holds the research paper behind the membrane model (v7.2). REG-ARCH, the architecture model, is a v0.4.1 candidate: it is not ratified and is not on this branch (`draft/reg-arch-v0.4.1-candidate`).
+`manuscript/` holds the research paper behind the membrane model (v7.2). REG-ARCH, the architecture model, is a v0.4.1 candidate: it is not ratified. Its registry (approval authority, versions, citation rule) and a Markdown transcription are in [`specs/reg-arch/`](specs/reg-arch/README.md); the frozen candidate package is in `audits/reg-arch-v0.4.1/`.
 
 **Passing vectors and holding a REG+ capability are different claims.** A vector exercises one runtime through one interface. A REG+ profile states the deployment in which a property is claimed and the evidence required. Neither implies the other. The rows that relate them are in the crosswalk, each with its stated limit.
 
