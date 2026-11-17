@@ -32,6 +32,7 @@ owns the runtime.
 | Port | Subject | Level |
 |---|---|---|
 | `ports/reference.py` | bundled reference kernel, not the TENIR-Gov runtime | 1 |
+| `ports/tenir_gov.py` | installed `tenir-governance`, default governor path, in process | 2 |
 
 `tests/test_harness.py` checks the instrument itself: each effect probe is run
 against a deliberately faulty test double and must report `FAIL`.

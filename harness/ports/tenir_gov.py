@@ -1,0 +1,155 @@
+"""Port over the TENIR-Gov runtime (package `tenir-governance`).
+
+What is under test: `DualKernelGovernor` as shipped, built from the shipped
+`ScoringKernelAdapter(TenirKernel())` and `TransitionMembrane`, in process,
+with the default composition policy and the default (non Profile S) commit
+path. Nothing in TENIR-Gov is patched or mocked. The installed distribution is
+the subject: pin it and pass its version and commit on the command line.
+
+What the port adds: one dispatch provider that appends to a journal owned by
+the port. It is the only way an effect can occur, and the journal is what
+`observed_effects` reads.
+
+Shape of the boundary: two steps. `adjudicate` admits or refuses and claims
+the operation; `dispatch_and_execute` crosses the boundary and calls the
+provider.
+
+Native verdicts are already the four REG dispositions (PASS, FLAG, HOLD,
+HARD_VETO). The port passes them through unchanged. It does not turn a native
+FLAG into a PASS.
+
+Intent mapping (PROVISIONAL, written by the harness author from the runtime's
+own behaviour; to be confirmed or corrected by the runtime's author):
+    ADMISSIBLE      best-case measured inputs, no resource in scope
+    INADMISSIBLE    structure outside bounds (S below the tau floor)
+    NO_STANDING     authority measured at 0.0
+    DENIED          amount above the registered budget (membrane invariant I8)
+    NEEDS_APPROVAL  best-case inputs, amount at 90 % of the budget: the
+                    composition policy escalates this to HOLD
+
+Refusal mapping at the boundary (PROVISIONAL, same caveat):
+    "payload does not match the payload authorized"        -> BINDING_VIOLATION
+    "operation is in state failed|hold|escalated|created"  -> INVALID_DISPOSITION
+    duplicate idempotency key at adjudication              -> NONCE_REPLAY
+Any other refusal is raised under its own code and satisfies no neutral vector.
+
+Not declared, because the default path of this runtime has no such primitive:
+    REVOKE       no revocation of a principal's standing after a verdict
+    STALE_GRANT  an admitted operation carries no validity window
+    STATE_DRIFT  no policy or state version is bound at verdict and re-checked
+    RECEIPTS     ledger entries are hash-chained, not signed
+"""
+from __future__ import annotations
+
+import copy
+import uuid
+
+from .. import port as P
+
+_BEST = dict(pressure=0.2, velocity=0.2, capacity=0.9, authority=0.9,
+             context_fit=1.0, evidence_quality=1.0, option_space=0.9)
+_BUDGET = "reg-harness-budget"
+_CAPACITY = 100.0
+# intent -> (overrides of _BEST, amount charged to the budget or None)
+_INPUTS = {
+    P.ADMISSIBLE:     ({}, None),
+    P.INADMISSIBLE:   (dict(pressure=0.95, velocity=0.90, capacity=0.10), None),
+    P.NO_STANDING:    (dict(authority=0.0), None),
+    P.DENIED:         ({}, _CAPACITY * 5),
+    P.NEEDS_APPROVAL: ({}, _CAPACITY * 0.9),
+}
+_NOT_ADMITTED = ("failed", "hold", "escalated", "created")
+
+
+class _JournalProvider:
+    """The only executor. One journal line per call the runtime makes."""
+
+    def __init__(self):
+        self.journal = []
+
+    def execute(self, idempotency_key, action_type, amount, agent_id, metadata=None):
+        from tenir_governance.operations.provider import DispatchResult, ProviderOutcome
+        self.journal.append(idempotency_key)
+        return DispatchResult(outcome=ProviderOutcome.CONFIRMED,
+                              provider_reference=f"journal-{len(self.journal)}")
+
+    def reconcile(self, idempotency_key, provider_reference=""):
+        from tenir_governance.operations.provider import ReconciliationResult
+        return ReconciliationResult(resolved=False)
+
+
+class TenirGovPort(P.RuntimePort):
+    name = "tenir-governance"
+    interface_mode = "port:tenir-governance"
+    evidence_level = 2
+    capabilities = frozenset({P.EVALUATE, P.COMMIT, P.NONCE, P.MANIFEST,
+                              P.TENIR_SCORE, P.EFFECTS})
+    intents = frozenset(_INPUTS)
+    not_applicable = {"C4": "No transport layer: the runtime is driven in process."}
+
+    def __init__(self):
+        import tenir_governance
+        self.subject_version = tenir_governance.__version__
+        self.reset()
+
+    def reset(self):
+        from tenir_governance.composition import DualKernelGovernor, ScoringKernelAdapter
+        from tenir_governance.membrane import MembraneState, TransitionMembrane
+        from tenir_governance.objects import Resource
+        from tenir_kernel.kernel import TenirKernel
+
+        state = MembraneState()
+        state.register_resource(Resource(resource_id=_BUDGET, capacity=_CAPACITY))
+        self._provider = _JournalProvider()
+        self._scoring = ScoringKernelAdapter(TenirKernel())
+        self._gov = DualKernelGovernor(self._scoring, TransitionMembrane(state),
+                                       provider=self._provider)
+
+    # -- primitives ---------------------------------------------------------
+    def evaluate(self, intent, *, principal, action_type, nonce=None):
+        from tenir_governance.objects import Passage
+
+        overrides, amount = _INPUTS[intent]
+        key = nonce or f"op-{uuid.uuid4().hex}"
+        passage = Passage(agent_id=principal, action_type=action_type,
+                          amount=amount or 0.0, idempotency_key=key)
+        budget = dict(resource_id=_BUDGET, amount=amount) if amount else {}
+        result = self._gov.adjudicate(passage, payload={"action_type": action_type},
+                                      **{**_BEST, **overrides}, **budget)
+        if str(result.get("composed_rationale", "")).startswith("Duplicate operation blocked"):
+            raise P.Refused(P.R_REPLAY, result.get("composed_decision"),
+                            result["composed_rationale"])
+        return P.Decision(key, result["composed_decision"], action_type, principal,
+                          {"result": result, "amount": amount})
+
+    def commit(self, decision, *, action_type=None):
+        amount = decision.raw.get("amount")
+        args = (_BUDGET, amount) if amount else ()
+        result = self._gov.dispatch_and_execute(
+            decision.decision_id, *args,
+            payload={"action_type": action_type or decision.action_type})
+        if result.get("dispatched"):
+            return P.Committed(decision.decision_id, result)
+        reason = str(result.get("reason", ""))
+        state = str(result.get("operation_state", ""))
+        if "does not match the payload authorized" in reason:
+            raise P.Refused(P.R_BINDING, None, reason)
+        if reason.startswith("Cannot dispatch") and state in _NOT_ADMITTED:
+            raise P.Refused(P.R_INVALID_DISPOSITION, decision.disposition, reason)
+        raise P.Refused(f"NATIVE:{state or 'unknown'}", None, reason)
+
+    def manifest_intact(self):
+        return bool(self._gov.ledger.verify_chain())
+
+    def tampered_manifest_intact(self):
+        probe = copy.deepcopy(self._gov.ledger)
+        probe.entries[0].decision = "TAMPERED"
+        return bool(probe.verify_chain())
+
+    def tenir_score(self, Pv, V, K):
+        best = {k: v for k, v in _BEST.items() if k not in ("pressure", "velocity", "capacity")}
+        r = self._scoring.adjudicate(pressure=Pv, velocity=V, capacity=K, **best)
+        return {"s_score": r["s_score"], "decision": r["decision"]}
+
+    def observed_effects(self, decision):
+        return self._provider.journal.count(decision.decision_id)

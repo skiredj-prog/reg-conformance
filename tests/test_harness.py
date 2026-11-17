@@ -121,3 +121,28 @@ def test_probes_are_not_reg_vectors():
     assert not set(PROBES) & set(R.VECTORS)
     assert all(not s.normative for s in PROBES.values())
 
+
+def _tenir_gov_installed():
+    try:
+        import tenir_governance  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+@pytest.mark.skipif(not _tenir_gov_installed(), reason="needs a pinned tenir-governance install")
+def test_tenir_gov_port_reports_native_dispositions_unchanged():
+    from harness.ports.tenir_gov import TenirGovPort
+    port = TenirGovPort()
+    adapter = PortAdapter(port)
+    # The port must not turn the runtime's FLAG into a PASS.
+    port.reset()
+    d = port.evaluate(P.ADMISSIBLE, principal="a", action_type="wire_transfer")
+    assert d.disposition == d.raw["result"]["composed_decision"]
+    # Nothing may pass on a capability the port does not declare.
+    undeclared = {"C3", "CT-R4-004", "CT-R4-005", "CT-R4-007"}
+    results = {r.vector_id: r.status for r in adapter.run_all()}
+    assert {results[v] for v in undeclared} == {R.ReportingState.ADAPTER_REQUIRED}
+    # A refusal and an unanswered approval leave the port's journal empty.
+    probes = {r.vector_id: r.status.value for r in adapter.run_probes()}
+    assert probes["HX-EFFECT-001"] == "PASS" and probes["HX-EFFECT-003"] == "PASS"
