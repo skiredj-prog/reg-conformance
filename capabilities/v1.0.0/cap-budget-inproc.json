@@ -15,7 +15,7 @@
     "implementation_version": "5.6.1",
     "test_version": "0.6.0",
     "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-    "test_command": "pytest -q tests/test_budget_i8.py tests/test_hold_budget_regression.py"
+    "test_command": "pytest -q tests/test_budget_constructor_lock.py tests/test_hold_budget_regression.py"
   },
   "demonstration_scope": null,
   "status_note": "Déclaré (v5.6.1) : 9 chemins BUD + régressions. Non démontré : preuve non liée.",

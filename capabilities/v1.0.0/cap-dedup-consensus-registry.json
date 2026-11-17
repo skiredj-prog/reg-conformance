@@ -15,7 +15,7 @@
     "implementation_version": "5.6.1",
     "test_version": "0.6.0",
     "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-    "test_command": "pytest -q tests/raft/test_registry.py"
+    "test_command": "pytest -q tests/test_quarantine_cross_registry.py"
   },
   "demonstration_scope": null,
   "status_note": "Déclaré : test loopback. Non démontré : preuve non liée.",

@@ -1,6 +1,7 @@
-# Profil multi-hôte avec consensus répliqué via Raft (pysyncobj).
-# Ce profil atteste SAF (safety), LIV (liveness), FT (cross-host fault tolerance),
-# et BUD (budget conservation) avec RaftConsensusBackend (tenir_governance 5.6.0).
+# Profil consensus répliqué via Raft (pysyncobj) sur cluster loopback mono-hôte.
+# Ce profil atteste SAF (safety), LIV (liveness), et BUD (budget conservation)
+# avec RaftConsensusBackend (tenir_governance 5.6.0). FT crash-stop testée sur
+# loopback uniquement. Multi-hôte physique non supporté avant 5.8.0 (FM-20).
 #
 # ATTENTION : les preuves sont auto-attestées (sandbox de l'auteur, pas un
 # vérificateur indépendant). Le hash SHA-256 prouve que le fichier n'a pas
@@ -14,13 +15,14 @@
 profile_id: "consensus-replicated"
 profile_version: "1.1.0"
 description: >
-  Consensus distribué répliqué multi-hôte via Raft (pysyncobj).
+  Consensus distribué répliqué via Raft (pysyncobj) sur cluster loopback mono-hôte.
   Déduplication par registre répliqué, réservations atomiques par consensus,
   UNKNOWN fail-closed. Backend: RaftConsensusBackend (tenir_governance 5.6.0).
-  Satisfait SAF, LIV, FT (crash-stop), BUD. Ne satisfait pas byzantine.
+  Satisfait SAF, LIV, BUD sur loopback. FT crash-stop testée sur loopback uniquement.
+  Déploiement multi-hôte physique non supporté avant 5.8.0 (FM-20 ouvert).
 
 config:
-  HOST_SCOPE: "multi-host"
+  HOST_SCOPE: "multi-host"          # structural: required by R2a/R2b for distributed-consensus
   DEDUP_LAYER: "distributed-consensus-registry"
   CONCURRENCY: "distributed-consensus"
   UNCERTAINTY: "fail-closed"
@@ -93,8 +95,8 @@ attestations:
     description: >
       5 tests : élection de leader, failover après crash (3-nœuds et 5-nœuds),
       un seul leader, préservation d'état après failover.
-      FT (tolérance aux pannes cross-host) attestée pour modèle crash-stop.
-      Format conforme à evidence-type-specs-v1.md §8.
+      FT (tolérance aux pannes loopback) attestée pour modèle crash-stop.
+      FM-20: testé sur loopback uniquement. Format conforme à evidence-type-specs-v1.md §8.
 
   # cap.dedup.consensus-registry — test.idempotency.distributed
   - capability_ids: ["cap.dedup.consensus-registry"]
@@ -109,7 +111,9 @@ attestations:
       reservation_id across nodes; different amount returns DUPLICATE_KEY.
       Format conforme à evidence-type-specs-v1.md §3.
 
-  # cap.host.multi-host — test.cross-host.communication
+  # cap.host.multi-host — test.cross-host.communication (loopback cluster only)
+  # NOTE: test is in Magertron partner perimeter, not in public tenir_governance.
+  # FM-20: v5.7 restricts Raft to loopback; physical multi-host planned for 5.8.0.
   - capability_ids: ["cap.host.multi-host"]
     evidence_type: "test.cross-host.communication"
     evidence_ref: "evidence/test-raft-cross-host-communication.log"
@@ -118,9 +122,10 @@ attestations:
     verifier: "sandbox-run tenir_governance@334109f (auteur, non indépendant)"
     verified_at: "2026-10-19"
     description: >
-      Cross-host replication verified: state replicates to all 3 nodes after
+      Loopback cluster replication: state replicates to all 3 nodes after
       reserve from leader, commit from follower, and reserve from another
-      follower. All nodes see consistent state.
+      follower. All nodes see consistent state. FM-20: tested on loopback
+      only; physical multi-host deployment prohibited until 5.8.0.
 
   # cap.uncertainty.fail-closed — test.unknown-outcome.blocks
   - capability_ids: ["cap.uncertainty.fail-closed"]

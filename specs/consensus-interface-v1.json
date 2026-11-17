@@ -2,9 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://reg-conformance.dev/specs/consensus-interface-v1.json",
   "title": "ConsensusBackend Interface v1",
-  "description": "Interface de conformance pour tout backend de coordination d'état. Le standard définit les propriétés (consensus-contract-v1.md), pas le mécanisme. Tout backend qui implémente cette interface et satisfait les propriétés exigées pour son périmètre de déploiement déclaré est conforme : SAF/LIV/BUD sur un seul hôte, et FT en plus pour un déploiement multi-hôte. NOTE TERMINOLOGIQUE : 'Consensus' dans le nom de cette interface désigne un point de coordination de l'état partagé, pas un algorithme de consensus distribué (Raft, Paxos, PBFT). Une implémentation single-host (ex: verrou de fichier) est conforme si elle satisfait SAF/LIV/BUD ; une implémentation multi-hôte (ex: Raft, etcd) est nécessaire pour satisfaire FT (tolérance aux pannes cross-host). IMPLÉMENTATIONS CONFORMES CONNUES : SingleHostLockBackend (tenir_governance 5.5.0+, SAF/LIV/BUD, single-host) et RaftConsensusBackend (tenir_governance 5.6.0+, SAF/LIV/FT/BUD, multi-host via pysyncobj Raft).",
+  "description": "Interface de conformance pour tout backend de coordination d'état. Le standard définit les propriétés (consensus-contract-v1.md), pas le mécanisme. Tout backend qui implémente cette interface et satisfait les propriétés exigées pour son périmètre de déploiement déclaré est conforme : SAF/LIV/BUD sur un seul hôte, et FT en plus pour un déploiement multi-hôte. NOTE TERMINOLOGIQUE : 'Consensus' dans le nom de cette interface désigne un point de coordination de l'état partagé, pas un algorithme de consensus distribué (Raft, Paxos, PBFT). Une implémentation single-host (ex: verrou de fichier) est conforme si elle satisfait SAF/LIV/BUD ; une implémentation multi-hôte (ex: Raft, etcd) est nécessaire pour satisfaire FT (tolérance aux pannes cross-host). IMPLÉMENTATIONS CONFORMES CONNUES : SingleHostLockBackend (tenir_governance 5.5.0+, SAF/LIV/BUD, single-host) et RaftConsensusBackend (tenir_governance 5.6.0+, SAF/LIV/BUD on loopback cluster; FT crash-stop on loopback only; multi-host physical deployment prohibited in v5.7, FM-20 open).",
   "type": "object",
-  "required": ["interface_version", "operations", "types"],
+  "required": [
+    "interface_version",
+    "operations",
+    "types"
+  ],
   "properties": {
     "interface_version": {
       "type": "string",
@@ -13,16 +17,29 @@
     },
     "operations": {
       "type": "object",
-      "required": ["reserve", "commit", "release", "reconcile", "get_state"],
+      "required": [
+        "reserve",
+        "commit",
+        "release",
+        "reconcile",
+        "get_state"
+      ],
       "properties": {
         "reserve": {
           "type": "object",
           "description": "Réserver un montant budgétaire pour une clé d'idempotence.",
-          "required": ["input", "output"],
+          "required": [
+            "input",
+            "output"
+          ],
           "properties": {
             "input": {
               "type": "object",
-              "required": ["key", "amount", "resource_id"],
+              "required": [
+                "key",
+                "amount",
+                "resource_id"
+              ],
               "properties": {
                 "key": {
                   "type": "string",
@@ -41,18 +58,32 @@
             },
             "output": {
               "type": "object",
-              "required": ["status", "reservation_id"],
+              "required": [
+                "status",
+                "reservation_id"
+              ],
               "properties": {
                 "status": {
                   "type": "string",
-                  "enum": ["RESERVED", "INSUFFICIENT_BUDGET", "DUPLICATE_KEY", "ERROR"]
+                  "enum": [
+                    "RESERVED",
+                    "INSUFFICIENT_BUDGET",
+                    "DUPLICATE_KEY",
+                    "ERROR"
+                  ]
                 },
                 "reservation_id": {
-                  "type": ["string", "null"],
+                  "type": [
+                    "string",
+                    "null"
+                  ],
                   "description": "Identifiant unique de la réservation si RESERVED, sinon null."
                 },
                 "amount_reserved": {
-                  "type": ["integer", "null"],
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
                   "minimum": 0
                 }
               }
@@ -66,11 +97,16 @@
         "commit": {
           "type": "object",
           "description": "Commiter une réservation : transfère le montant de reserved à committed.",
-          "required": ["input", "output"],
+          "required": [
+            "input",
+            "output"
+          ],
           "properties": {
             "input": {
               "type": "object",
-              "required": ["reservation_id"],
+              "required": [
+                "reservation_id"
+              ],
               "properties": {
                 "reservation_id": {
                   "type": "string",
@@ -80,11 +116,18 @@
             },
             "output": {
               "type": "object",
-              "required": ["status"],
+              "required": [
+                "status"
+              ],
               "properties": {
                 "status": {
                   "type": "string",
-                  "enum": ["COMMITTED", "NOT_FOUND", "ALREADY_COMMITTED", "ERROR"]
+                  "enum": [
+                    "COMMITTED",
+                    "NOT_FOUND",
+                    "ALREADY_COMMITTED",
+                    "ERROR"
+                  ]
                 }
               }
             },
@@ -97,11 +140,16 @@
         "release": {
           "type": "object",
           "description": "Libérer une réservation non commitée : remet le montant dans available.",
-          "required": ["input", "output"],
+          "required": [
+            "input",
+            "output"
+          ],
           "properties": {
             "input": {
               "type": "object",
-              "required": ["reservation_id"],
+              "required": [
+                "reservation_id"
+              ],
               "properties": {
                 "reservation_id": {
                   "type": "string"
@@ -110,11 +158,18 @@
             },
             "output": {
               "type": "object",
-              "required": ["status"],
+              "required": [
+                "status"
+              ],
               "properties": {
                 "status": {
                   "type": "string",
-                  "enum": ["RELEASED", "NOT_FOUND", "ALREADY_COMMITTED", "ERROR"]
+                  "enum": [
+                    "RELEASED",
+                    "NOT_FOUND",
+                    "ALREADY_COMMITTED",
+                    "ERROR"
+                  ]
                 }
               }
             },
@@ -127,11 +182,16 @@
         "reconcile": {
           "type": "object",
           "description": "Réconcilier une opération en état UNKNOWN : interroger le provider pour déterminer l'issue réelle.",
-          "required": ["input", "output"],
+          "required": [
+            "input",
+            "output"
+          ],
           "properties": {
             "input": {
               "type": "object",
-              "required": ["key"],
+              "required": [
+                "key"
+              ],
               "properties": {
                 "key": {
                   "type": "string",
@@ -141,14 +201,25 @@
             },
             "output": {
               "type": "object",
-              "required": ["status"],
+              "required": [
+                "status"
+              ],
               "properties": {
                 "status": {
                   "type": "string",
-                  "enum": ["CONFIRMED", "FAILED", "UNRESOLVED", "NOT_FOUND", "ERROR"]
+                  "enum": [
+                    "CONFIRMED",
+                    "FAILED",
+                    "UNRESOLVED",
+                    "NOT_FOUND",
+                    "ERROR"
+                  ]
                 },
                 "effect_observed": {
-                  "type": ["boolean", "null"],
+                  "type": [
+                    "boolean",
+                    "null"
+                  ],
                   "description": "true si l'effet a eu lieu (CONFIRMED), false sinon (FAILED), null si indéterminé (UNRESOLVED)."
                 }
               }
@@ -162,11 +233,16 @@
         "get_state": {
           "type": "object",
           "description": "Retourner l'état courant du backend. Opération pure : ne modifie aucun état.",
-          "required": ["input", "output"],
+          "required": [
+            "input",
+            "output"
+          ],
           "properties": {
             "input": {
               "type": "object",
-              "required": ["resource_id"],
+              "required": [
+                "resource_id"
+              ],
               "properties": {
                 "resource_id": {
                   "type": "string"
@@ -175,7 +251,13 @@
             },
             "output": {
               "type": "object",
-              "required": ["available", "reserved", "committed", "capacity", "reservations"],
+              "required": [
+                "available",
+                "reserved",
+                "committed",
+                "capacity",
+                "reservations"
+              ],
               "properties": {
                 "available": {
                   "type": "integer",
@@ -199,14 +281,31 @@
                   "type": "array",
                   "items": {
                     "type": "object",
-                    "required": ["reservation_id", "key", "amount", "state"],
+                    "required": [
+                      "reservation_id",
+                      "key",
+                      "amount",
+                      "state"
+                    ],
                     "properties": {
-                      "reservation_id": { "type": "string" },
-                      "key": { "type": "string" },
-                      "amount": { "type": "integer", "minimum": 1 },
+                      "reservation_id": {
+                        "type": "string"
+                      },
+                      "key": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
                       "state": {
                         "type": "string",
-                        "enum": ["RESERVED", "COMMITTED", "RELEASED", "UNKNOWN"]
+                        "enum": [
+                          "RESERVED",
+                          "COMMITTED",
+                          "RELEASED",
+                          "UNKNOWN"
+                        ]
                       }
                     }
                   }
@@ -224,57 +323,158 @@
     "types": {
       "type": "object",
       "description": "Types partagés utilisés par les opérations.",
-      "required": ["ReservationResult", "CommitResult", "ReleaseResult", "ReconciliationResult", "ConsensusState"],
+      "required": [
+        "ReservationResult",
+        "CommitResult",
+        "ReleaseResult",
+        "ReconciliationResult",
+        "ConsensusState"
+      ],
       "properties": {
         "ReservationResult": {
           "type": "object",
-          "required": ["status"],
+          "required": [
+            "status"
+          ],
           "properties": {
-            "status": { "type": "string", "enum": ["RESERVED", "INSUFFICIENT_BUDGET", "DUPLICATE_KEY", "ERROR"] },
-            "reservation_id": { "type": ["string", "null"] },
-            "amount_reserved": { "type": ["integer", "null"], "minimum": 0 }
+            "status": {
+              "type": "string",
+              "enum": [
+                "RESERVED",
+                "INSUFFICIENT_BUDGET",
+                "DUPLICATE_KEY",
+                "ERROR"
+              ]
+            },
+            "reservation_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "amount_reserved": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
           }
         },
         "CommitResult": {
           "type": "object",
-          "required": ["status"],
+          "required": [
+            "status"
+          ],
           "properties": {
-            "status": { "type": "string", "enum": ["COMMITTED", "NOT_FOUND", "ALREADY_COMMITTED", "ERROR"] }
+            "status": {
+              "type": "string",
+              "enum": [
+                "COMMITTED",
+                "NOT_FOUND",
+                "ALREADY_COMMITTED",
+                "ERROR"
+              ]
+            }
           }
         },
         "ReleaseResult": {
           "type": "object",
-          "required": ["status"],
+          "required": [
+            "status"
+          ],
           "properties": {
-            "status": { "type": "string", "enum": ["RELEASED", "NOT_FOUND", "ALREADY_COMMITTED", "ERROR"] }
+            "status": {
+              "type": "string",
+              "enum": [
+                "RELEASED",
+                "NOT_FOUND",
+                "ALREADY_COMMITTED",
+                "ERROR"
+              ]
+            }
           }
         },
         "ReconciliationResult": {
           "type": "object",
-          "required": ["status"],
+          "required": [
+            "status"
+          ],
           "properties": {
-            "status": { "type": "string", "enum": ["CONFIRMED", "FAILED", "UNRESOLVED", "NOT_FOUND", "ERROR"] },
-            "effect_observed": { "type": ["boolean", "null"] }
+            "status": {
+              "type": "string",
+              "enum": [
+                "CONFIRMED",
+                "FAILED",
+                "UNRESOLVED",
+                "NOT_FOUND",
+                "ERROR"
+              ]
+            },
+            "effect_observed": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
           }
         },
         "ConsensusState": {
           "type": "object",
-          "required": ["available", "reserved", "committed", "capacity", "reservations"],
+          "required": [
+            "available",
+            "reserved",
+            "committed",
+            "capacity",
+            "reservations"
+          ],
           "properties": {
-            "available": { "type": "integer", "minimum": 0 },
-            "reserved": { "type": "integer", "minimum": 0 },
-            "committed": { "type": "integer", "minimum": 0 },
-            "capacity": { "type": "integer", "minimum": 0 },
+            "available": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reserved": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "committed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "capacity": {
+              "type": "integer",
+              "minimum": 0
+            },
             "reservations": {
               "type": "array",
               "items": {
                 "type": "object",
-                "required": ["reservation_id", "key", "amount", "state"],
+                "required": [
+                  "reservation_id",
+                  "key",
+                  "amount",
+                  "state"
+                ],
                 "properties": {
-                  "reservation_id": { "type": "string" },
-                  "key": { "type": "string" },
-                  "amount": { "type": "integer", "minimum": 1 },
-                  "state": { "type": "string", "enum": ["RESERVED", "COMMITTED", "RELEASED", "UNKNOWN"] }
+                  "reservation_id": {
+                    "type": "string"
+                  },
+                  "key": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "RESERVED",
+                      "COMMITTED",
+                      "RELEASED",
+                      "UNKNOWN"
+                    ]
+                  }
                 }
               }
             }
@@ -285,40 +485,73 @@
     "invariants": {
       "type": "object",
       "description": "Invariants que le backend doit maintenir à tout instant.",
-      "required": ["BUD", "linearizability", "agreement", "validity"],
+      "required": [
+        "BUD",
+        "linearizability",
+        "agreement",
+        "validity"
+      ],
       "properties": {
         "BUD": {
           "type": "object",
           "description": "Conservation du budget agrégé : reserved + committed <= capacity, par resource_id, à tout instant.",
-          "required": ["property", "scope"],
+          "required": [
+            "property",
+            "scope"
+          ],
           "properties": {
-            "property": { "type": "string", "const": "reserved + committed <= capacity" },
-            "scope": { "type": "string", "const": "per resource_id" }
+            "property": {
+              "type": "string",
+              "const": "reserved + committed <= capacity"
+            },
+            "scope": {
+              "type": "string",
+              "const": "per resource_id"
+            }
           }
         },
         "linearizability": {
           "type": "object",
           "description": "Chaque opération prend effet à un point unique entre invocation et réponse. Vérifié par linearizability checker.",
-          "required": ["property", "verification"],
+          "required": [
+            "property",
+            "verification"
+          ],
           "properties": {
-            "property": { "type": "string", "const": "linearizable history exists" },
-            "verification": { "type": "string", "const": "Wing-Gong or equivalent" }
+            "property": {
+              "type": "string",
+              "const": "linearizable history exists"
+            },
+            "verification": {
+              "type": "string",
+              "const": "Wing-Gong or equivalent"
+            }
           }
         },
         "agreement": {
           "type": "object",
           "description": "Au plus un nœud peut commiter une réservation donnée.",
-          "required": ["property"],
+          "required": [
+            "property"
+          ],
           "properties": {
-            "property": { "type": "string", "const": "at most one commit per reservation" }
+            "property": {
+              "type": "string",
+              "const": "at most one commit per reservation"
+            }
           }
         },
         "validity": {
           "type": "object",
           "description": "Toute réservation/commit/libération correspond à une opération antérieure valide.",
-          "required": ["property"],
+          "required": [
+            "property"
+          ],
           "properties": {
-            "property": { "type": "string", "const": "no phantom operations" }
+            "property": {
+              "type": "string",
+              "const": "no phantom operations"
+            }
           }
         }
       }

@@ -15,7 +15,7 @@
     "implementation_version": "5.6.1",
     "test_version": "0.6.0",
     "test_results_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-    "test_command": "pytest -q tests/test_cross_process_i8.py"
+    "test_command": "pytest -q tests/test_cross_process.py tests/test_durable_budget_cross_process.py"
   },
   "demonstration_scope": null,
   "status_note": "Déclaré (v5.5.0) : 10 tests BUD cross-process. Non démontré : preuve non liée.",

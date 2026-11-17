@@ -9,17 +9,20 @@ IMPL, TEST = "5.6.1", "0.6.0"
 TS = "2026-10-20T21:55:30Z"  # horodatage de la vérification v0.6.0 (fail-closed)
 PH = "0" * 64  # placeholder : aucune preuve liée ; une capacité démontrée exige un hash réel
 
-def cap(cid, name, desc, inv, perimeter, demo, scope, cmd, limits, note):
+def cap(cid, name, desc, inv, perimeter, demo, scope, cmd, limits, note, *, cmd_note=None):
+    ev = {
+        "implementation_version": IMPL, "test_version": TEST,
+        "test_results_hash": PH, "test_command": cmd,
+    }
+    if cmd_note:
+        ev["test_command_note"] = cmd_note
     return {
         "capability_id": cid,
         "declaration": {
             "name": name, "description": desc,
             "invariants_required": inv, "deployment_perimeter": perimeter,
         },
-        "evidence": {
-            "implementation_version": IMPL, "test_version": TEST,
-            "test_results_hash": PH, "test_command": cmd,
-        },
+        "evidence": ev,
         "demonstration_scope": scope,
         "status_note": note,
         "limitations": {"known_limits": limits},
@@ -38,17 +41,17 @@ CAPS = [
     cap("cap-budget-inproc", "Conservation budget mono-process",
         "reserved + committed <= capacity sous concurrence threadée.", ["BUD"], MP,
         None, None,
-        "pytest -q tests/test_budget_i8.py tests/test_hold_budget_regression.py",
+        "pytest -q tests/test_budget_constructor_lock.py tests/test_hold_budget_regression.py",
         ["single-process only"], "Déclaré (v5.6.1) : 9 chemins BUD + régressions. Non démontré : preuve non liée."),
     cap("cap-budget-crossproc", "Conservation budget cross-process",
         "BUD préservé entre processus via fcntl.flock + état durable.", ["BUD"], MH,
         None, None,
-        "pytest -q tests/test_cross_process_i8.py",
+        "pytest -q tests/test_cross_process.py tests/test_durable_budget_cross_process.py",
         ["single-host only (flock ne traverse pas les hôtes)"], "Déclaré (v5.5.0) : 10 tests BUD cross-process. Non démontré : preuve non liée."),
     cap("cap-budget-raft", "Conservation budget Raft",
         "BUD préservé sur cluster Raft répliqué.", ["BUD"], MX,
         None, None,
-        "pytest -q tests/raft/test_i8_raft.py",
+        "pytest -q tests/test_p0_raft_determinism.py",
         ["FM-20 ouvert : transport PySyncObj non sécurisé",
          "adresses loopback uniquement",
          "déploiement multi-host physique NON supporté"],
@@ -56,14 +59,15 @@ CAPS = [
     cap("cap-deterministic-replication", "Réplication déterministe",
         "Même log => même état : horloge logique, IDs client-side, Decimal.", ["BUD"], MX,
         None, None,
-        "pytest -q tests/raft/test_determinism.py",
+        "pytest -q tests/test_p0_raft_determinism.py",
         ["périmètre loopback"], "Déclaré : E1 corrigé (horloge logique). Non démontré : preuve non liée."),
     cap("cap-dedup-local-registry", "Déduplication registre local",
         "Clé idempotente réclamée durablement avant évaluation ; replay = état réel.", ["I2"],
         {"HOST_SCOPE": "mono-host", "CONCURRENCY": "file-lock"},
         None, None,
         "pytest -q tests/test_idempotency.py",
-        ["single-host"], "Déclaré : E5 corrigé (replay réel). Non démontré : preuve non liée."),
+        ["single-host"], "Déclaré : E5 corrigé (replay réel). Non démontré : preuve non liée.",
+        cmd_note="test_idempotency.py is in the Magertron partner perimeter, not in public tenir_governance"),
     cap("cap-dedup-provider-key", "Déduplication par clé provider",
         "Idempotence déléguée au provider externe.", ["I2"],
         {"HOST_SCOPE": "mono-host", "CONCURRENCY": "file-lock"},
@@ -73,7 +77,7 @@ CAPS = [
     cap("cap-dedup-consensus-registry", "Déduplication registre consensus",
         "Registre de déduplication répliqué via Raft.", ["I2"], MX,
         None, None,
-        "pytest -q tests/raft/test_registry.py",
+        "pytest -q tests/test_quarantine_cross_registry.py",
         ["périmètre loopback", "FM-20"], "Déclaré : test loopback. Non démontré : preuve non liée."),
     cap("cap-budget-disttx", "Conservation budget transaction distribuée",
         "BUD via backend distributed-transaction.", ["BUD"],
@@ -82,7 +86,7 @@ CAPS = [
         ["slot structurel seulement"], "NON évalué : aucun backend implémenté."),
     cap("cap-linearizability-verification", "Vérification de linéarisabilité",
         "Preuve SAF par checker formel.", ["BUD"], MX,
-        False, None, "pytest -q tests/raft/test_linearizability.py",
+        False, None, "pytest -q tests/test_linearizability_checker.py",
         ["checker prototype (F-03)", "comparaison status-only", "specs raccourcies"],
         "RÉFUTÉ en l'état : ne pas citer comme preuve SAF."),
     cap("cap-secure-consensus-transport", "Transport consensus sécurisé",
