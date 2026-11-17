@@ -159,6 +159,8 @@ def test_tenir_gov_port_on_the_property_checks():
     assert got["PX-CT-R3-001"] == got["PX-CT-R3-003"] == "ADAPTER_REQUIRED"
     # The scope check runs: its outcome belongs to the runtime version, not to this test.
     assert got["PX-CT-R3-007"] in ("PASS", "FAIL")
+    # The default path declares no bound: a HOLD it enters carries no tau_k.
+    assert {got[c] for c in _AT_A_BOUND} == {"ADAPTER_REQUIRED"}
 
 
 # -- admission class (RFC-0 §4: PASS is ALLOW, FLAG is ALLOW_WITH_MONITORING) --
@@ -290,28 +292,51 @@ def test_bundle_verdict_carries_the_property_summary_and_never_certifies():
 # -- property checks: one indexed property each, never a vector ---------------
 
 class _Governed(P.RuntimePort):
-    """Two-phase test double with standing, a scope, a hard invariant, keys and
-    revocation. `fault` selects the defect."""
-    capabilities = frozenset({P.EVALUATE, P.COMMIT, P.REVOKE, P.NONCE, P.COMBINE})
+    """Two-phase test double with standing, a scope, a hard invariant, keys,
+    revocation, a clock and declared bounds. `fault` selects the defect."""
+    capabilities = frozenset({P.EVALUATE, P.COMMIT, P.REVOKE, P.NONCE, P.COMBINE, P.CLOCK})
     intents = frozenset({P.ADMISSIBLE, P.NO_STANDING, P.NEEDS_APPROVAL, P.MALFORMED_CREDENTIAL,
-                         P.OUT_OF_SCOPE, P.INVARIANT_VIOLATED})
+                         P.OUT_OF_SCOPE, P.INVARIANT_VIOLATED, P.EXPIRING_CREDENTIAL,
+                         P.STALE_REQUEST, P.REVOKED_KEY})
     combinations = frozenset({frozenset({P.NO_STANDING, P.NEEDS_APPROVAL})})
+    bounds = {P.B_REVOCATION: 5.0, P.B_CREDENTIAL: 60.0, P.B_FRESHNESS: 300.0, P.B_TAU_K: 120.0}
+    clock_mode = "simulated"
     fault = None
     verdicts = {P.ADMISSIBLE: "PASS", P.NO_STANDING: "HARD_VETO", P.NEEDS_APPROVAL: "HOLD",
                 P.MALFORMED_CREDENTIAL: "HARD_VETO", P.OUT_OF_SCOPE: "HARD_VETO",
-                P.INVARIANT_VIOLATED: "HARD_VETO"}
+                P.INVARIANT_VIOLATED: "HARD_VETO", P.EXPIRING_CREDENTIAL: "PASS",
+                P.STALE_REQUEST: "HARD_VETO", P.REVOKED_KEY: "HARD_VETO"}
     faults = {"admits_malformed": (P.MALFORMED_CREDENTIAL, "PASS"),
               "holds_malformed": (P.MALFORMED_CREDENTIAL, "HOLD"),
               "admits_out_of_scope": (P.OUT_OF_SCOPE, "FLAG"),
               "scores_past_invariant": (P.INVARIANT_VIOLATED, "FLAG"),
-              "holds_on_invariant": (P.INVARIANT_VIOLATED, "HOLD")}
+              "holds_on_invariant": (P.INVARIANT_VIOLATED, "HOLD"),
+              "accepts_stale_request": (P.STALE_REQUEST, "PASS"),
+              "accepts_revoked_key": (P.REVOKED_KEY, "PASS")}
 
     def reset(self):
-        self.revoked, self.keys = set(), {}
+        self.now, self.revoked, self.keys, self.issued, self.made = 0.0, {}, {}, {}, {}
 
-    def _verdict(self, intent):
+    def elapse_past(self, bound):
+        step = self.bounds[bound] + 0.001
+        self.now += step
+        return step
+
+    def _landed(self):
+        """Principals whose revocation has taken effect: after the declared
+        bound, or twice that when the revocation is late."""
+        lag = self.bounds.get(P.B_REVOCATION, 0.0) * (2 if self.fault == "revocation_late" else 1)
+        return {who for who, at in self.revoked.items() if self.now - at >= lag}
+
+    def _verdict(self, intent, principal):
         swapped, verdict = self.faults.get(self.fault, (None, None))
-        return verdict if intent == swapped else self.verdicts[intent]
+        if intent == swapped:
+            return verdict
+        if intent == P.EXPIRING_CREDENTIAL and self.fault != "credential_never_expires":
+            issued = self.issued.setdefault(principal, self.now)
+            if self.now - issued >= self.bounds.get(P.B_CREDENTIAL, 0.0):
+                return "HARD_VETO"
+        return self.verdicts[intent]
 
     def evaluate(self, intent, *, principal, action_type, nonce=None):
         return self.evaluate_combined((intent,), principal=principal,
@@ -324,20 +349,34 @@ class _Governed(P.RuntimePort):
                 raise P.Refused(P.R_REPLAY)
             self.keys[nonce] = action_type
         pick = min if self.fault == "least_restrictive_wins" else max
-        verdict = pick((self._verdict(i) for i in intents), key=P.RESTRICTIVENESS.index)
-        if principal in self.revoked or (self.revoked and self.fault == "revocation_spills"):
+        verdict = pick((self._verdict(i, principal) for i in intents),
+                       key=P.RESTRICTIVENESS.index)
+        landed = self._landed()
+        if principal in landed or (landed and self.fault == "revocation_spills"):
             verdict = "HARD_VETO"
-        return P.Decision(uuid.uuid4().hex, verdict, action_type, principal, {})
+        decision = P.Decision(uuid.uuid4().hex, verdict, action_type, principal, {})
+        self.made[decision.decision_id] = (verdict, self.now)
+        return decision
 
     def commit(self, decision, *, action_type=None):
-        if decision.principal in self.revoked or (
-                self.revoked and self.fault == "revocation_blocks_grants"):
+        verdict, born = self.made[decision.decision_id]
+        if verdict == "HOLD":
+            over = self.now - born >= self.bounds.get(P.B_TAU_K, float("inf"))
+            if over and self.fault == "hold_executes_after_window":
+                return P.Committed(decision.decision_id)
+            ended = over and self.fault != "hold_never_ends"
+            raise P.Refused(P.R_INVALID_DISPOSITION, "HARD_VETO" if ended else "HOLD")
+        if verdict == "HARD_VETO":
+            raise P.Refused(P.R_INVALID_DISPOSITION, "HARD_VETO")
+        landed = self._landed()
+        gone = decision.principal in landed and self.fault != "revocation_spares_grants"
+        if gone or (landed and self.fault == "revocation_blocks_grants"):
             raise P.Refused(P.R_STANDING_REVOKED, "HARD_VETO")
         return P.Committed(decision.decision_id)
 
     def revoke(self, principal):
         if self.fault != "revocation_inert":
-            self.revoked.add(principal)
+            self.revoked[principal] = self.now
 
 
 def _checks(fault=None, base=_Governed):
@@ -359,6 +398,11 @@ def test_property_checks_pass_on_a_correct_runtime():
     ("revocation_spills", "PX-CT-R3-003"),
     ("revocation_blocks_grants", "PX-CT-R3-003"),
     ("least_restrictive_wins", "PX-CT-R0-005"),
+    ("revocation_spares_grants", "PX-CT-R3-002"),
+    ("credential_never_expires", "PX-CT-R3-006"),
+    ("accepts_stale_request", "PX-VEC-6-03"),
+    ("accepts_revoked_key", "PX-VEC-6-04"),
+    ("hold_executes_after_window", "PX-REG-STATE-024"),
 ])
 def test_each_property_check_detects_its_fault_and_only_that_one(fault, check):
     got = _checks(fault)
@@ -369,9 +413,159 @@ def test_each_property_check_detects_its_fault_and_only_that_one(fault, check):
 @pytest.mark.parametrize("fault,check", [
     ("holds_malformed", "PX-CT-R3-001"),                 # suspended is not rejected
     ("revocation_inert", "PX-CT-R3-003"),                # nothing to isolate
+    ("hold_never_ends", "PX-REG-STATE-024"),             # not executable is not rejected
 ])
 def test_a_property_check_does_not_conclude_on_a_half_observation(fault, check):
     assert _checks(fault)[check] == "INCONCLUSIVE"
+
+
+# -- declared bounds: the harness sets no duration -----------------------------
+
+_AT_A_BOUND = {"PX-CT-R3-002", "PX-CT-R3-006", "PX-VEC-6-03", "PX-VEC-6-04", "PX-REG-STATE-024"}
+
+
+def test_a_revocation_that_lands_after_the_declared_bound_fails():
+    got = _checks("revocation_late")
+    # Still executable just past the bound the subject declares.
+    assert got["PX-CT-R3-002"] == "FAIL"
+    # And nothing to isolate yet for the isolation check.
+    assert got["PX-CT-R3-003"] == "INCONCLUSIVE"
+
+
+def test_a_revocation_that_does_nothing_fails_at_the_bound():
+    assert _checks("revocation_inert")["PX-CT-R3-002"] == "FAIL"
+
+
+def test_without_a_declared_bound_the_check_does_not_run():
+    class Undeclared(_Governed):
+        bounds = {}
+    adapter = PortAdapter(Undeclared())
+    got = {r.vector_id: r for r in adapter.run_checks()}
+    assert {c for c, r in got.items() if r.status.value == "ADAPTER_REQUIRED"} == _AT_A_BOUND
+    assert all("no bound declared for" in got[c].gap_note for c in _AT_A_BOUND)
+    # The checks that need no bound are untouched.
+    assert {r.status.value for c, r in got.items() if c not in _AT_A_BOUND} == {"PASS"}
+
+
+def test_each_check_at_a_bound_names_a_bound_the_port_can_declare():
+    assert {c for c, s in CHECKS.items() if s.bounds} == _AT_A_BOUND
+    assert all(s.bounds <= P.ALL_BOUNDS for s in CHECKS.values())
+
+
+def test_a_fail_degraded_deployment_is_not_judged_on_the_default():
+    class Degraded(_Governed):
+        exhaustion_policy = "fail-degraded"
+    assert _checks(base=Degraded)["PX-REG-STATE-024"] == "INCONCLUSIVE"
+
+
+@pytest.mark.parametrize("change", [
+    dict(bounds={"patience": 3.0}),                       # not a bound the harness knows
+    dict(bounds={P.B_TAU_K: -1.0}),
+    dict(bounds={P.B_TAU_K: float("inf")}),
+    dict(clock_mode=""),                                  # clock declared, mode not said
+    dict(exhaustion_policy="whatever"),
+])
+def test_a_port_states_its_bounds_and_its_clock_precisely(change):
+    Bad = type("Bad", (_Governed,), change)
+    with pytest.raises(ValueError):
+        PortAdapter(Bad())
+
+
+class _OneStepHolding(_Fixture):
+    """One-step double that suspends, with a clock and a declared tau_k.
+    Fault `approves_on_timeout`: the suspended call runs once the window ends."""
+    capabilities = _Fixture.capabilities | {P.CLOCK}
+    bounds = {P.B_TAU_K: 30.0}
+    clock_mode = "simulated"
+
+    def reset(self):
+        super().reset()
+        self.held = []
+
+    def evaluate(self, intent, **kw):
+        d = super().evaluate(intent, **kw)
+        if intent == P.NEEDS_APPROVAL:
+            self.held.append(d.decision_id)
+        return d
+
+    def elapse_past(self, bound):
+        if bound == P.B_TAU_K and self.fault == "approves_on_timeout":
+            self.journal += self.held
+        return self.bounds[bound] + 0.001
+
+
+def test_a_hold_that_runs_when_its_window_ends_is_caught_by_its_effect():
+    class F(_OneStepHolding): pass
+    F.fault = "approves_on_timeout"
+    got = {r.vector_id: r.status.value for r in PortAdapter(F()).run_checks()}
+    assert got["PX-REG-STATE-024"] == "FAIL"
+
+
+def test_with_no_separate_commit_no_effect_alone_does_not_prove_a_rejection():
+    got = {r.vector_id: r.status.value for r in PortAdapter(_OneStepHolding()).run_checks()}
+    assert got["PX-REG-STATE-024"] == "INCONCLUSIVE"
+
+
+# -- "no effect" is read after the declared effect window ----------------------
+
+class _Lagging(_Fixture):
+    """One-step double whose effects land `effect_window` seconds after the call."""
+    capabilities = _Fixture.capabilities | {P.CLOCK}
+    effect_window = 2.0
+    clock_mode = "simulated"
+
+    def reset(self):
+        super().reset()
+        self.now, self.pending = 0.0, []
+
+    def evaluate(self, intent, **kw):
+        before = len(self.journal)
+        d = super().evaluate(intent, **kw)
+        self.pending += [(self.now + self.effect_window, token) for token in self.journal[before:]]
+        del self.journal[before:]
+        return d
+
+    def elapse_past(self, bound):
+        assert bound == P.EFFECT_WINDOW
+        self.now += self.effect_window + 0.001
+        self.journal += [token for due, token in self.pending if due <= self.now]
+        self.pending = [(due, token) for due, token in self.pending if due > self.now]
+        return self.effect_window + 0.001
+
+
+def _lagging(fault):
+    class F(_Lagging): pass
+    F.fault = fault
+    return {r.vector_id: r.status.value for r in PortAdapter(F()).run_probes()}
+
+
+def test_an_effect_that_lands_late_is_still_counted():
+    # Read at once, the journal would be empty and the allowed call would show no effect.
+    assert set(_lagging(None).values()) == {"PASS"}
+
+
+def test_a_late_effect_after_a_refusal_is_caught():
+    # Read at once, the journal would be empty and the refusal would look clean.
+    assert _lagging("executes_on_refusal")["HX-EFFECT-001"] == "FAIL"
+
+
+def test_a_port_with_an_effect_window_must_be_able_to_let_it_pass():
+    class NoClock(_Fixture):
+        effect_window = 2.0
+    with pytest.raises(ValueError):
+        PortAdapter(NoClock())
+
+
+# -- every result says where it observed and what it does not establish --------
+
+def test_every_scenario_says_where_it_observes_and_what_it_does_not_establish():
+    from harness.scenarios import PHASES
+    for vid, scenario in {**SCENARIOS, **PROBES, **CHECKS}.items():
+        assert scenario.at in PHASES, vid
+        assert scenario.not_observed and all(scenario.not_observed), vid
+    # No probe may claim more than its journal and its window let it see.
+    assert all("journal" in s.not_observed[0] and "effect window" in s.not_observed[1]
+               for s in PROBES.values())
 
 
 def test_a_runtime_that_refuses_everything_passes_no_property_check():
@@ -451,10 +645,11 @@ def test_a_row_with_a_check_that_did_not_run_is_counted_once():
 def test_reference_kernel_on_the_property_checks():
     adapter, _, checks, view = _view_with_checks(ReferencePort())
     got = {r.vector_id: r for r in checks}
-    assert {k: r.status.value for k, r in got.items()} == {
-        "PX-CT-R0-005": "ADAPTER_REQUIRED", "PX-CT-R3-001": "FAIL", "PX-CT-R3-003": "PASS",
-        "PX-CT-R3-007": "ADAPTER_REQUIRED", "PX-VEC-6-02": "PASS",
-        "PX-REG-STATE-014": "ADAPTER_REQUIRED"}
+    ran = {k: r.status.value for k, r in got.items() if r.status.value != "ADAPTER_REQUIRED"}
+    assert ran == {"PX-CT-R3-001": "FAIL", "PX-CT-R3-003": "PASS", "PX-VEC-6-02": "PASS"}
+    # The kernel declares no bound: none of the checks at a bound runs on it.
+    assert _AT_A_BOUND <= set(got) - set(ran)
+    assert "Revocation propagation latency not declared" in got["PX-CT-R3-002"].gap_note
     # The kernel admits a blank credential. Its own gap register says so.
     assert "CT-R3-001" in got["PX-CT-R3-001"].gap_note
     # A failing check marks the family, whatever else passes in it.
@@ -475,3 +670,24 @@ def test_bundle_verdict_lists_property_checks_apart_from_the_vectors():
     assert not set(verdict["property_checks"]["results"]) & set(verdict["reg_vectors"]["passed"])
     assert verdict["property_view"]["index"]["with_check"] == len(SCENARIOS) + len(CHECKS)
     assert verdict["certifying"] is False
+
+
+def test_bundle_verdict_carries_the_residue_of_each_observed_result():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+    import make_evidence_bundle as B
+    adapter, results, checks, view = _view_with_checks(_Governed())
+    report = R.generate_report(adapter, results)
+    report["property_checks"] = {"exercises": _EXERCISES, "results": [R.asdict(r) for r in checks]}
+    every = {**SCENARIOS, **PROBES, **CHECKS}
+    report["observation"] = {
+        "conditions": {"effect_window_s": 0.0, "clock_mode": "simulated",
+                       "declared_bounds_s": dict(_Governed.bounds), "exhaustion_policy": None},
+        "checks": {vid: {"at": s.at, "not_observed": list(s.not_observed)}
+                   for vid, s in every.items()}}
+    verdict = B.build_verdict(json.loads(json.dumps(report, default=str)))
+    kept = verdict["observation"]["checks"]
+    observed = {r.vector_id for r in results + checks
+                if r.status.value in ("PASS", "FAIL", "INCONCLUSIVE")}
+    assert set(kept) == observed and set(CHECKS) <= observed
+    assert kept["PX-CT-R3-001"]["not_observed"][0] == "that the rejection comes before evaluation"
+    assert verdict["observation"]["conditions"]["declared_bounds_s"][P.B_TAU_K] == 120.0

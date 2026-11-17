@@ -47,6 +47,14 @@ are candidates and are not part of the frozen RFCs. The grouping changes no
 outcome and no vector count. It shows which properties were observed on a
 subject whose shape does not fit the vectors as written.
 
+**What a result does not establish.** Each test declares where it observes,
+as a phase of RFC-0 §5, and what its result leaves open. A test submits one
+case: a pass is a pass on that case. Tests that depend on time use the bound
+the subject declares and none of their own; when the subject declares no
+bound, the test does not run. "No effect" is read from one journal, after the
+effect window the port declares. `verdict.json` carries all of this for every
+result that gave an observation.
+
 **What counts as an admission.** RFC-0 §4 lets execution proceed on `PASS`
 and on `FLAG`, the latter only under an explicit condition or supervision.
 A test that needs an admitted action accepts either. The run lists the tests
@@ -72,7 +80,8 @@ Example:
 
 A count of families is quoted with the words "candidate families" and with
 the number not exercised. If a test went forward on a `FLAG` whose condition
-was not observed, the quote says so.
+was not observed, the quote says so. A quote that rests on one test's result
+gives what that test does not establish.
 
 ## What must not be said
 
@@ -89,6 +98,10 @@ was not observed, the quote says so.
 - That an effect probe or a property check is a REG vector, or the reverse.
 - That a row of the index is "covered" or "implemented" because a property
   check exists for it. The row keeps its status in `VECTORS.md`.
+- That a property holds "at the declared bound" for a subject that declares
+  none. The test did not run.
+- That no observed effect means no effect. The journal is one channel, read
+  after one declared window.
 - That a family with a passing check is satisfied, or that a subject
   "satisfies" a number of families. One check observed one behaviour.
 

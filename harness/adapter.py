@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib
 
 import runner as R
-from .port import ALL_CAPABILITIES, ALL_INTENTS, RuntimePort
+from .port import ALL_BOUNDS, ALL_CAPABILITIES, ALL_INTENTS, CLOCK, RuntimePort
 from .scenarios import CHECKS, PROBES, SCENARIOS
 
 HARNESS_GAP = ("HARNESS_GAP: no runtime-neutral scenario exists for this vector yet; "
@@ -24,6 +24,19 @@ class PortAdapter(R.BaseAdapter):
             if len(combo) < 2 or not set(combo) <= set(port.intents):
                 raise ValueError("a combination must list two or more intents the port "
                                  f"declares: {sorted(combo)}")
+        unknown = set(port.bounds) - ALL_BOUNDS
+        if unknown:
+            raise ValueError(f"port declares unknown bounds: {sorted(unknown)}")
+        for name, seconds in dict(port.bounds, effect_window=port.effect_window).items():
+            if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) \
+                    or not 0 <= seconds < float("inf"):
+                raise ValueError(f"{name} must be a finite number of seconds, zero or more")
+        if CLOCK in port.capabilities and port.clock_mode not in ("real", "simulated"):
+            raise ValueError("a port that declares clock says how time passes: real or simulated")
+        if port.effect_window and CLOCK not in port.capabilities:
+            raise ValueError("a port that declares an effect window must be able to let it pass")
+        if port.exhaustion_policy not in (None, "fail-closed", "fail-degraded"):
+            raise ValueError("exhaustion_policy is fail-closed, fail-degraded or None")
         self.port = port
         self.interface_mode = port.interface_mode
         # A port is a translation layer: it can never report native conformance.
@@ -35,12 +48,16 @@ class PortAdapter(R.BaseAdapter):
 
     def _run_scenario(self, vid, scenario):
         self.facts.pop(vid, None)
-        missing = sorted(scenario.requires - set(self.port.capabilities))
-        if missing:
-            return self._ar(vid, "port does not declare: " + ", ".join(missing))
-        missing = sorted(scenario.intents - set(self.port.intents))
-        if missing:
-            return self._ar(vid, "port cannot produce intent: " + ", ".join(missing))
+        # Everything that keeps the scenario from running, in one note: a
+        # missing capability, an intent the runtime has no notion of, a bound
+        # the subject does not declare.
+        lacking = [(label, sorted(wanted - set(have))) for label, wanted, have in (
+            ("port does not declare: ", scenario.requires, self.port.capabilities),
+            ("port cannot produce intent: ", scenario.intents, self.port.intents),
+            ("no bound declared for: ", scenario.bounds, self.port.bounds))]
+        lacking = [label + ", ".join(names) for label, names in lacking if names]
+        if lacking:
+            return self._ar(vid, "; ".join(lacking))
         try:
             self.port.reset()
             outcome = scenario.run(self.port)

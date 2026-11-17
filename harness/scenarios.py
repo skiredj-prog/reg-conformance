@@ -24,6 +24,19 @@ class Scenario:
     intents: frozenset = frozenset()
     normative: bool = True      # False = probe or property check, outside the REG vector set
     exercises: str = ""         # property check only: the VECTORS.md row it exercises
+    bounds: frozenset = frozenset()   # bounds the subject must declare for the scenario to run
+    at: str = ""                # where it observes, in the terms of RFC-0 §5
+    not_observed: tuple = ()    # what a result of this scenario does not establish
+
+
+# Where a scenario observes. The four phases are those of RFC-0 §5. MODEL is
+# for the scenarios that call the structural model directly, outside any attempt.
+PRE = "pre-execution"
+AUTH = "conditional authorization"
+EXEC = "supervised execution"
+PROOF = "closure and proof"
+MODEL = "structural model alone, outside the lifecycle"
+PHASES = (PRE, AUTH, EXEC, PROOF, MODEL)
 
 
 def _nonce() -> str:
@@ -202,12 +215,20 @@ def _cross(rt, d):
             pass
 
 
+def _effects(rt, d) -> int:
+    """Effects observed for a decision, read once the declared effect window
+    has passed. Without that wait, "no effect" would only mean "none yet"."""
+    if rt.effect_window:
+        rt.elapse_past(P.EFFECT_WINDOW)
+    return rt.observed_effects(d)
+
+
 def hx_refusal_zero_effects(rt):
     d = rt.evaluate(P.DENIED, principal=_principal("a"), action_type="count")
     if d.disposition not in ("HARD_VETO", "HOLD"):
         return INCONCLUSIVE, f"no refusal to observe (disposition={d.disposition})"
     _cross(rt, d)
-    n = rt.observed_effects(d)
+    n = _effects(rt, d)
     return (PASS, "refusal matched zero observed effects") if n == 0 \
         else (FAIL, f"refusal matched {n} observed effect(s)")
 
@@ -218,7 +239,7 @@ def hx_allow_exactly_one_effect(rt):
         return INCONCLUSIVE, f"no allow to observe (disposition={d.disposition})"
     _cross(rt, d)
     _cross(rt, d)               # a second attempt on the same grant, where one exists
-    n = rt.observed_effects(d)
+    n = _effects(rt, d)
     if n == 1:
         return PASS, "allow matched exactly one observed effect" + _via(d), _admission(d)
     return FAIL, f"allow matched {n} observed effect(s)", _admission(d)
@@ -229,7 +250,7 @@ def hx_unanswered_approval_zero_effects(rt):
     if d.disposition == "PASS":
         return FAIL, "call needing approval was allowed without one"
     _cross(rt, d)
-    n = rt.observed_effects(d)
+    n = _effects(rt, d)
     return (PASS, f"unanswered approval gave {d.disposition} and zero observed effects") if n == 0 \
         else (FAIL, f"unanswered approval matched {n} observed effect(s)")
 
@@ -240,7 +261,7 @@ def hx_allow_after_refusal(rt):
     if not _admitted(allowed):
         return INCONCLUSIVE, f"no allow after the refusal (disposition={allowed.disposition})"
     _cross(rt, allowed)
-    a, b = rt.observed_effects(refused), rt.observed_effects(allowed)
+    a, b = _effects(rt, refused), _effects(rt, allowed)
     if (a, b) == (0, 1):
         return (PASS, "a refusal left the next allowed call intact: 0 then 1 effect" + _via(allowed),
                 _admission(allowed))
@@ -348,6 +369,8 @@ def px_revocation_isolated(rt):
         return INCONCLUSIVE, f"the control request was not admitted (disposition={earlier.disposition})"
     facts = _admission(earlier)
     rt.revoke(revoked)
+    if P.B_REVOCATION in rt.bounds and P.CLOCK in rt.capabilities:
+        rt.elapse_past(P.B_REVOCATION)      # a revocation need only hold beyond the declared bound
     d, refusal = _attempt(rt.evaluate, P.ADMISSIBLE, principal=revoked, action_type="wire_transfer")
     if refusal is None and _admitted(d):
         return INCONCLUSIVE, "the revoked principal was still admitted: nothing to isolate", facts
@@ -405,50 +428,218 @@ def px_most_restrictive_governs(rt):
     return PASS, "the more restrictive disposition governed: " + "; ".join(seen)
 
 
+# -- property checks at a declared bound --------------------------------------
+# The harness sets no duration. Each check below needs a bound the port
+# declares for the subject and asks the port to let that bound pass. No
+# declared bound, no check.
+#
+# CT-R3-008 ("Rotated credentials invalidate prior grants") has no check. The
+# index anchors it on RFC-3, and no clause of the frozen RFC-3 mentions
+# rotation. RFC-6 §4.1 covers the rotation of keys and asks that old keys stay
+# usable for an overlap period. The row needs an anchor before it gets a check.
+
+def px_revocation_at_bound(rt):
+    """CT-R3-002. RFC-3 §4.2: a revoked authority is not executable beyond the
+    declared revocation bound. Nothing is asked of the time before it."""
+    who = _principal("revoked")
+    earlier = rt.evaluate(P.ADMISSIBLE, principal=who, action_type="wire_transfer")
+    if not _admitted(earlier):
+        return INCONCLUSIVE, f"the control request was not admitted (disposition={earlier.disposition})"
+    facts = _admission(earlier)
+    rt.revoke(who)
+    rt.elapse_past(P.B_REVOCATION)
+    bound = f"declared bound {rt.bounds[P.B_REVOCATION]:g} s"
+    d, refusal = _attempt(rt.evaluate, P.ADMISSIBLE, principal=who, action_type="wire_transfer")
+    state, details = _rejected(d, refusal, "past the bound, a new request from the revoked principal")
+    if state != PASS or P.COMMIT not in rt.capabilities:
+        return state, f"{details} ({bound})", facts
+    try:
+        rt.commit(earlier)
+    except P.Refused:
+        return PASS, f"{details}, and its earlier grant could not be committed ({bound})", facts
+    return FAIL, f"past the bound, an earlier grant of the revoked principal was committed ({bound})", facts
+
+
+def px_credential_expires(rt):
+    """CT-R3-006. RFC-3 §2.2 and §2.3: a time-limited credential is honoured
+    while valid and no longer once its declared lifetime has passed."""
+    who = _principal("limited")
+    first = rt.evaluate(P.EXPIRING_CREDENTIAL, principal=who, action_type="wire_transfer")
+    if not _admitted(first):
+        return INCONCLUSIVE, f"the credential was not admitted while valid (disposition={first.disposition})"
+    rt.elapse_past(P.B_CREDENTIAL)
+    d, refusal = _attempt(rt.evaluate, P.EXPIRING_CREDENTIAL, principal=who,
+                          action_type="wire_transfer")
+    state, details = _rejected(d, refusal, "the same credential, past its declared lifetime,")
+    return state, f"{details} (declared lifetime {rt.bounds[P.B_CREDENTIAL]:g} s)", _admission(first)
+
+
+# VEC-6-03. RFC-6 §3.2: a request whose timestamp falls outside the declared
+# freshness window is rejected. The port builds the stale request.
+px_stale_request = _must_reject(
+    P.STALE_REQUEST, "a request submitted outside the declared freshness window")
+
+# VEC-6-04. RFC-6 §4.2: a credential signed with a revoked key and presented
+# after the revocation bound produces no executable authorization.
+px_revoked_key = _must_reject(
+    P.REVOKED_KEY, "a credential signed by a key revoked for longer than the declared bound")
+
+
+def px_hold_expiry_fail_closed(rt):
+    """REG-STATE-024. RFC-5 §2: a HOLD nobody answers within tau_k is rejected
+    (HARD_VETO) unless a fail-degraded policy was pre-declared. A suspension
+    that merely goes on is not a rejection: the check then does not conclude."""
+    if rt.exhaustion_policy == "fail-degraded":
+        return INCONCLUSIVE, "the deployment pre-declares a fail-degraded policy: the default does not apply"
+    d = rt.evaluate(P.NEEDS_APPROVAL, principal=_principal("held"), action_type="wire_transfer")
+    if d.disposition != "HOLD":
+        return INCONCLUSIVE, f"no suspension to observe (disposition={d.disposition})"
+    rt.elapse_past(P.B_TAU_K)
+    window = f"declared window {rt.bounds[P.B_TAU_K]:g} s"
+    rejected = None
+    if P.COMMIT in rt.capabilities:
+        try:
+            rt.commit(d)
+        except P.Refused as e:
+            rejected = e.disposition == "HARD_VETO"
+        else:
+            return FAIL, f"a HOLD left unanswered past its window was committed ({window})"
+    if P.EFFECTS in rt.capabilities:
+        n = _effects(rt, d)
+        if n:
+            return FAIL, f"a HOLD left unanswered past its window matched {n} effect(s) ({window})"
+    elif rejected is None:
+        return INCONCLUSIVE, "the port can neither attempt the crossing nor observe effects"
+    if rejected:
+        return PASS, f"a HOLD left unanswered past its window was rejected with HARD_VETO ({window})"
+    return (INCONCLUSIVE, "past its window the HOLD was not executable, and no rejection was "
+                          f"recorded ({window})")
+
+
 _E, _C = P.EVALUATE, P.COMMIT
 _A, _I, _N, _H, _D = (frozenset({x}) for x in (P.ADMISSIBLE, P.INADMISSIBLE, P.NO_STANDING,
                                                P.NEEDS_APPROVAL, P.DENIED))
 _none = frozenset()
+
+
+def _vector(vector_id, requires, run, intents, at, *not_observed):
+    return Scenario(vector_id, frozenset(requires), run, intents, at=at, not_observed=not_observed)
+
+
+# Each entry ends with where the scenario observes and with what its result
+# does not establish. A PASS is a PASS on the case submitted, no further.
+_ONE_REPLAY = ("a replay presented at commit", "replays sent concurrently")
 SCENARIOS = {s.vector_id: s for s in [
-    Scenario("C1", frozenset({_E}), c1, _N),
-    Scenario("C2", frozenset({_E}), c2, _I),
-    Scenario("C3", frozenset({_E, _C, P.REVOKE}), c3, _A),
-    Scenario("C5", frozenset({_E, P.NONCE}), _replay("C5"), _A),
-    Scenario("CT-R4-001", frozenset({_E, _C}), r4_001, _A),
-    Scenario("CT-R4-002", frozenset({_E, _C}), r4_002, _A),
-    Scenario("CT-R4-003", frozenset({_E, P.NONCE}), _replay("CT-R4-003"), _A),
-    Scenario("CT-R4-004", frozenset({_C, P.STALE_GRANT}), r4_004, _none),
-    Scenario("CT-R4-005", frozenset({_E, _C, P.STATE_DRIFT}), r4_005, _A),
-    Scenario("CT-R4-006", frozenset({_E, _C}), r4_006, _N),
-    Scenario("CT-R4-007", frozenset({_E, P.RECEIPTS}), r4_007, _N),
-    Scenario("CT-R4-008", frozenset({_E, P.MANIFEST}), r4_008, _A),
-    Scenario("CT-R2-002", frozenset({P.TENIR_SCORE}), r2_002, _none),
-    Scenario("CT-R2-003", frozenset({P.TENIR_SCORE}), r2_003, _none),
+    _vector("C1", {_E}, c1, _N, AUTH,
+            "structural states other than the one submitted"),
+    _vector("C2", {_E}, c2, _I, AUTH,
+            "points of the region other than the one submitted",
+            "the thresholds themselves"),
+    _vector("C3", {_E, _C, P.REVOKE}, c3, _A, EXEC,
+            "a revocation during the commit or the execution: it lands between verdict and commit",
+            "a propagation delay: the port applies the revocation at once"),
+    _vector("C5", {_E, P.NONCE}, _replay("C5"), _A, PRE, *_ONE_REPLAY),
+    _vector("CT-R4-001", {_E, _C}, r4_001, _A, EXEC,
+            "each bound field taken alone: only the matching case is submitted",
+            "the effect itself"),
+    _vector("CT-R4-002", {_E, _C}, r4_002, _A, EXEC,
+            "bound fields other than the action type"),
+    _vector("CT-R4-003", {_E, P.NONCE}, _replay("CT-R4-003"), _A, PRE,
+            "a reuse after a commit consumed the nonce: the replay comes before any commit",
+            *_ONE_REPLAY),
+    _vector("CT-R4-004", {_C, P.STALE_GRANT}, r4_004, _none, EXEC,
+            "the passage of time across the bound: the grant is created already expired"),
+    _vector("CT-R4-005", {_E, _C, P.STATE_DRIFT}, r4_005, _A, EXEC,
+            "which state changes count as relevant: the port picks one",
+            "a change during the execution"),
+    _vector("CT-R4-006", {_E, _C}, r4_006, _N, EXEC,
+            "a commit attempt on a HOLD: only a HARD_VETO is submitted"),
+    _vector("CT-R4-007", {_E, P.RECEIPTS}, r4_007, _N, PROOF,
+            "receipts for PASS, FLAG and HOLD: the receipt of a refusal is checked",
+            "verification by a third party holding public material only: the port verifies",
+            "fields other than the one altered"),
+    _vector("CT-R4-008", {_E, P.MANIFEST}, r4_008, _A, PROOF,
+            "deletion or truncation: one entry is altered in a copy",
+            "anchoring outside the runtime"),
+    _vector("CT-R2-002", {P.TENIR_SCORE}, r2_002, _none, MODEL,
+            "inputs other than the one submitted",
+            "determinism across processes or versions"),
+    _vector("CT-R2-003", {P.TENIR_SCORE}, r2_003, _none, MODEL,
+            "denominators near zero other than exactly zero"),
 ]}
 
 _EF = frozenset({_E, P.EFFECTS})
+_JOURNAL = ("an effect outside the journal the port reads",
+            "an effect that appears after the declared effect window")
+
+
+def _probe(vector_id, run, intents, *not_observed):
+    return Scenario(vector_id, _EF, run, intents, normative=False, at=EXEC,
+                    not_observed=_JOURNAL + not_observed)
+
+
 PROBES = {s.vector_id: s for s in [
-    Scenario("HX-EFFECT-001", _EF, hx_refusal_zero_effects, _D, normative=False),
-    Scenario("HX-EFFECT-002", _EF, hx_allow_exactly_one_effect, _A, normative=False),
-    Scenario("HX-EFFECT-003", _EF, hx_unanswered_approval_zero_effects, _H, normative=False),
-    Scenario("HX-EFFECT-004", _EF, hx_allow_after_refusal, _A | _D, normative=False),
+    _probe("HX-EFFECT-001", hx_refusal_zero_effects, _D),
+    _probe("HX-EFFECT-002", hx_allow_exactly_one_effect, _A,
+           "more than two crossing attempts", "attempts made concurrently"),
+    _probe("HX-EFFECT-003", hx_unanswered_approval_zero_effects, _H,
+           "what follows a late approval or the end of the approval window"),
+    _probe("HX-EFFECT-004", hx_allow_after_refusal, _A | _D,
+           "sequences longer than one refusal then one allowed call"),
 ]}
 
-_M, _O, _V = (frozenset({P.ADMISSIBLE, x}) for x in (P.MALFORMED_CREDENTIAL, P.OUT_OF_SCOPE,
-                                                     P.INVARIANT_VIOLATED))
+_M, _O, _V, _S, _K = (frozenset({P.ADMISSIBLE, x}) for x in (
+    P.MALFORMED_CREDENTIAL, P.OUT_OF_SCOPE, P.INVARIANT_VIOLATED, P.STALE_REQUEST, P.REVOKED_KEY))
+_T = frozenset({P.EXPIRING_CREDENTIAL})
+_STATED = "that the bound is declared, versioned and signed: the port states it"
+_SIMULATED = "under a simulated clock, timers and background expiry in real time"
 
 
-def _check(exercises, requires, run, intents):
-    return Scenario(f"PX-{exercises}", frozenset(requires), run, intents,
-                    normative=False, exercises=exercises)
+def _check(exercises, requires, run, intents, at, *not_observed, bounds=()):
+    return Scenario(f"PX-{exercises}", frozenset(requires), run, intents, normative=False,
+                    exercises=exercises, bounds=frozenset(bounds), at=at,
+                    not_observed=not_observed)
 
 
 # In the order of VECTORS.md.
 CHECKS = {s.vector_id: s for s in [
-    _check("CT-R0-005", {_E, P.COMBINE}, px_most_restrictive_governs, _none),
-    _check("CT-R3-001", {_E}, px_malformed_credential, _M),
-    _check("CT-R3-003", {_E, P.REVOKE}, px_revocation_isolated, _A),
-    _check("CT-R3-007", {_E}, px_out_of_scope, _O),
-    _check("VEC-6-02", {_E, P.NONCE}, px_key_reuse_modified_action, _A),
-    _check("REG-STATE-014", {_E}, px_hard_invariant, _V),
+    _check("CT-R0-005", {_E, P.COMBINE}, px_most_restrictive_governs, _none, AUTH,
+           "the disposition of each control inside the combined attempt: each condition is "
+           "read alone, then both together",
+           "more than two conditions at once",
+           "combinations the port does not declare"),
+    _check("CT-R3-001", {_E}, px_malformed_credential, _M, PRE,
+           "that the rejection comes before evaluation",
+           "malformations other than the one the port submits"),
+    _check("CT-R3-002", {_E, P.REVOKE, P.CLOCK}, px_revocation_at_bound, _A, EXEC,
+           "what the runtime does before the bound has passed",
+           _STATED, _SIMULATED, bounds={P.B_REVOCATION}),
+    _check("CT-R3-003", {_E, P.REVOKE}, px_revocation_isolated, _A, AUTH,
+           "principals linked by a delegation",
+           "revocations made concurrently"),
+    _check("CT-R3-006", {_E, P.CLOCK}, px_credential_expires, _T, AUTH,
+           "the start of validity (not_before)",
+           "that the expiry is the one written in the credential: the port states the lifetime",
+           _SIMULATED, bounds={P.B_CREDENTIAL}),
+    _check("CT-R3-007", {_E}, px_out_of_scope, _O, AUTH,
+           "scope dimensions other than the one the port submits (targets, value limits, time)"),
+    _check("VEC-6-02", {_E, P.NONCE}, px_key_reuse_modified_action, _A, PRE,
+           "a replay with an identical payload",
+           "that the key is unique or random"),
+    _check("VEC-6-03", {_E}, px_stale_request, _S, PRE,
+           "a timestamp in the future",
+           "the exact edges of the window", _STATED, bounds={P.B_FRESHNESS}),
+    _check("VEC-6-04", {_E}, px_revoked_key, _K, PRE,
+           "a key revoked for less than the bound",
+           "how the revocation reached the runtime", _STATED, bounds={P.B_REVOCATION}),
+    _check("REG-STATE-014", {_E}, px_hard_invariant, _V, AUTH,
+           "that the scoring was bypassed: only the disposition is read",
+           "invariants other than the one the port submits"),
+    _check("REG-STATE-024", {_E, P.CLOCK}, px_hold_expiry_fail_closed, _H, EXEC,
+           "that tau_k was derived from an organizational constraint",
+           "a pre-declared fail-degraded policy",
+           "the review capacity Shadow Mode requires",
+           "on a runtime with no separate commit, a rejection as opposed to a suspension "
+           "that never ends",
+           _SIMULATED, bounds={P.B_TAU_K}),
 ]}

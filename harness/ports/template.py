@@ -22,6 +22,9 @@ class TemplatePort(P.RuntimePort):
     capabilities = frozenset()          # add capabilities as you implement them
     intents = frozenset()               # intents your runtime can be driven to produce
     combinations = frozenset()          # sets of intents you can produce in one attempt (COMBINE)
+    bounds = {}                         # bound -> seconds, as your deployment declares it; never a guess
+    effect_window = 0.0                 # seconds an effect may lag behind a call; zero if synchronous
+    clock_mode = ""                     # "real" or "simulated", once you declare CLOCK
     not_applicable = {}                 # vector_id -> why it cannot apply
     declared_gaps = {}                  # vector_id -> gap you already know about
 

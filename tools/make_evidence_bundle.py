@@ -41,9 +41,12 @@ def build_verdict(report: dict) -> dict:
     passed = [r["vector_id"] for r in report["results"] if r["status"] == "PASS"]
     view = report.get("property_view") or {}
     admission = report.get("admission") or {}
+    observation = report.get("observation") or {}
+    seen = {r["vector_id"] for r in report["results"] + probes + checks.get("results", [])
+            if r["status"] in ("PASS", "FAIL", "INCONCLUSIVE")}
     return {
-        # /2 adds property_checks, property_view and admission. Every /1 field
-        # is unchanged.
+        # /2 adds property_checks, property_view, admission and observation.
+        # Every /1 field is unchanged.
         "schema": "reg-evidence-verdict/2",
         "certifying": False,
         "statement": ("Diagnostic result of one harness run. Not a certification, not a "
@@ -89,6 +92,14 @@ def build_verdict(report: dict) -> dict:
             "checks_admitted_on_flag": admission.get("checks_admitted_on_flag", []),
             "flag_condition_observed": admission.get("flag_condition_observed", {}),
         } if admission else None,
+        # For each result that gave an observation: where it observed and what
+        # it does not establish. A quoted result travels with these.
+        "observation": {
+            "note": observation.get("note"),
+            "conditions": observation.get("conditions"),
+            "checks": {vid: entry for vid, entry in (observation.get("checks") or {}).items()
+                       if vid in seen},
+        } if observation else None,
         "ran_at": report.get("ran_at"),
     }
 

@@ -49,6 +49,14 @@ Not declared, because the default path of this runtime has no such primitive:
     MALFORMED_CREDENTIAL (intent)  the governor takes no credential: standing
                  arrives as a measured authority score and an agent
                  identifier asserted by the caller
+    CLOCK and every bound  `adjudicate` enters a HOLD without a tau_k ("Do not
+                 invent a tau_k here", says its source) and takes none from
+                 the caller, so the HOLD carries no window that could pass.
+                 The default path has no credential lifetime, no request
+                 timestamp and no revocation either.
+
+Effect window: zero. The provider is called inside `dispatch_and_execute`,
+before it returns.
 """
 from __future__ import annotations
 

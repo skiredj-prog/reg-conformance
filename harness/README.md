@@ -47,10 +47,15 @@ a ratification decision. Adding one is not.
 |---|---|---|---|
 | `PX-CT-R0-005` | RFC-0 §4 | Two conditions that give different dispositions alone give, together, one at least as restrictive as the stricter. Both orders. | `combine`, one declared combination |
 | `PX-CT-R3-001` | RFC-3 | A request with a malformed credential is rejected. Not observed: that the rejection comes before evaluation. | intent `malformed_credential` |
+| `PX-CT-R3-002` | RFC-3 | Past the declared revocation bound, a revoked principal's new request is rejected and its earlier grant cannot be committed. | `revoke`, `clock`, bound `revocation` |
 | `PX-CT-R3-003` | RFC-3, a proposal the RFCs do not specify | Revoking one principal leaves another's new request admitted and its earlier grant committable. | `revoke` |
+| `PX-CT-R3-006` | RFC-3 | A time-limited credential is admitted while valid and rejected once its declared lifetime has passed. | intent `expiring_credential`, `clock`, bound `credential_validity` |
 | `PX-CT-R3-007` | RFC-3 | A request outside the scope its caller holds is rejected. | intent `out_of_scope` |
 | `PX-VEC-6-02` | RFC-6 §3.1, §6.2 | A key already used, presented again with another action, is rejected. | `nonce` |
+| `PX-VEC-6-03` | RFC-6 §3.2, §6.2 | A request submitted outside the declared freshness window is rejected. | intent `stale_request`, bound `freshness` |
+| `PX-VEC-6-04` | RFC-3 §4.2; RFC-6 §4.2, §6.2 | A credential signed by a key revoked for longer than the declared bound is rejected. | intent `revoked_key`, bound `revocation` |
 | `PX-REG-STATE-014` | RFC-2 §3.3 | A hard invariant violation gets `HARD_VETO` on measurements that are admitted without it. | intent `invariant_violated` |
+| `PX-REG-STATE-024` | RFC-5 §1–3 | A `HOLD` nobody answers within the declared window is rejected with `HARD_VETO`, and produces no effect. | intent `needs_approval`, `clock`, bound `tau_k` |
 
 How a check concludes:
 
@@ -67,6 +72,47 @@ How a check concludes:
 - A port declares an intent only if the runtime has the notion: a credential
   that can be malformed, a scope a caller can hold, an invariant that can be
   declared. Otherwise the check is not run on that subject.
+
+## Declared bounds and the clock
+
+Five checks depend on time. The harness sets no duration for any of them.
+
+- The port declares, in `bounds`, the bounds the deployment under test
+  declares: `revocation`, `credential_validity`, `freshness`, `tau_k`. It
+  states them. It does not invent one. A check whose bound is not declared is
+  not run, and the result says which bound is missing.
+- A check never waits a number of seconds of its own. It calls
+  `elapse_past(bound)`, and the port lets its own declared bound pass, by
+  waiting (`clock_mode = "real"`) or by moving the clock the runtime reads
+  (`"simulated"`). The run records which.
+- `PX-REG-STATE-024` passes only on a rejection. A `HOLD` that is merely still
+  suspended after its window is not executable either, and is not rejected:
+  the check then reports `INCONCLUSIVE`.
+
+The effect probes follow the same rule. A port whose runtime executes after it
+replies declares `effect_window`, and "no effect" is read once that window has
+passed. Read at once, an empty journal would only mean "none yet".
+
+## What a result does not establish
+
+Every scenario, vector, probe or property check, declares two things:
+
+- `at`: where it observes, as one of the four phases of RFC-0 §5
+  (pre-execution, conditional authorization, supervised execution, closure and
+  proof), or the structural model alone for the two scenarios that call it
+  directly;
+- `not_observed`: what its result leaves open.
+
+```
+✓  PX-VEC-6-02  PASS  a used key presented again with a modified action was refused outright (NONCE_REPLAY)
+   ↳ not observed: a replay with an identical payload; that the key is unique or random
+```
+
+The console prints the line for the probes and the property checks that gave
+an observation. The report carries both fields for every scenario under
+`observation`, with the conditions of the run: effect window, clock mode,
+declared bounds, exhaustion policy. `verdict.json` keeps them for every result
+that gave an observation.
 
 ## Reading a run by property
 
@@ -99,7 +145,8 @@ The last line reads the same run row by row:
 Copy `ports/template.py`. Implement one primitive, add it to `capabilities`,
 run. The two mappings (native verdict to REG disposition, native refusal to
 REG reason code) live in the port file, in the open, and belong to whoever
-owns the runtime.
+owns the runtime. So do the bounds: they are the deployment's declared values,
+written in the port by whoever can answer for them.
 
 ## Ports
 

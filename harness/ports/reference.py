@@ -46,6 +46,10 @@ class ReferencePort(P.RuntimePort):
     # to give a principal a scope or to declare a hard invariant. COMBINE is
     # not declared either: its two refusals are both HARD_VETO, so no pair of
     # conditions conflicts.
+    # No bound and no clock. The kernel revokes at once, and its own register
+    # says the latency is "not declared or measured": the port does not
+    # declare one in its place. It has no time-limited credential, no request
+    # timestamp, no signing key for credentials and no HOLD.
     intents = frozenset({P.ADMISSIBLE, P.INADMISSIBLE, P.NO_STANDING, P.DENIED,
                          P.MALFORMED_CREDENTIAL})
     not_applicable = {"C4": "No transport layer in in-process kernel."}

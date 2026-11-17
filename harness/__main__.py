@@ -9,7 +9,7 @@ import sys
 import runner as R
 from . import properties
 from .adapter import PortAdapter, load_port
-from .scenarios import CHECKS, PROBES, SCENARIOS
+from .scenarios import CHECKS, PHASES, PROBES, SCENARIOS
 
 
 def main(argv=None):
@@ -38,12 +38,20 @@ def main(argv=None):
     report = R.generate_report(adapter, results, "", R.build_evidence_binding(adapter, args))
     report["port"] = {"spec": args.port, "name": adapter.port.name,
                       "capabilities": sorted(adapter.port.capabilities)}
+    every = {**SCENARIOS, **PROBES, **CHECKS}
+
+    def residue(r):
+        """One console line: what an observed result does not establish."""
+        if r.status.value in properties.OBSERVED:
+            print("     ↳ not observed: " + "; ".join(every[r.vector_id].not_observed))
+
     probes = []
     if args.probes:
         probes = adapter.run_probes()
         print("\n  Harness probes (not REG vectors)")
         for r in probes:
             print(f"  {R.MARKS.get(r.status.value, '?')}  {r.vector_id:<16}  {r.status.value:<22}  {r.details or r.gap_note}")
+            residue(r)
         report["harness_probes"] = {
             "note": ("Not REG vectors. Excluded from every vector summary and from "
                      "conformance_status. The property view counts them, as probes."),
@@ -62,6 +70,7 @@ def main(argv=None):
                   f"{row.get('property', '')}"[:170])
             if r.details and r.gap_note:
                 print(f"     ↳ {r.gap_note[:160]}")
+            residue(r)
         report["property_checks"] = {
             "note": ("Not REG vectors. Each one exercises a property indexed in VECTORS.md "
                      "that has no executable vector. Excluded from every vector summary and "
@@ -79,6 +88,27 @@ def main(argv=None):
                            exercises=exercises)
     report["property_view"] = view
     print("\n" + "\n".join(properties.render(view)))
+
+    # Where each scenario observes and what its result does not establish,
+    # with the conditions this run observed under.
+    port = adapter.port
+    report["observation"] = {
+        "note": ("A result holds for the case submitted, at the point named, under the "
+                 "conditions below. `not_observed` lists what it does not establish. The "
+                 "harness sets no duration: bounds are the ones the port declares for the "
+                 "subject."),
+        "conditions": {"effect_window_s": port.effect_window,
+                       "clock_mode": port.clock_mode or None,
+                       "declared_bounds_s": dict(port.bounds),
+                       "exhaustion_policy": port.exhaustion_policy},
+        "phases": list(PHASES),
+        "checks": {vid: {"at": sc.at, "not_observed": list(sc.not_observed)}
+                   for vid, sc in every.items()}}
+    declared = ", ".join(f"{k} {v:g} s" for k, v in sorted(port.bounds.items())) or "none"
+    print(f"\n  Observed under: effect window {port.effect_window:g} s; clock "
+          f"{port.clock_mode or 'not declared'}; declared bounds: {declared}")
+    if not args.checks and not args.probes:
+        print("  What each result does not establish is in the report, under `observation`.")
 
     # Which checks went forward on a FLAG, and whether its condition was observed.
     on_flag = sorted(c for c, f in adapter.facts.items() if f.get("admitted_on") == "FLAG")

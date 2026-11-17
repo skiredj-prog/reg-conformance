@@ -24,10 +24,11 @@ MANIFEST = "manifest"            # append-only evidence ledger, tamper-evident
 TENIR_SCORE = "tenir_score"      # exposes the TENIR S = K/(P*V+eps) computation
 EFFECTS = "effects"              # effects observable independently of the runtime
 COMBINE = "combine"              # one attempt that meets several conditions at once
+CLOCK = "clock"                  # let a declared bound pass for the runtime
 
 ALL_CAPABILITIES = frozenset({
     EVALUATE, COMMIT, REVOKE, STATE_DRIFT, STALE_GRANT, NONCE,
-    RECEIPTS, MANIFEST, TENIR_SCORE, EFFECTS, COMBINE,
+    RECEIPTS, MANIFEST, TENIR_SCORE, EFFECTS, COMBINE, CLOCK,
 })
 
 # Intents the harness asks for. The port maps each one to its own inputs.
@@ -45,9 +46,28 @@ DENIED = "denied"
 MALFORMED_CREDENTIAL = "malformed_credential"   # the credential presented is not well-formed
 OUT_OF_SCOPE = "out_of_scope"                   # valid standing for a declared scope; the request lies outside it
 INVARIANT_VIOLATED = "invariant_violated"       # measurements as ADMISSIBLE; a declared hard invariant is violated
+# The three below involve a bound the subject declares (see `bounds`).
+# Standing under a time-limited credential. The first use for a principal
+# issues it; every later use for that principal presents the same one.
+EXPIRING_CREDENTIAL = "expiring_credential"
+STALE_REQUEST = "stale_request"                 # submitted outside the declared freshness window
+REVOKED_KEY = "revoked_key"                     # credential signed by a key revoked for longer than the declared bound
 
 ALL_INTENTS = frozenset({ADMISSIBLE, INADMISSIBLE, NO_STANDING, NEEDS_APPROVAL, DENIED,
-                         MALFORMED_CREDENTIAL, OUT_OF_SCOPE, INVARIANT_VIOLATED})
+                         MALFORMED_CREDENTIAL, OUT_OF_SCOPE, INVARIANT_VIOLATED,
+                         EXPIRING_CREDENTIAL, STALE_REQUEST, REVOKED_KEY})
+
+# Bounds a subject may declare, in seconds. The harness never sets a duration:
+# a check that depends on time reads the bound the port declares and asks the
+# port to let it pass. No declared bound, no check.
+B_REVOCATION = "revocation"              # RFC-3 §4.2: a revoked authority is not executable beyond it
+B_CREDENTIAL = "credential_validity"     # RFC-3 §2.2: lifetime of the time-limited credential the port presents
+B_FRESHNESS = "freshness"                # RFC-6 §3.2: a request older than this is rejected
+B_TAU_K = "tau_k"                        # RFC-5 §1: how long a HOLD may wait for a human
+ALL_BOUNDS = frozenset({B_REVOCATION, B_CREDENTIAL, B_FRESHNESS, B_TAU_K})
+# Not a policy bound but a condition of observation: how long after a call an
+# effect may still appear. "No effect" is read once it has passed.
+EFFECT_WINDOW = "effect_window"
 
 # Normalised refusal codes.
 R_STANDING_REVOKED = "STANDING_REVOKED"
@@ -122,6 +142,19 @@ class RuntimePort:
     # Declare a set only when each condition comes from its own input, so that
     # asking for one does not undo another.
     combinations: frozenset = frozenset()
+    # bound name (B_*) -> seconds, as the subject declares it. The port states
+    # what the deployment under test declares. It does not invent a value.
+    bounds: dict = {}
+    # How long after a call an effect may still appear, in seconds. Zero for a
+    # runtime that executes synchronously. Above zero, the port needs CLOCK.
+    effect_window: float = 0.0
+    # How the port lets time pass: "real" (it waits) or "simulated" (it moves
+    # the clock the runtime reads). Required with CLOCK.
+    clock_mode: str = ""
+    # What the deployment pre-declares for a HOLD nobody answers within tau_k:
+    # "fail-closed", "fail-degraded", or None when it declares nothing, in
+    # which case the default of RFC-5 §2.1 applies: fail-closed.
+    exhaustion_policy: Optional[str] = None
 
     def reset(self) -> None:
         """Return the runtime to a clean state. Called before every scenario,
@@ -138,6 +171,14 @@ class RuntimePort:
                           nonce: Optional[str] = None) -> Decision:
         """Submit one attempt that meets every listed condition at once, in
         the order given where the runtime's input has an order."""
+        raise NotImplementedError
+
+    def elapse_past(self, bound: str) -> float:
+        """Let the named bound pass for the runtime, and just more than it.
+        `bound` is a declared bound or EFFECT_WINDOW. Returns the seconds let
+        pass. The port knows its own clock: the harness supplies no margin.
+        Letting time pass includes whatever the deployment runs on a schedule
+        once it has passed, an expiry sweep for example."""
         raise NotImplementedError
 
     def commit(self, decision: Decision, *, action_type: Optional[str] = None) -> Committed:
