@@ -70,9 +70,9 @@ adapter:
   backend_ref: "tenir_governance/operations/consensus_backend.py"
 
 attestations:
-  # SAF — Safety : linearizability + BUD + agreement (file-lock backend)
-  - capability_ids: ["cap.concurrency.file-lock"]
-    evidence_type: "test.lock.cross-process"
+  # SAF — Safety : linearizability + BUD + agreement
+  - capability_ids: ["cap.concurrency.consensus-reference"]
+    evidence_type: "test.consensus.safety"
     evidence_ref: "evidence/test-consensus-safety.log"
     evidence_sha256: "19330b7b00a08d26c85d64ed162644aa2957526c2d203fc378f4c293670feedf"
     verified: true
@@ -83,9 +83,9 @@ attestations:
       histories séquentielles et concurrentes. Format conforme à
       evidence-type-specs-v1.md §6 (en-têtes structurées + sortie pytest).
 
-  # LIV — Liveness : terminaison sous quorum sain (file-lock backend)
-  - capability_ids: ["cap.concurrency.file-lock"]
-    evidence_type: "test.lock.cross-process"
+  # LIV — Liveness : terminaison sous quorum sain
+  - capability_ids: ["cap.concurrency.consensus-reference"]
+    evidence_type: "test.consensus.liveness"
     evidence_ref: "evidence/test-consensus-liveness.log"
     evidence_sha256: "90686b732cde6420118b25655325bce253782c14dafde86dc869cd665a90332d"
     verified: true
@@ -97,9 +97,9 @@ attestations:
       max sous charge, release termine, clé dupliquée termine. Format conforme
       à evidence-type-specs-v1.md §7.
 
-  # FT — Fault tolerance : crash-stop recovery (single-host, file-lock)
-  - capability_ids: ["cap.concurrency.file-lock"]
-    evidence_type: "test.lock.cross-process"
+  # FT — Fault tolerance : crash-stop recovery (single-host)
+  - capability_ids: ["cap.concurrency.consensus-reference"]
+    evidence_type: "test.fault-tolerance"
     evidence_ref: "evidence/test-fault-tolerance.log"
     evidence_sha256: "82171f5f99267d7eec372875680a7760170204983cd092610d2e1b59266bbd06"
     verified: true

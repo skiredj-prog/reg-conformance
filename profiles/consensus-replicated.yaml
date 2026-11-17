@@ -22,7 +22,7 @@ description: >
   Déploiement multi-hôte physique non supporté avant 5.8.0 (FM-20 ouvert).
 
 config:
-  HOST_SCOPE: "mono-host"           # FM-20: raft_backend.py enforces loopback in v5.7
+  HOST_SCOPE: "multi-host"          # structural: required by R2a/R2b for distributed-consensus
   DEDUP_LAYER: "distributed-consensus-registry"
   CONCURRENCY: "distributed-consensus"
   UNCERTAINTY: "fail-closed"
@@ -95,8 +95,8 @@ attestations:
     description: >
       5 tests : élection de leader, failover après crash (3-nœuds et 5-nœuds),
       un seul leader, préservation d'état après failover.
-      FT (tolérance aux pannes cross-host) attestée pour modèle crash-stop.
-      Format conforme à evidence-type-specs-v1.md §8.
+      FT (tolérance aux pannes loopback) attestée pour modèle crash-stop.
+      FM-20: testé sur loopback uniquement. Format conforme à evidence-type-specs-v1.md §8.
 
   # cap.dedup.consensus-registry — test.idempotency.distributed
   - capability_ids: ["cap.dedup.consensus-registry"]
@@ -111,10 +111,10 @@ attestations:
       reservation_id across nodes; different amount returns DUPLICATE_KEY.
       Format conforme à evidence-type-specs-v1.md §3.
 
-  # cap.host.single-host — test.cross-host.communication (loopback cluster)
+  # cap.host.multi-host — test.cross-host.communication (loopback cluster only)
   # NOTE: test is in Magertron partner perimeter, not in public tenir_governance.
-  # Relinked from cap.host.multi-host: v5.7 restricts Raft to loopback (FM-20).
-  - capability_ids: ["cap.host.single-host"]
+  # FM-20: v5.7 restricts Raft to loopback; physical multi-host planned for 5.8.0.
+  - capability_ids: ["cap.host.multi-host"]
     evidence_type: "test.cross-host.communication"
     evidence_ref: "evidence/test-raft-cross-host-communication.log"
     evidence_sha256: "bb428af73edd4ea1b0d3890bbf0dc3c6ee7d68afb6fba9e640fd4cb8cc60ec1a"
@@ -124,7 +124,8 @@ attestations:
     description: >
       Loopback cluster replication: state replicates to all 3 nodes after
       reserve from leader, commit from follower, and reserve from another
-      follower. All nodes see consistent state. Physical multi-host: planned 5.8.0.
+      follower. All nodes see consistent state. FM-20: tested on loopback
+      only; physical multi-host deployment prohibited until 5.8.0.
 
   # cap.uncertainty.fail-closed — test.unknown-outcome.blocks
   - capability_ids: ["cap.uncertainty.fail-closed"]
@@ -138,7 +139,7 @@ attestations:
       Résultat UNKNOWN passe en human_review, reprise bloquée.
       Mécanisme identique sur Raft (reconcile() via provider_reconcile).
 
-# DÉPENDANCE BLOQUANTE : deployment.manifest (cap.host.single-host, loopback)
+# DÉPENDANCE BLOQUANTE : deployment.manifest (cap.host.multi-host)
 # Sans ce manifeste, le vérificateur durci échoue (fail-closed) et l'audit
 # externe ne peut pas lier l'évidence à l'hypothèse de déploiement.
 # Seul l'opérateur peut fournir un manifeste de déploiement réel.
