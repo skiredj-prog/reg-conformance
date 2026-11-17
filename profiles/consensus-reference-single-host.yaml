@@ -1,8 +1,8 @@
 # Profil mono-hôte avec backend de coordination de référence. Ce profil atteste
 # que l'interface ConsensusBackend (consensus-interface-v1.json) est implémentée
-# et testée sur un seul hôte avec fcntl.flock. Les propriétés C1 (safety,
-# linearizability), C2 (liveness, terminaison) et I8 (conservation budget) sont
-# démontrées par des tests réels. C3 (cross-host fault tolerance) n'est PAS
+# et testée sur un seul hôte avec fcntl.flock. Les propriétés SAF (safety,
+# linearizability), LIV (liveness, terminaison) et BUD (conservation budget) sont
+# démontrées par des tests réels. FT (cross-host fault tolerance) n'est PAS
 # réclamée — ce profil est explicitement mono-hôte.
 #
 # NOTE TERMINOLOGIQUE : 'Consensus' dans le nom de l'interface désigne un point
@@ -26,15 +26,15 @@ profile_id: "consensus-reference-single-host"
 profile_version: "1.1.0"
 description: >
   Backend de coordination de référence (single-host, fcntl.flock). Implémente
-  l'interface ConsensusBackend et satisfait C1 (safety/linearizability),
-  C2 (liveness/termination) et I8 (budget conservation) sur un seul hôte.
-  Ne satisfait PAS C3 (cross-host fault tolerance). Sert de référence pour
+  l'interface ConsensusBackend et satisfait SAF (safety/linearizability),
+  LIV (liveness/termination) et BUD (budget conservation) sur un seul hôte.
+  Ne satisfait PAS FT (cross-host fault tolerance). Sert de référence pour
   valider l'interface et le harnais de test avant un déploiement multi-hôte.
 
 config:
   HOST_SCOPE: "mono-host"
   DEDUP_LAYER: "local-registry"
-  CONCURRENCY: "consensus-reference"
+  CONCURRENCY: "file-lock"
   UNCERTAINTY: "fail-closed"
 
 # Modèle de faute : crash-only, single-host. Le backend survit aux crashes de
@@ -54,7 +54,7 @@ fault_model:
 
 invariants:
   - "commit-binding"
-  - "budget-ceiling-aggregate"    # I8 : reserved + committed <= capacity
+  - "budget-ceiling-aggregate"    # BUD : reserved + committed <= capacity
   - "single-dispatch-per-reservation"
   - "linearizability"              # LIN : ordre linéarisable
   - "agreement"                   # AGR : au plus un commit par réservation
@@ -70,7 +70,7 @@ adapter:
   backend_ref: "tenir_governance/operations/consensus_backend.py"
 
 attestations:
-  # C1 — Safety : linearizability + I8 + agreement
+  # SAF — Safety : linearizability + BUD + agreement
   - capability_ids: ["cap.concurrency.consensus-reference"]
     evidence_type: "test.consensus.safety"
     evidence_ref: "evidence/test-consensus-safety.log"
@@ -79,11 +79,11 @@ attestations:
     verifier: "sandbox-run tenir-conformance-s1-g1 / tenir_governance@5.5.0 (auteur, non indépendant)"
     verified_at: "2026-10-19"
     description: >
-      30 tests de linearizability (Wing-Gong). Vérifie LIN, I8, AGR sur
+      30 tests de linearizability (Wing-Gong). Vérifie LIN, BUD, AGR sur
       histories séquentielles et concurrentes. Format conforme à
       evidence-type-specs-v1.md §6 (en-têtes structurées + sortie pytest).
 
-  # C2 — Liveness : terminaison sous quorum sain
+  # LIV — Liveness : terminaison sous quorum sain
   - capability_ids: ["cap.concurrency.consensus-reference"]
     evidence_type: "test.consensus.liveness"
     evidence_ref: "evidence/test-consensus-liveness.log"
@@ -97,7 +97,7 @@ attestations:
       max sous charge, release termine, clé dupliquée termine. Format conforme
       à evidence-type-specs-v1.md §7.
 
-  # C3 — Fault tolerance : crash-stop recovery (single-host)
+  # FT — Fault tolerance : crash-stop recovery (single-host)
   - capability_ids: ["cap.concurrency.consensus-reference"]
     evidence_type: "test.fault-tolerance"
     evidence_ref: "evidence/test-fault-tolerance.log"
@@ -106,7 +106,7 @@ attestations:
     verifier: "sandbox-run tenir-conformance-s1-g1 / tenir_governance@5.5.0 (auteur, non indépendant)"
     verified_at: "2026-10-19"
     description: >
-      12 tests Jepsen-style : crash-stop recovery, I8 après crash, état durable
+      12 tests Jepsen-style : crash-stop recovery, BUD après crash, état durable
       visible après restart, simulation partition (lock contention), rejet
       byzantin, pas de re-commit après crash. Note : single-host seulement.
       Format conforme à evidence-type-specs-v1.md §8.

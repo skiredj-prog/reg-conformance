@@ -9,10 +9,35 @@
 > real runtime adapter and external outcome evidence exist.
 > See [lifecycle integration](LIFECYCLE_INTEGRATION.md).
 
+## What is in this repository
+
+Four things live here. They answer different questions and are versioned separately.
+
+| Layer | Question it answers | Where | Version |
+|---|---|---|---|
+| **REG** | What must a runtime do before, at and after it commits an action? | `reg-standards-baseline/rfc/` (RFC-0 to RFC-7) | frozen baseline |
+| **Conformance suite** | Does a given runtime do it? | `runner.py`, `vectors/`, [`VECTORS.md`](VECTORS.md), [`spec.md`](spec.md), `lifecycle/` ([status](LIFECYCLE_INTEGRATION.md)) | suite v0.3.2 |
+| **REG+** | In which deployment does a guarantee still hold, and what evidence shows it? | `catalog/`, `specs/`, `profiles/`, `capabilities/`, `tools/` | catalogue v1.2.0 |
+| **Crosswalk** | Which clause of another framework, or of another layer, does a mechanism relate to? | `crosswalk/` ([mapping policy](crosswalk/MAPPING_POLICY.md)) | — |
+
+`manuscript/` holds the research paper behind the membrane model (v7.2). REG-ARCH, the architecture model, is a v0.4.1 candidate: it is not ratified and is not on this branch (`draft/reg-arch-v0.4.1-candidate`).
+
+**Passing vectors and holding a REG+ capability are different claims.** A vector exercises one runtime through one interface. A REG+ profile states the deployment in which a property is claimed and the evidence required. Neither implies the other. The rows that relate them are in the crosswalk, each with its stated limit.
+
+**Coverage today.** [`VECTORS.md`](VECTORS.md) indexes 59 properties that the frozen RFCs specify: 14 are exercised by the runner, 17 are registered and not yet tested, 28 are not yet registered. A further 25 registered ids are proposals that the frozen RFCs do not specify; three of them, the lifecycle vectors, rest on the manuscript and are validated in the laboratory only. REG+ enumerates 144 configurations, of which 42 are admissible; none is marked demonstrated yet.
+
+**Target.** [`conformance-target.json`](conformance-target.json) names the one implementation revision that CI exercises: `tenir-governance` 5.7.0. Evidence produced on an earlier revision says so and has not been replayed on the target.
+
+**Check that this page is still true.** `python tools/check_coherence.py` compares the registries, the documents and the published files, and lists what disagrees. Points that are known and open are in [`coherence-baseline.json`](coherence-baseline.json).
+
+**Explore.** [Vector lab](https://skiredj-prog.github.io/reg-conformance/lab/) · [Crosswalk](https://skiredj-prog.github.io/reg-conformance/crosswalk/)
+
+## REG+
+
 Standard de preuve runtime pour REG+. Séparation stricte : spécification (`specs/`),
 données déclaratives (`catalog/`), outils (`tools/`), profils (`profiles/`), tests (`tests/`).
 
-Le standard est **implementation-neutral** : il définit les propriétés (safety, liveness, fault tolerance, I8), pas le mécanisme. Tout backend qui implémente l'interface `ConsensusBackend` et satisfait les propriétés est conforme.
+Le standard est **implementation-neutral** : il définit les propriétés (safety, liveness, fault tolerance, BUD), pas le mécanisme. Tout backend qui implémente l'interface `ConsensusBackend` et satisfait les propriétés est conforme.
 
 ## Structure
 
@@ -26,7 +51,7 @@ reg-conformance/
 ├── specs/
 │   ├── evidence-contract-v1.json     # EvidenceRecord (JSON Schema 2020-12)
 │   ├── assure-contract-v1.md         # Modèle théorique Assure (P1/P4/P5)
-│   ├── consensus-contract-v1.md      # Contrat consensus : C1 safety, C2 liveness, C3 fault tolerance, I8
+│   ├── consensus-contract-v1.md      # Contrat consensus : SAF safety, LIV liveness, FT fault tolerance, BUD
 │   ├── consensus-interface-v1.json   # Interface ConsensusBackend (reserve/commit/release/reconcile/get_state)
 │   └── evidence-type-specs-v1.md     # Spécification des 16 evidence types (schéma, protocole, critères)
 ├── tools/
@@ -56,11 +81,13 @@ Le catalogue définit désormais des invariants normatifs que tout backend confo
 
 | ID | Nom | Propriété | Périmètre |
 |---|---|---|---|
-| **I8** | budget-ceiling-aggregate | `reserved + committed ≤ capacity` | par resource_id |
+| **BUD** | budget-ceiling-aggregate | `reserved + committed ≤ capacity` | par resource_id |
 | **LIN** | linearizability | ordre linéarisable respectant la précédence | toutes opérations |
 | **AGR** | agreement | au plus un commit par réservation | tous commits |
 
 Voir `consensus-contract-v1.md` pour les définitions formelles.
+
+`BUD` s'appelait `I8` jusqu'au catalogue v1.1.0. Le manuscrit emploie `I8` pour un autre invariant ; `tenir_governance` et les journaux de preuve antérieurs disent toujours `I8`. Les propriétés du contrat de consensus s'appelaient `C1`, `C2`, `C3` ; elles s'appellent `SAF`, `LIV`, `FT`, parce que `C1` à `C5` désignent des vecteurs de la suite.
 
 ## Modèle de faute paramétrique (v1.1.0)
 
@@ -75,9 +102,9 @@ quorum: q           # nœuds nécessaires pour décider
 total_nodes: n      # nombre total de nœuds
 ```
 
-Bornes de résilience vérifiées par le vérificateur de profil :
-- Crash-only : `n ≥ 2f + 1`, `quorum = f + 1` (Raft, Paxos)
-- Byzantin : `n ≥ 3m + 1`, `quorum = 2m + 1` (PBFT, Tendermint)
+Bornes de résilience vérifiées par le validateur pour le profil Raft crash-stop (les fautes byzantines et d'omission ne sont pas attestées) :
+- Crash-stop / Raft : `quorum = floor(n / 2) + 1`; disponibilité sous `f` crashs si `n - f >= quorum`
+- Byzantin : `n ≥ 3m + 1`, `quorum = 2m + 1` (PBFT, Tendermint) ; non pris en charge par le profil Raft actuel
 
 ## Interface de conformance (v1.0.0)
 
@@ -99,6 +126,32 @@ Le standard ne prescrit ni Raft, ni Paxos, ni etcd, ni PostgreSQL. Il prescrit c
 - Admissibles (structurel) : **42** — mono-process 9, mono-host 18, multi-host 15
 - Rejetées : **102**
 
+## Test perimeter and pinned implementation
+
+The `conformance-target.json` manifest pins the TENIR-Gov source commit and package version, plus `catalog_version` and `rules_version`. The `pinned-tenir-gov-conformance` workflow checks out that exact source commit, verifies package/catalog/rules metadata, validates profile assumptions, and runs the pinned Raft integration suite.
+
+### Reproduction
+
+```bash
+python tools/validate_profiles.py
+python tests/test_profile_admissibility.py
+pytest -q tests/test_conformance_target.py
+pytest -q tenir-governance/tests/test_raft_backend.py
+```
+
+### Included
+- Structural profile validation and crash-stop/quorum consistency checks.
+- Exact implementation, catalog, and rules version checks.
+- Local Raft integration, BUD regression, idempotent replay, amount validation, logical-clock replication, and resource re-registration tests.
+
+### Excluded / not established
+- Physical multi-host network or partition testing (the current Raft suite uses `localhost` and separate ports).
+- Byzantine fault tolerance, hardened transport/authentication, third-party attestation, or exactly-once external effects.
+- Formal proof of linearizability or production certification.
+
+The CI run is the authoritative source for exact collected, passed, failed, and skipped counts. Do not combine counts from different suites without reporting each suite and its denominator. `admissible_structural` means structural coherence only; it must never be used to infer `effective_guarantee_demonstrated`.
+
+Recorded pinned run: [GitHub Actions #39206045440](https://github.com/skiredj-prog/reg-conformance/actions/runs/39206045440) checked out TENIR-Gov commit `82037052556c5bfd731bd59fe958cf4df61d21b6`. Results: 5 target-metadata tests passed, including a guard against marking effective guarantees in the structural catalog; the profile validator accepted all 4 repository profiles and its adversarial profile script passed; the pinned Raft suite collected 46 tests and passed all 46 (0 failed, 0 skipped) in 142.12 s. These are empirical localhost-lab results, not physical multi-host or production certification.
 ## Build
 
 1. `python3 tools/enumerate_configs.py` — régénère `valid-configurations-v1.json`
@@ -108,18 +161,18 @@ Le standard ne prescrit ni Raft, ni Paxos, ni etcd, ni PostgreSQL. Il prescrit c
 5. `python3 tools/verify_effective_guarantees.py` — rejette tout profil réclamant une capacité sans preuve **réelle** : fichier présent, SHA-256 égal à `evidence_sha256`, chemin relatif sans `..` (fail-closed). Test : `test_effective_guarantees.py` (13 scénarios dont altération et traversée).
    **Attendu** : les profils exemple et consensus-replicated échouent (exit 1) car les preuves manquent. C'est le comportement voulu, pas une erreur de build.
 
-## Preuves réelles (état au 2026-10-19)
+## Preuves réelles (état au 2026-11-16, d'après `tools/verify_effective_guarantees.py`)
 
 | Profil | Config | Preuves obtenues | Manquant |
 |---|---|---|---|
-| `consensus-reference-single-host.yaml` | mono-host / local-registry / consensus-reference / fail-closed | `test.consensus.safety` (`evidence/test-consensus-safety.log`), `test.consensus.liveness` (`evidence/test-consensus-liveness.log`), `test.fault-tolerance` (`evidence/test-fault-tolerance.log`), `test.idempotency.local` (`evidence/test-idempotency-local.log`), `test.unknown-outcome.blocks` (`evidence/unknown-outcome-run.log`) | **`deployment.manifest`** (dépendance bloquante pour l'audit externe) |
+| `consensus-reference-single-host.yaml` | mono-host / local-registry / file-lock / fail-closed | `test.idempotency.local` (`evidence/test-idempotency-local.log`), `test.unknown-outcome.blocks` (`evidence/unknown-outcome-run.log`). **Non comptées** : `test.consensus.safety`, `test.consensus.liveness`, `test.fault-tolerance`, attestées pour `cap.concurrency.consensus-reference`, que la configuration `file-lock` ne réclame pas | **`test.lock.cross-process`** (exigée par `cap.concurrency.file-lock`), **`deployment.manifest`** (dépendance bloquante pour l'audit externe) |
 | `example-aggregate-budget-single-host.yaml` | mono-host / local-registry / file-lock / fail-closed | `test.lock.cross-process`, `test.idempotency.local` (`evidence/cross-process-run.log`), `test.unknown-outcome.blocks` (`evidence/unknown-outcome-run.log`) | **`deployment.manifest`** (dépendance bloquante pour l'audit externe) |
 | `example-aggregate-budget.yaml` | multi-host / distributed-consensus | aucune | toutes : **aucune implémentation de consensus multi-hôte n'existe** |
-| `consensus-replicated.yaml` | multi-host / distributed-consensus / fail-closed | aucune | toutes : modèle pour déploiement futur, adapter requis |
+| `consensus-replicated.yaml` | multi-host / distributed-consensus-registry / distributed-consensus / fail-closed | `test.consensus.safety`, `test.consensus.liveness`, `test.fault-tolerance`, `test.idempotency.distributed`, `test.cross-host.communication` (`evidence/test-raft-*.log`), `test.unknown-outcome.blocks` : 3 nœuds Raft, `tenir_governance` 5.6.0, bac à sable de l'auteur (non indépendant) | **`deployment.manifest`** |
 
 **`deployment.manifest` est une dépendance bloquante**, pas un détail. Sans ce manifeste, l'auditeur externe ne peut pas lier l'évidence à l'hypothèse de déploiement (`HOST_SCOPE = mono-host`). C'est le chaînon manquant pour tout audit indépendant. Seul l'opérateur peut le fournir (voir `evidence-type-specs-v1.md` §1 pour le schéma).
 
-Les logs de preuve sont conformes au format défini dans `evidence-type-specs-v1.md` (en-têtes structurées + sortie pytest brute). Ils sont liés au commit `342bc04` de `skiredj-prog/tenir_governance` (5.5.0), avec SHA-256 dans les attestations. Ils sont produits par l'auteur (sandbox), **non par un vérificateur indépendant**.
+Les logs de preuve sont conformes au format défini dans `evidence-type-specs-v1.md` (en-têtes structurées + sortie pytest brute). Les journaux mono-hôte (`SingleHostLockBackend`) sont liés au commit `342bc04` de `skiredj-prog/tenir_governance` (5.5.0) ; les journaux Raft (`evidence/test-raft-*.log`) au commit `334109f` (5.6.0). Les SHA-256 sont dans les attestations. Ils sont produits par l'auteur (sandbox), **non par un vérificateur indépendant**.
 
 ## Types de preuve (v1.0.0)
 
@@ -127,11 +180,11 @@ Les logs de preuve sont conformes au format défini dans `evidence-type-specs-v1
 
 ## Correctifs clés
 
-### v1.1.0 — Consensus, I8, fault model
+### v1.1.0 — Consensus, BUD, fault model
 
-- **Consensus contract** : `consensus-contract-v1.md` définit formellement safety (C1), liveness (C2), fault tolerance (C3), et I8 (conservation du budget agrégé). Implementation-neutral.
+- **Consensus contract** : `consensus-contract-v1.md` définit formellement safety (SAF), liveness (LIV), fault tolerance (FT), et BUD (conservation du budget agrégé). Implementation-neutral.
 - **Interface ConsensusBackend** : `consensus-interface-v1.json` définit l'API que tout backend doit implémenter. Le standard ne nomme aucune technologie.
-- **I8 normatif** : I8 est désormais un invariant du standard (`normative_invariants` dans `capabilities-v1.yaml`), pas seulement un détail d'implémentation de `tenir_governance`.
+- **BUD normatif** : BUD est désormais un invariant du standard (`normative_invariants` dans `capabilities-v1.yaml`), pas seulement un détail d'implémentation de `tenir_governance`.
 - **Fault model paramétrique** : `fault_model_schema` et `resilience_bounds` dans le catalogue. Le vérificateur de profil rejette les configurations violant les bornes (Raft, PBFT).
 - **Asymétrie corrigée** : `test.fault-tolerance` désormais requis pour `cap.dedup.consensus-registry` (symmetry avec `cap.concurrency.consensus`).
 - **Evidence type specs** : `evidence-type-specs-v1.md` définit les 16 types de preuve avec schéma, protocole, et critères d'acceptation.

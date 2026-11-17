@@ -1,4 +1,4 @@
-version: "1.1.0"
+version: "1.2.0"
 description: >
   Registre des capacités réclamées par chaque valeur d'axe, et des preuves
   requises pour que la réclamation soit considérée comme DÉMONTRÉE.
@@ -14,8 +14,25 @@ policy:
 # Invariants normatifs — tout backend conforme doit maintenir ces invariants.
 # Voir consensus-contract-v1.md pour les définitions formelles.
 normative_invariants:
-  - id: "I8"
+  - id: "I2"
+    name: "permit-single-use"
+    property: "a permit bound to an attempt and LEI authorizes at most one effect-producing dispatch"
+    scope: "per attempt"
+    description: >
+      Un permis lié à une tentative et à un LEI ne peut autoriser qu'une seule
+      dispatch produisant un effet, et ne peut pas être consommé à nouveau.
+      Définition importée du manuscrit REG/TENIR (v7.1, §2.3 et table des
+      invariants). Ne signifie pas seulement que les permis ne sont pas utilisés
+      en concurrence.
+    applies_to: ["cap.dedup.local-registry", "cap.dedup.consensus-registry",
+                 "cap.dedup.provider-key"]
+    guarantee_records: ["cap-exactly-once-external"]
+    verification: "a définir : aucun test de conformance ne l'exerce encore"
+    contract_ref: "manuscript/v7.1.md (I2 — Permit single-use)"
+
+  - id: "BUD"
     name: "budget-ceiling-aggregate"
+    formerly: "I8 (jusqu'au catalogue v1.1.0 ; toujours nommé I8 dans tenir_governance et dans les journaux de preuve antérieurs)"
     property: "reserved + committed <= capacity"
     scope: "per resource_id"
     description: >
@@ -84,19 +101,22 @@ fault_model_schema:
 resilience_bounds:
   crash_only:
     condition: "byzantine == 0 and omission == 0"
-    required: "total_nodes >= 2 * crash + 1"
-    quorum: "crash + 1"
+    required: "total_nodes - crash >= quorum"
+    quorum: "floor(total_nodes / 2) + 1"
     reference: "Raft, Paxos"
+    validated_by: "tools/validate_profiles.py (validate_fault_model)"
   crash_with_omission:
     condition: "byzantine == 0 and omission > 0"
-    required: "total_nodes >= 2 * (crash + omission) + 1"
-    quorum: "crash + omission + 1"
+    required: "availability depends on the nodes and links still operating"
+    quorum: "floor(total_nodes / 2) + 1"
     reference: "Paxos with omission"
+    validated_by: "not validated: theoretical reference only"
   byzantine:
     condition: "byzantine > 0"
     required: "total_nodes >= 3 * byzantine + 1"
     quorum: "2 * byzantine + 1"
     reference: "PBFT, Tendermint"
+    validated_by: "not validated: theoretical reference only"
 
 # Pour chaque (axe, valeur) : capability_id + liste des types de preuve requis.
 # Une attestation valide = evidence_type correspondant, verified=true,
@@ -158,8 +178,8 @@ capabilities:
       description: >
         Backend de consensus de référence (single-host, fcntl.flock). Implémente
         l'interface ConsensusBackend (consensus-interface-v1.json) et satisfait
-        C1 (safety/linearizability), C2 (liveness/termination), I8 (budget
-        conservation) sur un seul hôte. Ne satisfait PAS C3 (cross-host fault
+        SAF (safety/linearizability), LIV (liveness/termination), BUD (budget
+        conservation) sur un seul hôte. Ne satisfait PAS FT (cross-host fault
         tolerance). Sert de référence pour valider l'interface et le harnais
         de test avant un déploiement multi-hôte.
       required_evidence:
@@ -187,3 +207,38 @@ capabilities:
       capability_id: "cap.uncertainty.human-escalation"
       description: "Résultat UNKNOWN déclenche une escalade humaine."
       required_evidence: ["test.unknown-outcome.escalates"]
+
+# -----------------------------------------------------------------------------
+# Fiches de garantie (capabilities/v1.0.0/*.json)
+# -----------------------------------------------------------------------------
+# Une fiche porte une preuve pour un périmètre de déploiement. Elle ne remplace
+# pas la capacité d'axe qu'elle précise (refines) : la capacité d'axe dit ce
+# qu'une configuration réclame, la fiche dit ce qui a été démontré, et où.
+#   applies_when : valeurs d'axes pour lesquelles la fiche est rattachée à une
+#                  configuration admissible (lu par tools/fill_catalog_guarantees.py).
+#   Sans applies_when, la fiche n'est rattachée à aucune configuration.
+guarantee_records:
+  - id: "cap-budget-inproc"
+    applies_when: { HOST_SCOPE: "mono-process", CONCURRENCY: "thread-lock" }
+  - id: "cap-budget-crossproc"
+    applies_when: { HOST_SCOPE: "mono-host", CONCURRENCY: "file-lock" }
+  - id: "cap-budget-raft"
+    applies_when: { CONCURRENCY: "distributed-consensus" }
+  - id: "cap-deterministic-replication"
+    applies_when: { CONCURRENCY: "distributed-consensus" }
+  - id: "cap-budget-disttx"
+    applies_when: { CONCURRENCY: "distributed-transaction" }
+  - id: "cap-dedup-local-registry"
+    refines: "cap.dedup.local-registry"
+    applies_when: { DEDUP_LAYER: "local-registry" }
+  - id: "cap-dedup-provider-key"
+    refines: "cap.dedup.provider-key"
+    applies_when: { DEDUP_LAYER: "provider-idempotency-key" }
+  - id: "cap-dedup-consensus-registry"
+    refines: "cap.dedup.consensus-registry"
+    applies_when: { DEDUP_LAYER: "distributed-consensus-registry" }
+  - id: "cap-byzantine-tolerance"
+  - id: "cap-exactly-once-external"
+  - id: "cap-linearizability-verification"
+  - id: "cap-secure-consensus-transport"
+  - id: "raft-consensus-replication"

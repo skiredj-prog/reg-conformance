@@ -2,8 +2,8 @@
   "capability_id": "raft-consensus-replication",
   "declaration": {
     "name": "Réplication consensus Raft (single-host / loopback)",
-    "description": "I8 + C1/C2 crash-stop sur cluster loopback via RaftConsensusBackend.",
-    "invariants_required": ["I8"],
+    "description": "BUD + SAF/LIV crash-stop sur cluster loopback via RaftConsensusBackend.",
+    "invariants_required": ["BUD"],
     "deployment_perimeter": {
       "HOST_SCOPE": "mono-host",
       "DEDUP_LAYER": "none",
@@ -25,7 +25,7 @@
     }
   },
   "demonstration_scope": "loopback-test-only",
-  "status_note": "Validé indépendamment par Harv Banning le 2026-10-20. 46/46 PASS (131.14s). Périmètre : localhost / single-host. Pas de revendication C3, ni multi-host.",
+  "status_note": "Validé indépendamment par Harv Banning le 2026-10-20. 46/46 PASS (131.14s). Périmètre : localhost / single-host. Pas de revendication FT, ni multi-host.",
   "limitations": {
     "known_limits": [
       "FM-20 ouvert : sécurité du transport PySyncObj non établie",

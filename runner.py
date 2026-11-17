@@ -103,11 +103,11 @@ CORE_VECTORS: dict[str, TestVector] = {
                     "Third-party verifier reproduces decision from manifest without mutable state."),
     "CT-R4-010":TestVector("CT-R4-010","RFC-4 §1.1","External-Effect Claim Boundary",
                     "external_effect_atomic=false; post_commit_evidence_required=true."),
-    "CT-R4-011":TestVector("CT-R4-011","RFC-4 lifecycle T6","UNKNOWN → RESOLVED (qualified)",
+    "CT-R4-011":TestVector("CT-R4-011","Lifecycle T6 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)","UNKNOWN → RESOLVED (qualified)",
                     "Qualified evidence (receipt, effect confirmation) or explicit qualification transitions unresolved attempt to RESOLVED within τ_K."),
-    "CT-R4-012":TestVector("CT-R4-012","RFC-4 lifecycle T7","UNKNOWN → FAILED (evidence guard)",
+    "CT-R4-012":TestVector("CT-R4-012","Lifecycle T7 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)","UNKNOWN → FAILED (evidence guard)",
                     "FAILED requires evidence_qualified=true. Timeout (τ_K expiry) alone must NOT auto-transition to FAILED; UNKNOWN persists until qualification or explicit failure."),
-    "CT-R4-013":TestVector("CT-R4-013","RFC-4 lifecycle T8","FAILED + retry_eligible → new attempt",
+    "CT-R4-013":TestVector("CT-R4-013","Lifecycle T8 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)","FAILED + retry_eligible → new attempt",
                     "retry_eligible=true on FAILED allows issuing a new attempt_id on the same LEI. New attempt_id ≠ old attempt_id. LEI lock released only on (RESOLVED + qualified) or explicit reconciliation."),
 }
 
@@ -1044,6 +1044,28 @@ def build_evidence_binding(adapter, args):
     }
 
 
+def summary_by_basis(results):
+    """Split the results by what the vector rests on.
+
+    'specified_by_frozen_rfcs' counts vectors whose property is stated in the
+    frozen RFC text; 'outside_frozen_rfcs' counts registered ids that the RFCs
+    do not specify (proposals, and lifecycle vectors validated in the lab).
+    The classification is read from vectors/dist/vectors.json; None if absent.
+    """
+    try:
+        compiled = json.loads((Path(__file__).parent / "vectors" / "dist" / "vectors.json").read_text(encoding="utf-8"))
+        basis = {v["id"]: ("specified_by_frozen_rfcs" if v.get("status") in ("implemented", "specified")
+                           else "outside_frozen_rfcs") for v in compiled["vectors"]}
+    except Exception:
+        return None
+    out = {}
+    for key in ("specified_by_frozen_rfcs", "outside_frozen_rfcs"):
+        group = [r for r in results if basis.get(r.vector_id) == key]
+        out[key] = {"total": len(group), **{s.value: sum(r.status == s for r in group) for s in ReportingState}}
+    out["unclassified"] = sum(r.vector_id not in basis for r in results)
+    return out
+
+
 def generate_report(adapter, results, endpoint="", evidence_binding=None):
     counts = {s.value:0 for s in ReportingState}
     try:
@@ -1070,6 +1092,7 @@ def generate_report(adapter, results, endpoint="", evidence_binding=None):
             "vector_sets":{"core":len(CORE_VECTORS),
                            "extended":len(EXTENDED_VECTORS),
                            "total":len(VECTORS)},
+            "summary_by_basis":summary_by_basis(results),
             "summary_core":{s.value:sum(r.status == s for r in core_results)
                             for s in ReportingState},
             "summary_extended":{s.value:sum(r.status == s for r in extended_results)
@@ -1119,6 +1142,11 @@ def main():
         for r in results: counts[r.status.value] = counts.get(r.status.value,0)+1
         print(f"\n{'─'*66}")
         for k,v in counts.items(): print(f"  {MARKS.get(k,'?')} {k}: {v}")
+        by_basis = summary_by_basis(results)
+        if by_basis:
+            spec, other = by_basis["specified_by_frozen_rfcs"], by_basis["outside_frozen_rfcs"]
+            print(f"\n  Specified by the frozen RFCs: {spec['PASS']} PASS of {spec['total']}"
+                  f"   |   Registered ids outside the frozen RFCs: {other['total']}")
         all_reports.append(generate_report(
             adapter, results, endpoint,
             build_evidence_binding(adapter, args)))

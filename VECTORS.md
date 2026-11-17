@@ -1,8 +1,8 @@
 # REG Vector Index
 
-This index points to normative properties in the RFCs; it does not replace them. `IMPLEMENTED` means a behavioral test exists in the current runner. `DECLARED` means the RFC specifies the property but the runner does not test it. `RESERVED` means the check is identified but the RFC does not specify it.
+This index points to normative properties in the RFCs; it does not replace them. A vector id is a stable label, not a pointer: the `CT-Rn` prefix records where the id was first filed, and the `rfc` column states the clause the vector rests on. `CT-R5` vectors rest on RFC-1 and RFC-4 clauses; `CT-R4-011` to `CT-R4-013` rest on the manuscript. `IMPLEMENTED` means a behavioral test exists in the current runner. `DECLARED` means the RFC specifies the property but the runner does not test it. `RESERVED` means the check is identified but the RFC does not specify it.
 
-The runner registers 53 vector IDs (15 core/commit and 38 extended). Registration alone does not make a vector `IMPLEMENTED`: 36 extended entries currently return an implementation-gap result without exercising the property. The archived v0.3.1 reports also contain false PASS assessments for C3, CT-R4-005, CT-R4-009, and CT-R4-010; use corrected implementation and current report before making conformance claims.
+The runner registers 56 vector IDs (18 core/commit, of which three lifecycle vectors, and 38 extended). Registration alone does not make a vector `IMPLEMENTED`: 36 extended entries currently return an implementation-gap result without exercising the property. The archived v0.3.1 reports also contain false PASS assessments for C3, CT-R4-005, CT-R4-009, and CT-R4-010; use corrected implementation and current report before making conformance claims.
 
 | vector_id | family | rfc | normative_property | status | location |
 |---|---|---|---|---|---|
@@ -21,6 +21,9 @@ The runner registers 53 vector IDs (15 core/commit and 38 extended). Registratio
 |CT-R4-008|COMMIT|RFC-4 §4|Append-only hash-chain manifest; integrity verifiable at any time.|IMPLEMENTED|runner.py CORE_VECTORS and adapter dispatch|
 |CT-R4-009|COMMIT|RFC-4 §4|Independent verification must reproduce or verify the decision from recorded inputs, policies, transformations, and attestations. (RFC-4 §4.3, §5.1)|DECLARED|runner.py CORE_VECTORS and adapter dispatch|
 |CT-R4-010|COMMIT|RFC-4 §1.1|Non-atomic external effects require post-commit evidence; declaring the effect non-atomic alone is insufficient. (RFC-4 §1.1, §4.1)|DECLARED|runner.py CORE_VECTORS and adapter dispatch|
+|CT-R4-011|COMMIT|Manuscript v7.2 §4.4 (transitions); the frozen RFC-4 text defines no lifecycle transition|Unspecified proposal (T6): UNKNOWN or AWAITING becomes RESOLVED only on qualified, correctly bound evidence; a timeout alone does not resolve.|RESERVED|runner.py CORE_VECTORS; laboratory probe only, reported as IMPLEMENTATION_GAP in native mode (LIFECYCLE_INTEGRATION.md)|
+|CT-R4-012|COMMIT|Manuscript v7.2 §4.4 (transitions); the frozen RFC-4 text defines no lifecycle transition|Unspecified proposal (T7): UNKNOWN becomes FAILED only on a qualified non-execution attestation; a timeout or a boolean alone is insufficient.|RESERVED|runner.py CORE_VECTORS; laboratory probe only, reported as IMPLEMENTATION_GAP in native mode (LIFECYCLE_INTEGRATION.md)|
+|CT-R4-013|COMMIT|Manuscript v7.2 §4.4 (transitions); the frozen RFC-4 text defines no lifecycle transition|Unspecified proposal (T8): a new attempt after FAILED requires confirmed non-execution, no observed effect and retry eligibility.|RESERVED|runner.py CORE_VECTORS; laboratory probe only, reported as IMPLEMENTATION_GAP in native mode (LIFECYCLE_INTEGRATION.md)|
 |CT-R0-001|INTEGRATION|RFC-0|Unspecified proposal: Policy file hash verifiable independently.|RESERVED|runner.py EXTENDED_VECTORS and adapter dispatch|
 |CT-R0-002|INTEGRATION|RFC-0|Unspecified proposal: Implementation declares conformant RFC versions.|RESERVED|runner.py EXTENDED_VECTORS and adapter dispatch|
 |CT-R0-003|INTEGRATION|RFC-0|Declared scope matches tested behavior.|DECLARED|runner.py EXTENDED_VECTORS and adapter dispatch|

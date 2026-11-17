@@ -16,6 +16,14 @@ config:
   CONCURRENCY: "distributed-consensus"
   UNCERTAINTY: "fail-closed"
 
+# Hypothèse déclarée, pas une preuve de déploiement : Raft crash-stop, 3 nœuds.
+fault_model:
+  crash: 1
+  byzantine: 0
+  omission: 0
+  quorum: 2
+  total_nodes: 3
+
 # Invariants applicables (référence le catalogue d'invariants, hors de ce fichier).
 invariants:
   - "commit-binding"

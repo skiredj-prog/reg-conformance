@@ -3,7 +3,7 @@
 **Modèle théorique du consensus distribué pour la gouvernance runtime REG+**
 
 - Statut : spécification de référence (`reg-conformance/specs/`)
-- Propriétés visées : **C1** (safety / accord), **C2** (liveness / terminaison), **C3** (tolérance aux pannes), **I8** (conservation du budget agrégé)
+- Propriétés visées : **SAF** (safety / accord), **LIV** (liveness / terminaison), **FT** (tolérance aux pannes), **BUD** (conservation du budget agrégé)
 - Interface associée : `consensus-interface-v1.json` (`ConsensusBackend`)
 - Indépendance : aucune dépendance à un protocole spécifique (Raft, Paxos, 2PC, ou backend externe). Le contrat définit les propriétés, pas le mécanisme.
 
@@ -15,13 +15,13 @@
 
 > **Le standard définit les propriétés, pas le mécanisme.**
 
-Un backend de consensus est conforme à ce contrat s'il satisfait les propriétés C1, C2, C3 et I8 pour les paramètres déclarés dans le profil. Le standard ne prescrit ni Raft, ni Paxos, ni etcd, ni PostgreSQL. Il prescrit ce que le backend doit garantir.
+Un backend de consensus est conforme à ce contrat s'il satisfait les propriétés SAF, LIV, FT et BUD pour les paramètres déclarés dans le profil. Le standard ne prescrit ni Raft, ni Paxos, ni etcd, ni PostgreSQL. Il prescrit ce que le backend doit garantir.
 
 L'interface `ConsensusBackend` (voir `consensus-interface-v1.json`) est le point de conformance. Tout backend qui implémente cette interface et satisfait les propriétés est conforme.
 
 ---
 
-## 2. Safety (C1) — Accord et linearizability
+## 2. Safety (SAF) — Accord et linearizability
 
 ### 2.1 Linearizability
 
@@ -46,7 +46,7 @@ Pour toute opération `commit(reservation_id)` :
 - Tout commit réussi correspond à une réservation existante non commitée.
 - Toute libération correspond à une réservation existante (commitée ou non).
 
-### 2.4 Conservation du budget agrégé (I8)
+### 2.4 Conservation du budget agrégé (BUD)
 
 Pour tout état du système à tout instant :
 
@@ -61,11 +61,11 @@ où :
 
 Cette invariant doit tenir **à chaque état intermédiaire**, pas seulement à l'état final. Sous concurrence, deux `reserve()` simultanées ne doivent pas faire dépasser le plafond même si chacune individuellement respecte `available >= amount`.
 
-**Périmètre** : I8 s'applique par `resource_id`. Le profil peut déclarer plusieurs ressources, chacune avec son propre plafond. L'invariant est par ressource, pas global.
+**Périmètre** : BUD s'applique par `resource_id`. Le profil peut déclarer plusieurs ressources, chacune avec son propre plafond. L'invariant est par ressource, pas global.
 
 ---
 
-## 3. Liveness (C2) — Terminaison
+## 3. Liveness (LIV) — Terminaison
 
 ### 3.1 Terminaison sous quorum
 
@@ -88,7 +88,7 @@ Une opération en état `UNKNOWN` doit pouvoir être réconciliée : `reconcile(
 
 ---
 
-## 4. Tolérance aux pannes (C3)
+## 4. Tolérance aux pannes (FT)
 
 ### 4.1 Modèle de faute paramétrique
 
@@ -96,12 +96,15 @@ Le profil déclare le modèle de faute supporté :
 
 ```yaml
 fault_model:
-  crash: f          # nombre de nœuds qui peuvent crasher (crash-stop)
-  byzantine: m      # nombre de nœuds byzantins (réponses arbitraires)
-  omission: o       # nombre de nœuds en omission (perte de messages)
-quorum: q           # nombre de nœuds nécessaires pour décider
-total_nodes: n      # nombre total de nœuds dans le déploiement
+  crash: f          # nombre maximal de crash-stop déclarés
+  byzantine: m      # fautes byzantines déclarées
+  omission: o       # fautes d'omission déclarées
+  quorum: q         # quorum de décision
+  total_nodes: n    # nombre total de nœuds
 ```
+
+Le profil Raft actuellement pris en charge est **crash-stop uniquement** :
+`byzantine = 0` et `omission = 0`. Toute autre tolérance doit être implémentée et démontrée séparément ; elle ne découle pas de ce contrat générique.
 
 ### 4.2 Bornes de résilience
 
@@ -109,15 +112,15 @@ Le profil doit satisfaire les bornes théoriques :
 
 | Modèle de faute | Condition nécessaire | Référence |
 |---|---|---|
-| Crash-stop uniquement | `n ≥ 2f + 1`, `quorum = f + 1` | Raft, Paxos |
-| Crash-stop + omission | `n ≥ 2f + 1`, `quorum = f + 1` | Paxos |
+| Crash-stop uniquement | `quorum = floor(n / 2) + 1`, `n - f ≥ quorum` pour la disponibilité déclarée | Raft, Paxos |
+| Crash-stop + omission | `quorum = floor(n / 2) + 1`, disponibilité conditionnée aux nœuds et liens encore opérationnels | Paxos |
 | Byzantin | `n ≥ 3m + 1`, `quorum = 2m + 1` | PBFT, Tendermint |
 
-Le vérificateur de profil rejette toute configuration violant ces bornes.
+Le validateur actuel applique ces contrôles au profil Raft crash-stop uniquement. Les bornes byzantines et crash-stop + omission sont des références théoriques dans ce contrat ; elles ne sont ni validées par ce profil ni attestées comme capacités implémentées.
 
 ### 4.3 Safety sous faute
 
-Le système doit maintenir C1 (safety) et I8 (budget) sous les fautes déclarées :
+Le système doit maintenir SAF (safety) et BUD (budget) sous les fautes déclarées :
 - `f` nœuds crashent à un moment arbitraire ;
 - `m` nœuds produisent des réponses arbitraires (byzantins) ;
 - `o` nœuds perdent des messages (omission).
@@ -184,7 +187,7 @@ Chaque opération a une spécification séquentielle précise (préconditions, p
 | Interface conforme au schéma JSON | `consensus-interface-v1.json` |
 | Safety (linearizability) | Linearizability checker (Wing-Gong) |
 | Safety (accord, validité) | Tests adversariaux (double-commit, clé dupliquée) |
-| I8 (conservation budget) | Budget harness multi-processus |
+| BUD (conservation budget) | Budget harness multi-processus |
 | Liveness (terminaison) | Liveness harness (timeout sous quorum) |
 | Fault tolerance | Fault harness (partitions, crashs, byzantins) |
 | Profil admissible (bornes) | Vérificateur de profil |
@@ -198,7 +201,7 @@ Chaque opération a une spécification séquentielle précise (préconditions, p
 | Linearizability | Ordre linéarisable | Enregistrer une histoire concurrente, vérifier la sérialisabilité |
 | Accord | Au plus un commit par réservation | Deux nœuds tentent le même commit → au plus un réussit |
 | Validité | Pas d'effet fantôme | Commiter une réservation inexistante → échec sans effet |
-| I8 (budget) | `reserved + committed ≤ capacity` | N processus réservent simultanément → somme ne dépasse jamais capacity |
+| BUD (budget) | `reserved + committed ≤ capacity` | N processus réservent simultanément → somme ne dépasse jamais capacity |
 | Terminaison | Opération se termine sous quorum | Invoquer sous quorum sain → se termine en temps borné |
 | Safety sous partition | Safety tient pendant partition | Partitionner le réseau, effectuer des opérations → safety non violée |
 | Récupération | Nœud crashé reprend correctement | Crasher un nœud, le redémarrer → ne reprend pas d'opérations déjà commitées |

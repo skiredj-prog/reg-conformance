@@ -2,9 +2,9 @@
   "capability_id": "cap-linearizability-verification",
   "declaration": {
     "name": "Vérification de linéarisabilité",
-    "description": "Preuve C1 par checker formel.",
+    "description": "Preuve SAF par checker formel.",
     "invariants_required": [
-      "I8"
+      "BUD"
     ],
     "deployment_perimeter": {
       "HOST_SCOPE": "multi-host",
@@ -18,7 +18,7 @@
     "test_command": "pytest -q tests/raft/test_linearizability.py"
   },
   "demonstration_scope": null,
-  "status_note": "RÉFUTÉ en l'état : ne pas citer comme preuve C1.",
+  "status_note": "RÉFUTÉ en l'état : ne pas citer comme preuve SAF.",
   "limitations": {
     "known_limits": [
       "checker prototype (F-03)",
@@ -29,6 +29,6 @@
   "validation": {
     "structural_admissibility": true,
     "effective_guarantee_demonstrated": false,
-    "verification_timestamp": "2026-10-21T07:29:00Z"
+    "verification_timestamp": "2026-10-20T21:55:30Z"
   }
 }

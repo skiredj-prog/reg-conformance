@@ -1,7 +1,25 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["meta", "vectors"],
+  "required": ["meta"],
+  "anyOf": [{ "required": ["vectors"] }, { "required": ["candidates"] }],
+  "additionalProperties": false,
+  "definitions": {
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "category", "status"],
+        "properties": {
+          "id":       { "type": "string" },
+          "category": { "enum": ["candidate", "exploratory"] },
+          "status":   { "enum": ["proposed", "rejected"] },
+          "note":     { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
   "properties": {
     "meta": {
       "type": "object",
@@ -25,13 +43,15 @@
           "input":     { "type": "string" },
           "intended":  { "type": "string" },
           "expected":  { "type": "string" },
-          "status":    { "enum": ["implemented", "specified", "proposal"] },
+          "status":    { "enum": ["implemented", "specified", "proposal", "lab_validated"] },
           "native":    { "enum": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_APPLICABLE", "ADAPTER_REQUIRED", "IMPLEMENTATION_GAP", null] },
           "observed":  { "type": "string" },
           "reference": { "type": "string" }
         },
         "additionalProperties": false
       }
-    }
+    },
+    "candidates":    { "$ref": "#/definitions/candidates" },
+    "non_validated": { "$ref": "#/definitions/candidates" }
   }
 }
