@@ -26,6 +26,14 @@ own behaviour; to be confirmed or corrected by the runtime's author):
     DENIED          amount above the registered budget (membrane invariant I8)
     NEEDS_APPROVAL  best-case inputs, amount at 90 % of the budget: the
                     composition policy escalates this to HOLD
+    INVARIANT_VIOLATED  best-case inputs, amount above the registered budget
+                    (membrane invariant I8); the same inputs as DENIED
+    OUT_OF_SCOPE    best-case inputs, from an agent registered with a
+                    capability set that does not contain the requested action
+
+Combinations (COMBINE), each on two independent inputs of one adjudication:
+    NO_STANDING + NEEDS_APPROVAL    authority at 0.0 and 90 % of the budget
+    INADMISSIBLE + NEEDS_APPROVAL   structure outside bounds and 90 % of the budget
 
 Refusal mapping at the boundary (PROVISIONAL, same caveat):
     "payload does not match the payload authorized"        -> BINDING_VIOLATION
@@ -38,6 +46,9 @@ Not declared, because the default path of this runtime has no such primitive:
     STALE_GRANT  an admitted operation carries no validity window
     STATE_DRIFT  no policy or state version is bound at verdict and re-checked
     RECEIPTS     ledger entries are hash-chained, not signed
+    MALFORMED_CREDENTIAL (intent)  the governor takes no credential: standing
+                 arrives as a measured authority score and an agent
+                 identifier asserted by the caller
 """
 from __future__ import annotations
 
@@ -57,7 +68,11 @@ _INPUTS = {
     P.NO_STANDING:    (dict(authority=0.0), None),
     P.DENIED:         ({}, _CAPACITY * 5),
     P.NEEDS_APPROVAL: ({}, _CAPACITY * 0.9),
+    P.INVARIANT_VIOLATED: ({}, _CAPACITY * 5),
+    P.OUT_OF_SCOPE:   ({}, None),
 }
+# The scope given to the agent of an OUT_OF_SCOPE attempt.
+_SCOPE = frozenset({"read"})
 _NOT_ADMITTED = ("failed", "hold", "escalated", "created")
 
 
@@ -83,8 +98,10 @@ class TenirGovPort(P.RuntimePort):
     interface_mode = "port:tenir-governance"
     evidence_level = 2
     capabilities = frozenset({P.EVALUATE, P.COMMIT, P.NONCE, P.MANIFEST,
-                              P.TENIR_SCORE, P.EFFECTS})
+                              P.TENIR_SCORE, P.EFFECTS, P.COMBINE})
     intents = frozenset(_INPUTS)
+    combinations = frozenset({frozenset({P.NO_STANDING, P.NEEDS_APPROVAL}),
+                              frozenset({P.INADMISSIBLE, P.NEEDS_APPROVAL})})
     not_applicable = {"C4": "No transport layer: the runtime is driven in process."}
 
     def __init__(self):
@@ -98,7 +115,7 @@ class TenirGovPort(P.RuntimePort):
         from tenir_governance.objects import Resource
         from tenir_kernel.kernel import TenirKernel
 
-        state = MembraneState()
+        state = self._state = MembraneState()
         state.register_resource(Resource(resource_id=_BUDGET, capacity=_CAPACITY))
         self._provider = _JournalProvider()
         self._scoring = ScoringKernelAdapter(TenirKernel())
@@ -107,9 +124,25 @@ class TenirGovPort(P.RuntimePort):
 
     # -- primitives ---------------------------------------------------------
     def evaluate(self, intent, *, principal, action_type, nonce=None):
-        from tenir_governance.objects import Passage
+        return self.evaluate_combined((intent,), principal=principal,
+                                      action_type=action_type, nonce=nonce)
 
-        overrides, amount = _INPUTS[intent]
+    def evaluate_combined(self, intents, *, principal, action_type, nonce=None):
+        from tenir_governance.objects import Agent, Passage
+
+        overrides, amounts = {}, []
+        for intent in intents:
+            changed, amount = _INPUTS[intent]
+            overrides.update(changed)
+            if amount:
+                amounts.append(amount)
+        if len(amounts) > 1:
+            raise ValueError("one adjudication carries one amount")
+        amount = amounts[0] if amounts else None
+        if P.OUT_OF_SCOPE in intents:
+            if action_type in _SCOPE:
+                raise ValueError(f"{action_type!r} is inside the scope used for OUT_OF_SCOPE")
+            self._state.register_agent(Agent(agent_id=principal, capabilities=_SCOPE))
         key = nonce or f"op-{uuid.uuid4().hex}"
         passage = Passage(agent_id=principal, action_type=action_type,
                           amount=amount or 0.0, idempotency_key=key)

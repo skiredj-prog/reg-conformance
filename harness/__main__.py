@@ -1,4 +1,4 @@
-"""python -m harness --port package.module:ClassName [--probes] [--output FILE]"""
+"""python -m harness --port package.module:ClassName [--probes] [--checks] [--output FILE]"""
 from __future__ import annotations
 
 import argparse
@@ -9,7 +9,7 @@ import sys
 import runner as R
 from . import properties
 from .adapter import PortAdapter, load_port
-from .scenarios import PROBES, SCENARIOS
+from .scenarios import CHECKS, PROBES, SCENARIOS
 
 
 def main(argv=None):
@@ -18,6 +18,8 @@ def main(argv=None):
     p.add_argument("--port", required=True, help="package.module:ClassName")
     p.add_argument("--probes", action="store_true",
                    help="also run the harness effect probes (not REG vectors)")
+    p.add_argument("--checks", action="store_true",
+                   help="also run the property checks (not REG vectors)")
     p.add_argument("--conformance-profile", default="REG-v0.3.1-RFC-4-strict-C3")
     p.add_argument("--subject-repository", default="")
     p.add_argument("--subject-revision", default="")
@@ -46,11 +48,35 @@ def main(argv=None):
             "note": ("Not REG vectors. Excluded from every vector summary and from "
                      "conformance_status. The property view counts them, as probes."),
             "results": [R.asdict(r) for r in probes]}
+    exercises = {vid: s.exercises for vid, s in CHECKS.items()}
+    checks = []
+    if args.checks:
+        checks = adapter.run_checks()
+        index = properties.index_rows()
+        rows = {vid: {"row": row, **index.get(row, {})} for vid, row in exercises.items()}
+        print("\n  Property checks (not REG vectors)")
+        for r in checks:
+            row = rows[r.vector_id]
+            print(f"  {R.MARKS.get(r.status.value, '?')}  {r.vector_id:<16}  {r.status.value:<22}  {r.details or r.gap_note}")
+            print(f"     ↳ row {row['row']}, {row.get('rfc', '?')}, {row.get('status', '?')}: "
+                  f"{row.get('property', '')}"[:170])
+            if r.details and r.gap_note:
+                print(f"     ↳ {r.gap_note[:160]}")
+        report["property_checks"] = {
+            "note": ("Not REG vectors. Each one exercises a property indexed in VECTORS.md "
+                     "that has no executable vector. Excluded from every vector summary and "
+                     "from conformance_status. The property view counts them under the "
+                     "family of the row they exercise. A row whose status is RESERVED is a "
+                     "proposal the frozen RFCs do not specify."),
+            "exercises": exercises,
+            "rows": rows,
+            "results": [R.asdict(r) for r in checks]}
     print("\n  " + "  ".join(f"{k}: {v}" for k, v in report["summary"].items() if v))
 
     # A second reading of the same results, by candidate property family.
-    view = properties.view(results, probes, registered=R.VECTORS,
-                           executable=set(SCENARIOS) | set(PROBES))
+    view = properties.view(results, probes, checks, registered=R.VECTORS,
+                           executable=set(SCENARIOS) | set(PROBES) | set(CHECKS),
+                           exercises=exercises)
     report["property_view"] = view
     print("\n" + "\n".join(properties.render(view)))
 

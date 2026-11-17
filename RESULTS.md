@@ -6,10 +6,11 @@ Each line is one run: one subject revision, one `reg-conformance` commit, one
 evidence bundle. Read [`CLAIMS.md`](CLAIMS.md) before quoting any of it. No
 line here is a certification.
 
-REG vectors and effect probes are counted apart. The suite has 56 REG vectors
-and 4 effect probes. From the next published run on, each line will also give
-the reading by candidate property family described in `CLAIMS.md`. The run
-below predates it.
+REG vectors, effect probes and property checks are counted apart. The suite
+has 56 REG vectors, 4 effect probes and 6 property checks. From the next
+published run on, each line will also give the property checks and the
+reading by candidate property family described in `CLAIMS.md`. The run below
+predates both.
 
 | Subject | Revision | Level | REG vectors | Effect probes | Run |
 |---|---|---|---|---|---|
@@ -44,11 +45,14 @@ so that they stay available.
 git clone https://github.com/skiredj-prog/reg-conformance
 cd reg-conformance
 pip install -r requirements.txt pytest
-python -m harness --port harness.ports.reference:ReferencePort --probes
+python -m harness --port harness.ports.reference:ReferencePort --probes --checks
 python -m pytest tests/test_harness.py
 ```
 
-The first command should print `PASS: 14  NOT_APPLICABLE: 1  IMPLEMENTATION_GAP: 41`,
-then the reading by candidate property family. The second checks the
-instrument: each effect probe is run against a deliberately faulty test double
-and must report `FAIL`.
+The first command should print `PASS: 14  NOT_APPLICABLE: 1  IMPLEMENTATION_GAP: 41`
+for the vectors. Of the six property checks, three run on the reference
+kernel: two pass and one fails (`PX-CT-R3-001`: the kernel admits a blank
+credential, a gap its own register declares). The reading by candidate
+property family follows. The second command checks the instrument: each
+effect probe and each property check is run against a deliberately faulty
+test double and must report `FAIL`.

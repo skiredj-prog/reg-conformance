@@ -6,7 +6,7 @@ import importlib
 
 import runner as R
 from .port import ALL_CAPABILITIES, ALL_INTENTS, RuntimePort
-from .scenarios import PROBES, SCENARIOS
+from .scenarios import CHECKS, PROBES, SCENARIOS
 
 HARNESS_GAP = ("HARNESS_GAP: no runtime-neutral scenario exists for this vector yet; "
                "the subject was not evaluated.")
@@ -20,6 +20,10 @@ class PortAdapter(R.BaseAdapter):
         unknown = set(port.intents) - ALL_INTENTS
         if unknown:
             raise ValueError(f"port declares unknown intents: {sorted(unknown)}")
+        for combo in port.combinations:
+            if len(combo) < 2 or not set(combo) <= set(port.intents):
+                raise ValueError("a combination must list two or more intents the port "
+                                 f"declares: {sorted(combo)}")
         self.port = port
         self.interface_mode = port.interface_mode
         # A port is a translation layer: it can never report native conformance.
@@ -68,6 +72,20 @@ class PortAdapter(R.BaseAdapter):
     def run_probes(self):
         """Harness probes, reported apart from the REG vector set."""
         return [self._run_scenario(vid, s) for vid, s in PROBES.items()]
+
+    def run_checks(self):
+        """Property checks, reported apart from the REG vector set. When the
+        implementer has declared a gap on the row a check exercises, the note
+        travels with any result that is not a pass."""
+        out = []
+        for vid, s in CHECKS.items():
+            r = self._run_scenario(vid, s)
+            gap = self.port.declared_gaps.get(s.exercises)
+            if gap and r.status != R.ReportingState.PASS:
+                note = f"gap declared by the implementer on {s.exercises}: {gap}"
+                r.gap_note = f"{r.gap_note} | {note}" if r.gap_note else note
+            out.append(r)
+        return out
 
 
 def load_port(spec: str) -> RuntimePort:

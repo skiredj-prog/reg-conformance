@@ -34,6 +34,7 @@ def sha256(path: Path) -> str:
 def build_verdict(report: dict) -> dict:
     binding = report.get("evidence_binding") or {}
     probes = (report.get("harness_probes") or {}).get("results", [])
+    checks = report.get("property_checks") or {}
     level = int(report["evidence_level"])
     if level >= 3:
         raise SystemExit("refusing to bundle: a port run cannot carry evidence level 3")
@@ -41,7 +42,8 @@ def build_verdict(report: dict) -> dict:
     view = report.get("property_view") or {}
     admission = report.get("admission") or {}
     return {
-        # /2 adds property_view and admission. Every /1 field is unchanged.
+        # /2 adds property_checks, property_view and admission. Every /1 field
+        # is unchanged.
         "schema": "reg-evidence-verdict/2",
         "certifying": False,
         "statement": ("Diagnostic result of one harness run. Not a certification, not a "
@@ -64,14 +66,22 @@ def build_verdict(report: dict) -> dict:
             "note": "Harness probes. Not REG vectors; excluded from reg_vectors above.",
             "results": {r["vector_id"]: r["status"] for r in probes},
         },
+        "property_checks": {
+            "note": ("Property checks. Not REG vectors; excluded from reg_vectors above. "
+                     "Each exercises one row of VECTORS.md that has no executable vector."),
+            "exercises": checks.get("exercises", {}),
+            "rows": checks.get("rows", {}),
+            "results": {r["vector_id"]: r["status"] for r in checks.get("results", [])},
+        },
         # A second reading of the same results, by candidate property family.
         # Absent from reports written before the property view existed.
         "property_view": {
             "note": view.get("note"),
             "status": view.get("status"),
             "summary": view.get("summary"),
-            "families": {k: {f: fam[f] for f in ("PASS", "FAIL", "INCONCLUSIVE", "not_run",
-                                                 "unregistered", "state")}
+            "index": view.get("index"),
+            "families": {k: {f: fam.get(f) for f in ("PASS", "FAIL", "INCONCLUSIVE", "not_run",
+                                                     "unregistered", "no_check", "state")}
                          for k, fam in (view.get("families") or {}).items()},
         } if view else None,
         "admission": {
@@ -124,10 +134,15 @@ def main(argv=None):
     v = verdict["reg_vectors"]
     s = (verdict.get("property_view") or {}).get("summary")
     by_property = (f"properties (candidate families) {s['has_pass']}/{s['families']} with a passing "
-                   f"check, {s['has_fail']} with a failing check | ") if s else ""
+                   f"check and no failing one, {s['has_fail']} with a failing check | ") if s else ""
+    c = list(verdict["property_checks"]["results"].values())
+    ran = [x for x in c if x in ("PASS", "FAIL", "INCONCLUSIVE")]
+    by_check = (f"property checks {ran.count('PASS')} PASS, {ran.count('FAIL')} FAIL, "
+                f"{ran.count('INCONCLUSIVE')} inconclusive, {len(c) - len(ran)} not run"
+                if c else "property checks not run")
     print(f"bundle: {out} | level {verdict['evidence_level']} {verdict['evidence_label']} | "
           f"REG {v['status']} {v['summary']['PASS']}/{v['total']} PASS | "
-          f"probes {verdict['effect_probes']['results'] or 'not run'} | "
+          f"probes {verdict['effect_probes']['results'] or 'not run'} | {by_check} | "
           f"{by_property}certifying: false")
     return 0
 

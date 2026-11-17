@@ -8,6 +8,9 @@
 # 56-vector summary of a run is computed exactly as before. The property view
 # is a second reading of the same results.
 #
+# A property check (PX-<row>) is not listed here: it is counted under the
+# family of the row it exercises.
+#
 # EGP = execution-governance property. The identifiers are provisional.
 schema: reg-property-families/0
 status: candidate

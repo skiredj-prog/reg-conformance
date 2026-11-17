@@ -35,15 +35,17 @@ Only `PASS` counts as a pass.
 
 **Which set the test belongs to.** REG vectors test properties specified by
 the REG RFCs. Effect probes (`HX-EFFECT-*`) check that a refusal matches zero
-downstream effects and an allowed call exactly one. Probes are listed apart
-and are never counted among the vectors.
+downstream effects and an allowed call exactly one. Property checks (`PX-*`)
+each exercise one property that the index lists and that has no executable
+vector yet. Probes and property checks are listed apart and are never counted
+among the vectors.
 
 **The reading by property.** A run also groups its results by candidate
-property family: the vectors and the probes that exercise the same property
-are counted together, each under its own kind. The families are candidates
-and are not part of the frozen RFCs. The grouping changes no outcome and no
-vector count. It shows which properties were observed on a subject whose
-shape does not fit the vectors as written.
+property family: the vectors, the probes and the property checks that exercise
+the same property are counted together, each under its own kind. The families
+are candidates and are not part of the frozen RFCs. The grouping changes no
+outcome and no vector count. It shows which properties were observed on a
+subject whose shape does not fit the vectors as written.
 
 **What counts as an admission.** RFC-0 §4 lets execution proceed on `PASS`
 and on `FLAG`, the latter only under an explicit condition or supervision.
@@ -57,7 +59,7 @@ A statement about a result names all of the following:
 1. the subject and its exact revision (commit),
 2. the `reg-conformance` commit that ran,
 3. the evidence level,
-4. the counts per outcome, vectors and probes apart,
+4. the counts per outcome, with vectors, probes and property checks apart,
 5. where the evidence bundle is, with its checksums.
 
 Example:
@@ -84,7 +86,9 @@ was not observed, the quote says so.
   and are not failures.
 - That a result maps to a regulation or to another framework. The crosswalk
   states such relations one by one, each with its limit.
-- That an effect probe is a REG vector, or the reverse.
+- That an effect probe or a property check is a REG vector, or the reverse.
+- That a row of the index is "covered" or "implemented" because a property
+  check exists for it. The row keeps its status in `VECTORS.md`.
 - That a family with a passing check is satisfied, or that a subject
   "satisfies" a number of families. One check observed one behaviour.
 

@@ -23,10 +23,11 @@ RECEIPTS = "receipts"            # signed decision receipts, verifiable
 MANIFEST = "manifest"            # append-only evidence ledger, tamper-evident
 TENIR_SCORE = "tenir_score"      # exposes the TENIR S = K/(P*V+eps) computation
 EFFECTS = "effects"              # effects observable independently of the runtime
+COMBINE = "combine"              # one attempt that meets several conditions at once
 
 ALL_CAPABILITIES = frozenset({
     EVALUATE, COMMIT, REVOKE, STATE_DRIFT, STALE_GRANT, NONCE,
-    RECEIPTS, MANIFEST, TENIR_SCORE, EFFECTS,
+    RECEIPTS, MANIFEST, TENIR_SCORE, EFFECTS, COMBINE,
 })
 
 # Intents the harness asks for. The port maps each one to its own inputs.
@@ -38,8 +39,15 @@ NEEDS_APPROVAL = "needs_approval"    # the runtime must obtain a human approval 
 # distinct from INADMISSIBLE: a policy refusal is not evidence of REG structural
 # admissibility, and must never satisfy a vector about it.
 DENIED = "denied"
+# The three below describe one departure from ADMISSIBLE each. A port declares
+# one only if the runtime has the notion: a credential that can be malformed, a
+# scope a caller can hold, a hard invariant that can be declared.
+MALFORMED_CREDENTIAL = "malformed_credential"   # the credential presented is not well-formed
+OUT_OF_SCOPE = "out_of_scope"                   # valid standing for a declared scope; the request lies outside it
+INVARIANT_VIOLATED = "invariant_violated"       # measurements as ADMISSIBLE; a declared hard invariant is violated
 
-ALL_INTENTS = frozenset({ADMISSIBLE, INADMISSIBLE, NO_STANDING, NEEDS_APPROVAL, DENIED})
+ALL_INTENTS = frozenset({ADMISSIBLE, INADMISSIBLE, NO_STANDING, NEEDS_APPROVAL, DENIED,
+                         MALFORMED_CREDENTIAL, OUT_OF_SCOPE, INVARIANT_VIOLATED})
 
 # Normalised refusal codes.
 R_STANDING_REVOKED = "STANDING_REVOKED"
@@ -55,6 +63,12 @@ R_REPLAY = "NONCE_REPLAY"
 # A port reports the condition it observes in `Decision.conditions`.
 # HOLD (SUSPEND) and HARD_VETO (BLOCK) never admit.
 ADMISSION_DISPOSITIONS = frozenset({"PASS", "FLAG"})
+
+# From least to most restrictive. RFC-0 §4: "When multiple applicable controls
+# produce incompatible dispositions, the most restrictive applicable
+# disposition governs", with the example PASS, FLAG and HOLD giving HOLD, and
+# HARD_VETO prevailing over all.
+RESTRICTIVENESS = ("PASS", "FLAG", "HOLD", "HARD_VETO")
 
 
 class Refused(Exception):
@@ -104,13 +118,26 @@ class RuntimePort:
     not_applicable: dict = {}
     # vector_id -> note. Gaps the implementer declares about its own runtime.
     declared_gaps: dict = {}
+    # Sets of intents the port can produce together in one attempt (COMBINE).
+    # Declare a set only when each condition comes from its own input, so that
+    # asking for one does not undo another.
+    combinations: frozenset = frozenset()
 
     def reset(self) -> None:
-        """Return the runtime to a clean state. Called before every scenario."""
+        """Return the runtime to a clean state. Called before every scenario,
+        and by a scenario between two observations that must not share state."""
 
     # -- primitives ---------------------------------------------------------
     def evaluate(self, intent: str, *, principal: str, action_type: str,
                  nonce: Optional[str] = None) -> Decision:
+        """Submit one attempt. `nonce` is the caller-supplied key the runtime
+        uses against replay, whatever it calls it (nonce, idempotency key)."""
+        raise NotImplementedError
+
+    def evaluate_combined(self, intents: tuple, *, principal: str, action_type: str,
+                          nonce: Optional[str] = None) -> Decision:
+        """Submit one attempt that meets every listed condition at once, in
+        the order given where the runtime's input has an order."""
         raise NotImplementedError
 
     def commit(self, decision: Decision, *, action_type: Optional[str] = None) -> Committed:
