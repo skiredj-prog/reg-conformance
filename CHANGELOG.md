@@ -6,6 +6,7 @@ Une seule version de chaque chose. Détail et état : `python tools/check_cohere
 
 ### Added
 
+- `reg-standards-baseline/notes/RN-001-flag-time-drift.md` : note ratifiée le 18 novembre 2026. FLAG avec condition = admission, FLAG sans condition = lacune ; borne fail-safe contre temps écoulé épistémique ; remplacement annoncé de CT-R4-004 ; résultat exigé pour C3 et CT-R4-005. Aucun résultat ni compte de vecteurs ne change.
 - `tools/check_coherence.py`, `coherence-baseline.json`, job CI `coherence` : compare les registres, les documents et les fichiers publiés ; échoue sur toute contradiction nouvelle.
 - `README.md` : carte du dépôt (REG, suite de conformance, REG+, crosswalk) et couverture publiée par fondement.
 - Crosswalk : six correspondances vecteur REG ↔ REG+ au statut `unverified`, avec citation et limite.
@@ -52,6 +53,16 @@ Une seule version de chaque chose. Détail et état : `python tools/check_cohere
 - Les preuves des profils datent de `tenir_governance` 5.5.0 et 5.6.0, et la validation indépendante du backend Raft de 5.6.1 : elles n'ont pas été rejouées sur la cible 5.7.0.
 - `consensus-reference-single-host.yaml` : trois attestations citent `cap.concurrency.consensus-reference`, que la configuration `file-lock` ne réclame pas ; le vérificateur ne les compte pas.
 - Trois fiches (`cap-budget-disttx`, `cap-dedup-local-registry`, `cap-dedup-provider-key`) sont rattachées à des configurations hors du périmètre qu'elles déclarent.
+
+## v0.6.2 — 2026-11-18
+
+Tag posé sur le commit `a2ec724` (30 octobre 2026), celui qui a été cité comme référence de la suite (56 vecteurs, Apache 2.0). v0.6.1 plus quatre commits :
+
+- registre d'extériorité v0.2 (brouillon) et frontière de provenance HITL E2 (#46) ;
+- JSON tranche 1 avec la séparation EV-001 ;
+- synchronisation des sondes signées du cycle de vie T6–T8.
+
+Limites de ce commit, dites plutôt que corrigées : le CHANGELOG du commit s'arrête à v0.5.1, il n'a pas de `conformance-target.json`, et l'invariant budgétaire s'y appelle encore `I8`. Le travail ultérieur de `main` (section « Non publié » ci-dessus) n'en fait pas partie et paraîtra en v0.7.0.
 
 ## v0.6.1 — 2026-10-21
 
