@@ -49,19 +49,20 @@ vectors:
     status: implemented
     native: PASS
     observed: EVALUATION_EXPIRED (native)
-    reference: RFC-4 §2
+    reference: RFC-4 §2; superseded per RN-001 §3, kept with its text and results
+    superseded_by: [CT-R4-014, CT-R4-015, CT-R4-016]
 
   - id: CT-R4-005
     rfc: RFC-4 §2.2
     category: commit
     property: Commit-State Binding / Race Detection
     input: policy_epoch changed between verdict and commit
-    intended: HARD_VETO / STATE_DRIFT; commit blocked
-    expected: HARD_VETO
+    intended: No effect under the changed state; terminal refusal, or suspension with a declared resumption condition
+    expected: no effect; terminal refusal, or suspension with a declared resumption condition
     status: implemented
     native: PASS
     observed: "STATE_DRIFT produced HARD_VETO (epoch 0→1) (native)"
-    reference: RFC-4 §2.2
+    reference: RFC-4 §2.2; RN-001 §4
 
   - id: CT-R4-006
     rfc: RFC-4 §1
@@ -122,3 +123,39 @@ vectors:
     native: IMPLEMENTATION_GAP
     observed: "Declaration present; no evidence of external effect."
     reference: RFC-4 §1.1
+
+  - id: CT-R4-014
+    rfc: RFC-4 §1.1, §5.2; RN-001 §3
+    category: commit
+    property: No Dispatch on a Stale Verdict
+    input: Verdict older than the policy's freshness threshold reaches commit
+    intended: No effect without a fresh adjudication that includes the verdict's age
+    expected: no effect, or a fresh adjudication that includes the verdict's age
+    status: specified
+    native: IMPLEMENTATION_GAP
+    observed: "Not exercised yet. CT-R4-004 covers the refusal branch only."
+    reference: RN-001 §3.1
+
+  - id: CT-R4-015
+    rfc: RFC-2 §3.4; RN-001 §3
+    category: commit
+    property: Age Never Improves a Disposition
+    input: Same inputs readjudicated with a greater verdict age
+    intended: Disposition no less restrictive than at the lesser age
+    expected: disposition at the greater age is equal or more restrictive
+    status: specified
+    native: IMPLEMENTATION_GAP
+    observed: "Not exercised yet; needs a readjudication entry point."
+    reference: RFC-2 §3.4 (one-way hardening) applied to verdict age; RN-001 §3.2
+
+  - id: CT-R4-016
+    rfc: RFC-5 §2; RFC-0 §6; RN-001 §2a, §3
+    category: commit
+    property: Fail-Safe Bound Refuses Alone
+    input: A bound the policy declares fail-safe (e.g. τ_K on a HOLD) is exhausted, all other inputs favourable
+    intended: Pre-declared exhaustion policy applied wherever the held operation could advance
+    expected: no effect; exhaustion policy applied without a timer
+    status: specified
+    native: IMPLEMENTATION_GAP
+    observed: "Not exercised yet; needs a policy-declared fail-safe bound in the subject."
+    reference: RFC-5 §2 (pre-declared exhaustion policy); RN-001 §2a, §3.3

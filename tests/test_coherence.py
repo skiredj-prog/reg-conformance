@@ -100,7 +100,7 @@ def test_a_crosswalk_row_citing_an_unknown_vector_is_caught(copy):
 def test_published_coverage_is_checked(copy):
     assert "COH-V09" not in findings(copy)
     readme = copy / "README.md"
-    readme.write_text(readme.read_text(encoding="utf-8").replace("indexes 59 properties", "indexes 31 properties"), encoding="utf-8")
+    readme.write_text(readme.read_text(encoding="utf-8").replace("indexes 62 properties", "indexes 31 properties"), encoding="utf-8")
     assert "COH-V09" in findings(copy)
 
 

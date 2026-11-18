@@ -6,6 +6,7 @@ Une seule version de chaque chose. Détail et état : `python tools/check_cohere
 
 ### Added
 
+- Vecteurs `CT-R4-014` (pas de dispatch sur un verdict périmé), `CT-R4-015` (l'âge n'améliore jamais une disposition) et `CT-R4-016` (une borne fail-safe refuse seule), enregistrés selon RN-001 §3 au statut `specified` ; le runner rend `IMPLEMENTATION_GAP` tant que les sondes n'existent pas. Le runner enregistre 59 identifiants au lieu de 56. `vectors/schema.json` accepte `superseded_by`.
 - `reg-standards-baseline/notes/RN-001-flag-time-drift.md` : note ratifiée le 18 novembre 2026. FLAG avec condition = admission, FLAG sans condition = lacune ; borne fail-safe contre temps écoulé épistémique ; remplacement annoncé de CT-R4-004 ; résultat exigé pour C3 et CT-R4-005. Aucun résultat ni compte de vecteurs ne change.
 - `tools/check_coherence.py`, `coherence-baseline.json`, job CI `coherence` : compare les registres, les documents et les fichiers publiés ; échoue sur toute contradiction nouvelle.
 - `README.md` : carte du dépôt (REG, suite de conformance, REG+, crosswalk) et couverture publiée par fondement.
@@ -16,6 +17,8 @@ Une seule version de chaque chose. Détail et état : `python tools/check_cohere
 
 ### Changed
 
+- **CT-R4-004 remplacé** par CT-R4-014 à CT-R4-016 (RN-001 §3) : `superseded_by` dans `vectors/commit.yaml` ; il reste enregistré avec son texte et ses résultats.
+- **C3 et CT-R4-005 : résultat exigé** (RN-001 §4) : aucun effet, et la classe d'état rapportée (refus terminal, ou suspension avec condition de reprise déclarée). `HARD_VETO` n'est plus exigé. Les sondes ne reconnaissent encore que la branche `HARD_VETO` ; un commit refusé sous un autre libellé donne `INCONCLUSIVE`, plus `FAIL`, pour CT-R4-005 comme déjà pour C3. Aucun résultat publié ne change.
 - **Invariant renommé : `I8` → `BUD`** (budget-ceiling-aggregate). Le manuscrit utilise `I8` pour un autre invariant (permanence de l'historique des tentatives). `tenir_governance` et les journaux de preuve antérieurs disent toujours `I8`. Les fiches `cap-i8-budget-*` deviennent `cap-budget-*`.
 - **Propriétés du contrat de consensus renommées : `C1`, `C2`, `C3` → `SAF`, `LIV`, `FT`.** `C1` à `C5` désignent des vecteurs de la suite.
 - **Quorum** : fusion de la pull request #33 (majorité `floor(n / 2) + 1`, validation du modèle de faute, cible épinglée). `resilience_bounds` du catalogue aligné sur le contrat corrigé.

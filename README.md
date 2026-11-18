@@ -24,7 +24,7 @@ Four things live here. They answer different questions and are versioned separat
 
 **Passing vectors and holding a REG+ capability are different claims.** A vector exercises one runtime through one interface. A REG+ profile states the deployment in which a property is claimed and the evidence required. Neither implies the other. The rows that relate them are in the crosswalk, each with its stated limit.
 
-**Coverage today.** [`VECTORS.md`](VECTORS.md) indexes 59 properties that the frozen RFCs specify: 14 are exercised by the runner, 17 are registered and not yet tested, 28 are not yet registered. A further 25 registered ids are proposals that the frozen RFCs do not specify; three of them, the lifecycle vectors, rest on the manuscript and are validated in the laboratory only. REG+ enumerates 144 configurations, of which 42 are admissible; none is marked demonstrated yet.
+**Coverage today.** [`VECTORS.md`](VECTORS.md) indexes 62 properties that the frozen RFCs specify, three of them as read by RN-001: 14 are exercised by the runner, 20 are registered and not yet tested, 28 are not yet registered. A further 25 registered ids are proposals that the frozen RFCs do not specify; three of them, the lifecycle vectors, rest on the manuscript and are validated in the laboratory only. REG+ enumerates 144 configurations, of which 42 are admissible; none is marked demonstrated yet.
 
 **Target.** [`conformance-target.json`](conformance-target.json) names the one implementation revision that CI exercises: `tenir-governance` 5.7.0. Evidence produced on an earlier revision says so and has not been replayed on the target.
 
