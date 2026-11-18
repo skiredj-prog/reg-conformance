@@ -1,6 +1,8 @@
 # What a REG conformance result lets you say
 
-Draft for the author's review. Not yet in force.
+Draft for the author's review. Two sections are in force: "What counts as an
+admission" and "Third-party assessments", ratified by the author on
+18 November 2026. The rest is not yet in force.
 
 REG Conformance runs a fixed set of tests against a runtime and reports what
 passed, what failed and what could not be tested. It tests behaviour. It does
@@ -60,6 +62,11 @@ and on `FLAG`, the latter only under an explicit condition or supervision.
 A test that needs an admitted action accepts either. The run lists the tests
 that went forward on a `FLAG` and says whether the condition was observed.
 
+As ratified in [RN-001](reg-standards-baseline/notes/RN-001-flag-time-drift.md)
+§1: a `FLAG` that carries an explicit condition counts as an admission. A
+`FLAG` that carries none does not satisfy RFC-0 §4; it is recorded as an
+implementation gap, and a quote of a test that went forward on it says so.
+
 ## How to quote a result
 
 A statement about a result names all of the following:
@@ -112,13 +119,27 @@ port was not written or reviewed by the runtime's owner, the result is
 provisional and is quoted as such until the owner has confirmed or corrected
 the mapping.
 
-## Assessments built on REG
+## Third-party assessments
 
 A third party may run the suite and report its results under the terms above.
 A third party's own requirement identifiers, scoring or labels are that
 party's work. REG neither defines nor endorses them. An assessment report
 keeps the two apart: what the REG run observed, and what the assessor
 concluded from it.
+
+What an assessment says about REG is limited to this sentence:
+
+> Assessed against REG Conformance `<version>` at commit `<commit>`,
+> evidence level `<N>`.
+
+followed by the quote described in "How to quote a result", and nothing more.
+
+- A readiness, maturity or assurance rating defined by the assessor is not a
+  REG conformance level, and is not presented as one. In particular, a
+  "readiness" result says nothing about conformance.
+- Using the REG name in a commercial offer, product or service name requires
+  the licensor's written agreement. Apache-2.0 covers the files, not the name
+  (see below).
 
 ## Name and licence
 
