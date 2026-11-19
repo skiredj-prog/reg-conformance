@@ -968,3 +968,12 @@ def test_tenir_gov_tau_k_port_on_the_fail_safe_bound():
     assert got["CT-R4-005"].status == R.ReportingState.INCONCLUSIVE
     checks = {r.vector_id: r.status for r in adapter.run_checks()}
     assert checks["PX-REG-STATE-024"] == R.ReportingState.PASS
+
+
+def test_tenir_gov_port_reports_flag_conditions_as_observed():
+    from harness.ports.tenir_gov import _flag_conditions
+    assert _flag_conditions({"composed_decision": "FLAG"}) == ()          # 5.7.0: no field
+    assert _flag_conditions({"composed_decision": "FLAG", "flag_conditions": []}) == ()
+    assert _flag_conditions({"composed_decision": "FLAG",
+                             "flag_conditions": ["review within 24 h"]}) == ("review within 24 h",)
+    assert _flag_conditions({"composed_decision": "PASS", "flag_conditions": ["x"]}) == ()

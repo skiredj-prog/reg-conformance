@@ -99,6 +99,18 @@ _QUALITY = (1.0, 0.75, 0.5, 0.25, 0.0)
 _NOT_ADMITTED = ("failed", "hold", "escalated", "created")
 
 
+
+def _flag_conditions(result) -> tuple:
+    """The conditions a FLAG states, as the runtime reports them.
+
+    tenir-governance 5.7.5 copies the conditions its policy declares into
+    ``flag_conditions`` (empty by default); 5.7.0 has no such field. The port
+    reports what it observes and adds nothing.
+    """
+    if result.get("composed_decision") != "FLAG":
+        return ()
+    return tuple(str(c) for c in (result.get("flag_conditions") or ()))
+
 class _JournalProvider:
     """The only executor. One journal line per call the runtime makes."""
 
@@ -197,7 +209,8 @@ class TenirGovPort(P.RuntimePort):
             raise P.Refused(P.R_REPLAY, result.get("composed_decision"),
                             result["composed_rationale"])
         return P.Decision(key, result["composed_decision"], action_type, principal,
-                          {"result": result, "amount": amount})
+                          {"result": result, "amount": amount},
+                          conditions=_flag_conditions(result))
 
     def commit(self, decision, *, action_type=None):
         amount = decision.raw.get("amount")
@@ -338,7 +351,8 @@ class TenirGovTauKPort(TenirGovPort):
             raise P.Refused(f"NATIVE:{result.get('operation_state') or 'unknown'}", None,
                             str(result.get("reason")))
         return P.Decision(decision.decision_id, disposition, decision.action_type,
-                          decision.principal, {"result": result, "amount": decision.raw.get("amount")})
+                          decision.principal, {"result": result, "amount": decision.raw.get("amount")},
+                          conditions=_flag_conditions(result))
 
     def drift_state(self):
         self._gov.lock_quarantine("reg-harness", incident_id=f"drift-{uuid.uuid4().hex[:8]}")
