@@ -1,10 +1,12 @@
 ---
 rfc: 4
 title: Commit & Execution Proof
-version: v0.2
-status: Frozen
-date: 2026-10-02
-supersedes: v0.1
+version: v0.3
+status: Draft (awaiting ratification by the author; v0.2 stays the frozen text until then)
+date: 2026-11-19
+supersedes: v0.2
+incorporates:
+  - RN-001 (FLAG admission, elapsed time, and state drift at commit), ratified 2026-11-18
 dependencies:
   - RFC-0 (Constitution)
   - RFC-1 (Wire Protocol)
@@ -57,6 +59,21 @@ dispositions, and standardizes the Evidence Manifest for post-hoc verification.
    external effect. RFC-4 produces evidence of the decision and its binding, not
    evidence of the effect itself.
 
+7. **Elapsed Time: Fail-Safe Bound vs. Epistemic Input (v0.3)** — A bound the
+   policy declares fail-safe refuses alone; any other elapsed time is an
+   epistemic input to readjudication. The age of a verdict already rendered
+   (`PASS` or `FLAG`) is not, by itself, a gate: past the policy's freshness
+   threshold it requires a fresh adjudication in which that age is one input
+   among the others, and it can only make the disposition more restrictive.
+   τ_K, the bound on waiting for a human resolution of a `HOLD` (RFC-0 §6,
+   RFC-5 §1), is a fail-safe bound (§2.3, §7).
+
+8. **Outcome, Not Label, on State Drift (v0.3)** — On a change of governance
+   state between verdict and commit, REG requires no effect under the changed
+   state and a reported state class: a terminal refusal, or a suspension with a
+   declared resumption condition. `HARD_VETO` is one terminal refusal; REG does
+   not impose it (§2.2).
+
 ---
 
 ## 1. The Commit Boundary & Binding Property
@@ -70,7 +87,10 @@ window, or commit conditions.
 **What REG Controls:**
 
 - The grant is bound to a specific `evaluation_id`, `action_id`, and `nonce`.
-- The grant is valid only within the `valid_until` window.
+- The grant can be consumed as is only within the `valid_until` window. In v0.3,
+  `valid_until` is the policy's freshness threshold for that verdict (§2.3):
+  past it, no effect follows from the grant without a fresh adjudication that
+  includes the verdict's age.
 - The grant is valid only if the Standing Credential remains valid (RFC-3).
 - The grant is valid only if the structural state has not materially drifted (RFC-2).
 
@@ -118,7 +138,7 @@ The membrane binds the evaluation to a specific state at the moment of verdict.
 
 **Reference Mechanism:** `state_hash_at_verdict`. At commit time the executor MAY
 present a `state_hash_at_commit`. If the delta exceeds the pre-declared tolerance,
-the membrane triggers HARD_VETO.
+the commit MUST NOT produce an effect (required outcome below).
 
 The tolerance (or equivalent acceptance criteria for alternative binding
 mechanisms) is part of the versioned policy and threshold configuration and is
@@ -132,7 +152,54 @@ subject to change control.
 - Resource Version
 
 If the state changes after the verdict but before commit, the binding mechanism
-MUST detect this and trigger HARD_VETO.
+MUST detect this. The required outcome is (RN-001 §4):
+
+> No effect under a changed governance state, and the reported state class:
+> either a terminal refusal, or a suspension with a declared resumption
+> condition.
+
+`HARD_VETO` is the reference terminal refusal. An implementation that suspends
+instead MUST declare the resumption condition in the Suspension Receipt
+(§3.2). A suspension without a declared resumption condition does not satisfy
+this clause.
+
+*Changed from v0.2, which read "MUST detect this and trigger HARD_VETO". REG
+describes the outcome; it does not prescribe the mechanism.*
+
+### 2.3 Elapsed Time at Commit (v0.3)
+
+This section separates two objects that v0.2 did not distinguish (RN-001 §2).
+
+**2.3.1 Fail-safe bound.** A bound that the versioned policy declares
+fail-safe refuses alone when it is exhausted. It is never invented by the
+implementation (RFC-0 §6, RFC-5 §1). Its exhaustion applies the pre-declared
+exhaustion policy (RFC-5 §2) wherever the bounded operation could advance, and
+this MUST NOT depend on a timer firing. τ_K on a `HOLD` is such a bound when the
+policy supplies it.
+
+**2.3.2 Verdict age.** Any other elapsed time, in particular the age of a
+verdict already rendered (`PASS` or `FLAG`), is an epistemic input. It does not
+refuse alone. Where it reaches the policy's freshness threshold (for the grant,
+`valid_until`):
+
+1. **No dispatch on a stale verdict.** No effect follows from that verdict
+   without a fresh adjudication that includes the verdict's age as an input.
+   Refusing the commit (`REJECT` / `EVALUATION_EXPIRED`) is the reference
+   outcome when no fresh adjudication takes place.
+2. **One direction.** All else equal, the fresh adjudication is never less
+   restrictive because the verdict is older. Age acts as a modulator that
+   contracts the admissible region (RFC-2 §3.4, one-way hardening); it is not a
+   term that a strong score elsewhere can buy back.
+3. **Recorded.** A fresh adjudication is a disposition: it produces its own
+   Decision Receipt (§3), which records the verdict age that entered it. A
+   readjudication that leaves no receipt is indistinguishable from a dispatch
+   on a stale verdict and is treated as one.
+
+**2.3.3 When age is fail-safe.** Verdict age refuses alone only where the
+policy declares the freshness threshold fail-safe for that action class. The
+policy SHOULD do so where proceeding on a verdict of that age could threaten a
+declared invariant or a fail-safe property; the declaration follows the same
+change control as the other thresholds (§2.2).
 
 ---
 
@@ -149,7 +216,7 @@ Silence is not a valid governance outcome.
 |---|---|---|
 | PASS | Grant / Authorization Receipt | Proof of authorization under specific bindings |
 | FLAG | Conditional Decision Receipt | Proof of conditional authorization with explicit conditions |
-| HOLD | Suspension Receipt | Proof of suspension with triggering conditions and tau_K |
+| HOLD | Suspension Receipt | Proof of suspension with triggering conditions, τ_K when the policy supplies it, and the resumption condition when the suspension follows a state change (§2.2) |
 | HARD_VETO | Refusal Receipt | Proof of categorical refusal with reason codes |
 
 ### 3.3 Receipt Contents
@@ -250,13 +317,20 @@ Each vector is specified by the following fields:
 1. CT-R4-001 — Valid Grant Binding: valid EGE, matching evaluation_id / action_id / nonce, matching commit state → PASS / EXECUTE
 2. CT-R4-002 — Action/Payload Binding Violation: grant issued for action_A, commit attempts action_B → HARD_VETO / REJECT
 3. CT-R4-003 — Replay Rejection: reuse of a consumed nonce or grant → REJECT / REPLAY_DETECTED
-4. CT-R4-004 — Expired Grant Rejection: `valid_until` window passed before commit → REJECT / EVALUATION_EXPIRED
-5. CT-R4-005 — Commit-State Binding / Race Detection: state at commit materially differs from state captured at verdict (state_hash_at_verdict or equivalent) → REJECT / STATE_DRIFT
+4. CT-R4-004 — Stale Grant, Refusal Branch (rewritten in v0.3): `valid_until` passed before commit and no fresh adjudication presented → no effect; REJECT / EVALUATION_EXPIRED is the reference outcome. An effect without a recorded fresh adjudication fails the vector (§2.3.2). As a normative anchor, CT-R4-004 is superseded by CT-R4-014 to CT-R4-016 (RN-001 §3); it stays registered with its results.
+5. CT-R4-005 — Commit-State Binding / Race Detection: state at commit materially differs from state captured at verdict (state_hash_at_verdict or equivalent) → no effect under the changed state; terminal refusal, or suspension with a declared resumption condition (§2.2, RN-001 §4)
 6. CT-R4-006 — Non-PASS Cannot Cross Commit: HOLD or HARD_VETO disposition → commit attempt → REJECT / INVALID_DISPOSITION
 7. CT-R4-007 — Decision Receipt Generation: every disposition (including non-PASS) produces a cryptographically signed Decision Receipt, independently verifiable without accessing internal state
 8. CT-R4-008 — Evidence Manifest Integrity: Evidence Manifest altered after closure → integrity verification fails. Requires tamper-evident, append-only ledger.
 9. CT-R4-009 — Independent Evidence Verification: third-party verifier can reproduce or verify the decision from the Manifest without accessing mutable internal state
 10. CT-R4-010 — External-Effect Claim Boundary: implementation provides post-commit evidence for non-atomic external effects and does NOT claim atomic external-effect semantics
+11. CT-R4-014 — No Dispatch on a Stale Verdict: verdict older than the policy's freshness threshold → no effect without a fresh adjudication that includes the verdict's age (§2.3.2 item 1)
+12. CT-R4-015 — Age Never Improves a Disposition: same inputs readjudicated at a greater verdict age → equal or more restrictive disposition (§2.3.2 item 2)
+13. CT-R4-016 — Fail-Safe Bound Refuses Alone: a bound the policy declares fail-safe (e.g. τ_K on a HOLD) is exhausted, all other inputs favourable → no effect; the pre-declared exhaustion policy applies wherever the operation could advance, without a timer (§2.3.1)
+
+Identifiers are stable labels: CT-R4-011 to CT-R4-013 are lifecycle vectors
+filed under this prefix but resting on the manuscript, not on this RFC (see
+`VECTORS.md`). Items 11 to 13 above are new normative anchors in v0.3.
 
 A conforming implementation MUST pass all applicable vectors in this minimal set.
 
@@ -274,8 +348,61 @@ normative minimal behavioral anchors.
 |---|---|
 | Grant Binding | Does this decision concern exactly this action, under these exact conditions? |
 | Replay Soundness | Can the same grant be fraudulently reused? |
-| Race Soundness | Does the decision remain valid in the face of state changes? |
+| Race Soundness | Does the decision remain valid in the face of state changes and elapsed time? |
 | Evidence Integrity | Can we prove after the fact what was decided, under which bindings, and what execution evidence was recorded? |
 
 RFC-3 protects the continuity of authority. RFC-4 protects the integrity of the
 passage from authority to effect.
+
+---
+
+## 7. Reconciliation: τ_K and Verdict Age (informative)
+
+Both objects measure time, which is why they were confused. They bound
+different things:
+
+| | τ_K (§2.3.1) | Verdict age (§2.3.2) |
+|---|---|---|
+| What it bounds | The **absence** of a decision: how long a `HOLD` may wait for a human resolution | The **age** of a decision already rendered (`PASS`, `FLAG`) |
+| Source | Policy, derived from organizational SLAs (RFC-5 §1); never invented | Policy freshness threshold (`valid_until`) |
+| On exhaustion | Refuses alone: pre-declared exhaustion policy, default Fail-Closed (RFC-5 §2) | Does not refuse alone: requires a fresh adjudication in which age is one input, and only hardens |
+| Exception | Fail-Degraded only if pre-declared and signed (RFC-5 §2.2) | Refuses alone only if the policy declares it fail-safe (§2.3.3) |
+| Vector | CT-R4-016; RFC-7 Liveness & Exhaustion | CT-R4-004 (refusal branch), CT-R4-014, CT-R4-015 |
+
+Consequences:
+
+- A human approval or resolution that arrives after τ_K is exhausted does not
+  revive the `HOLD`. The held operation has no admission whose age could be
+  weighed; the bound that governs it is fail-safe. An implementation that fails
+  closed on a late resolve, a late exit approval, or a dispatch of an operation
+  whose τ_K is exhausted conforms to §2.3.1 and does not contradict §2.3.2.
+- The converse does not hold: an implementation MUST NOT apply a fail-safe
+  refusal to the age of a `PASS` or `FLAG` unless the policy declares that
+  threshold fail-safe (§2.3.3).
+- When the policy supplies no τ_K, the implementation MUST NOT invent one
+  (RFC-0 §6). CT-R4-016 is then not applicable to that `HOLD`, and the report
+  says so.
+
+Application to one runtime (informative, not a conformance statement):
+TENIR-Gov issue #140 reports that in 5.7.0 an exhausted τ_K does not stop a
+`HOLD` from advancing through `resolve_hold`, `authorize_exit(approve=True)` or
+`dispatch`. A correction that fails closed at those advance points when a
+policy-supplied τ_K is exhausted, and that leaves τ_K unset when the policy
+supplies none, is consistent with §2.3.1. It is not an application of
+CT-R4-004: the vector that covers it is CT-R4-016.
+
+Terminology: this RFC uses τ_K only in the sense of RFC-0 §6 and RFC-5 §1, with
+τ_K^comp (RFC-3 §6.4) as its composition variant. The bound that manuscript
+v7.2 writes τ_K for waiting on a qualifying receipt (`AWAITING` → `UNKNOWN`) is
+a different object, named τ_R in the REG glossary; RFC-4 does not define it.
+
+---
+
+## Changes from v0.2
+
+- Major Decisions 7 and 8 added; §2.3 and §7 added.
+- §1.1: `valid_until` read as the policy's freshness threshold.
+- §2.2: required outcome on state drift replaces the `HARD_VETO` label (RN-001 §4).
+- §3.2: Suspension Receipt carries τ_K when supplied and the resumption condition after a state change.
+- §5.2: CT-R4-004 rewritten as the refusal branch and marked superseded as an anchor; CT-R4-005 expected outcome aligned on RN-001 §4; CT-R4-014 to CT-R4-016 added.
+- No recorded result changes. RN-001 stays in force as the record of the decision.

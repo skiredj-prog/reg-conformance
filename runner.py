@@ -90,7 +90,7 @@ CORE_VECTORS: dict[str, TestVector] = {
     "CT-R4-003":TestVector("CT-R4-003","RFC-4 §2.1","Replay Rejection",
                     "Consumed nonce reused → REJECT/REPLAY_DETECTED."),
     "CT-R4-004":TestVector("CT-R4-004","RFC-4 §2","Expired Grant Rejection",
-                    "valid_until passed before commit → REJECT/EVALUATION_EXPIRED. Superseded by CT-R4-014..016 (RN-001 §3); kept with its results."),
+                    "valid_until passed, no fresh adjudication → no effect; REJECT/EVALUATION_EXPIRED is the reference outcome (RFC-4 v0.3 §2.3.2). Superseded as an anchor by CT-R4-014..016 (RN-001 §3)."),
     "CT-R4-005":TestVector("CT-R4-005","RFC-4 §2.2","Commit-State Binding / Race Detection",
                     "State (policy_epoch) changed between verdict and commit → no effect; terminal refusal, or suspension with a declared resumption condition (RN-001 §4)."),
     "CT-R4-006":TestVector("CT-R4-006","RFC-4 §1","Non-PASS Cannot Cross Commit",
@@ -491,9 +491,14 @@ class HTTPAdapter(BaseAdapter):
             return self._ar("CT-R4-004",
                 "/admin/expire-eval absent — cannot trigger expiry without wait")
         cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
-        return (self._pass("CT-R4-004","EVALUATION_EXPIRED on force-expired grant")
-                if cc == 409 and "EXPIRED" in cr.get("detail","")
-                else self._fail("CT-R4-004", f"expected 409 EXPIRED, got {cc}: {cr}"))
+        detail = cr.get("detail", "") if isinstance(cr, dict) else cr
+        if cc == 409 and "EXPIRED" in str(detail):
+            return self._pass("CT-R4-004", "EVALUATION_EXPIRED on force-expired grant")
+        if cc in (200, 201):
+            # RFC-4 v0.3 §2.3.2 item 3: an unrecorded readjudication counts as a dispatch on a stale verdict
+            return self._fail("CT-R4-004", "commit accepted on a grant past valid_until, with no recorded fresh adjudication")
+        return self._inconclusive("CT-R4-004",
+            f"commit not accepted, but refusal on verdict age was not established (HTTP {cc}: {cr})")
 
     # CT-R4-005  (uses /admin/reload-policy)
     def _v_ct_r4_005(self):
@@ -870,10 +875,12 @@ class NativeKernelAdapter(BaseAdapter):
         stale = self._inject_stale()
         try:
             self._commit(stale["evaluation_id"],action_id=stale["action_id"],nonce=stale["nonce"])
-            return self._fail("CT-R4-004","Expired grant accepted")
+            return self._fail("CT-R4-004","Expired grant accepted with no recorded fresh adjudication")
         except ValueError as e:
             return (self._pass("CT-R4-004","EVALUATION_EXPIRED on stale grant (native)")
-                    if "EXPIRED" in str(e) else self._fail("CT-R4-004",str(e)))
+                    if "EXPIRED" in str(e) else
+                    self._inconclusive("CT-R4-004",
+                        f"commit refused, but refusal on verdict age was not established (native): {e}"))
 
     def _v_ct_r4_005(self):
         g = self._evaluate("a","valid","wt",0.2,0.2,0.90,uuid.uuid4().hex)

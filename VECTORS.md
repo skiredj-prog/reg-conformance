@@ -14,7 +14,7 @@ The runner registers 59 vector IDs (21 core/commit, of which three lifecycle vec
 |CT-R4-001|COMMIT|RFC-4 §1|Matching evaluation_id/action/nonce within window → GRANT/COMMITTED.|IMPLEMENTED|runner.py CORE_VECTORS and adapter dispatch|
 |CT-R4-002|COMMIT|RFC-4 §1.3|Grant for action_A; commit attempts action_B → REJECT/BINDING_VIOLATION.|IMPLEMENTED|runner.py CORE_VECTORS and adapter dispatch|
 |CT-R4-003|COMMIT|RFC-4 §2.1|Consumed nonce reused → REJECT/REPLAY_DETECTED.|IMPLEMENTED|runner.py CORE_VECTORS and adapter dispatch|
-|CT-R4-004|COMMIT|RFC-4 §2|valid_until passed before commit → REJECT/EVALUATION_EXPIRED. Superseded by CT-R4-014, CT-R4-015 and CT-R4-016 (RN-001 §3); kept with its text and results.|IMPLEMENTED|runner.py CORE_VECTORS and adapter dispatch|
+|CT-R4-004|COMMIT|RFC-4 §2.3.2|Stale grant, refusal branch: valid_until passed and no fresh adjudication presented → no effect; REJECT/EVALUATION_EXPIRED is the reference outcome; a refusal for another reason is INCONCLUSIVE. Superseded as an anchor by CT-R4-014, CT-R4-015 and CT-R4-016 (RN-001 §3); kept with its results.|IMPLEMENTED|runner.py CORE_VECTORS and adapter dispatch|
 |CT-R4-005|COMMIT|RFC-4 §2.2|Relevant state drift after verdict and before commit: no effect under the changed state, and the reported state class is a terminal refusal or a suspension with a declared resumption condition. (RFC-4 §2.2; RN-001 §4)|IMPLEMENTED|runner.py CORE_VECTORS and adapter dispatch|
 |CT-R4-006|COMMIT|RFC-4 §1|HOLD or HARD_VETO → commit attempt → REJECT/INVALID_DISPOSITION.|IMPLEMENTED|runner.py CORE_VECTORS and adapter dispatch|
 |CT-R4-007|COMMIT|RFC-4 §3|Every disposition → cryptographically signed Receipt, independently verifiable.|IMPLEMENTED|runner.py CORE_VECTORS and adapter dispatch|

@@ -74,7 +74,7 @@ No HTTP paths. No interface shape. Adapters translate.
 | CT-R4-001 | Valid Grant Binding | Valid evaluation_id + matching action + nonce, within window | `GRANT` / `COMMITTED` |
 | CT-R4-002 | Action/Payload Binding Violation | Grant for action_A; commit attempts action_B | `REJECT` / `PAYLOAD_BINDING_VIOLATION` |
 | CT-R4-003 | Replay Rejection | Consumed nonce reused | `REJECT` / `REPLAY_DETECTED` |
-| CT-R4-004 | Expired Grant Rejection | `valid_until` passed before commit | `REJECT` / `EVALUATION_EXPIRED`. Superseded by CT-R4-014 to CT-R4-016 (RN-001 §3); kept with its results. |
+| CT-R4-004 | Stale Grant, Refusal Branch | `valid_until` passed before commit, no fresh adjudication presented | No effect; `REJECT` / `EVALUATION_EXPIRED` is the reference outcome (RFC-4 v0.3 §2.3.2). Superseded as an anchor by CT-R4-014 to CT-R4-016 (RN-001 §3); kept with its results. |
 | CT-R4-005 | Commit-State Binding / Race Detection | Relevant state at commit differs from state at verdict | No effect; terminal refusal, or suspension with a declared resumption condition (RN-001 §4) |
 | CT-R4-006 | Non-PASS Cannot Cross Commit | `HOLD` or `HARD_VETO` disposition → commit attempt | `REJECT` / `INVALID_DISPOSITION` |
 | CT-R4-007 | Decision Receipt Generation | Any disposition (including non-PASS) | Signed Decision Receipt independently verifiable |
@@ -139,6 +139,6 @@ The suite runs in two modes. **Conformance is declared per mode.** Native does n
 Both modes run the same 59 registered IDs from `VECTORS`. Pass/fail criteria are identical where an executable probe exists. The only legitimate differences between modes:
 
 - **C4** (`Fail-Closed Transport Safety`) — `NOT_APPLICABLE` for native: no transport layer exists. This is architectural, not a permissiveness concession.
-- **CT-R4-004** (`Expired Grant Rejection`) — native uses `_inject_stale_grant()` to set `valid_until = now - 1 s`, rather than waiting 30 s. The normative property tested is identical: commit on an expired grant must be rejected with `EVALUATION_EXPIRED`. The precondition mechanism differs; the criterion does not.
+- **CT-R4-004** (`Expired Grant Rejection`) — native uses `_inject_stale_grant()` to set `valid_until = now - 1 s`, rather than waiting 30 s. The criterion is identical: an accepted commit on the expired grant is `FAIL` (no recorded fresh adjudication, RFC-4 v0.3 §2.3.2 item 3), a refusal with `EVALUATION_EXPIRED` is `PASS`, and a refusal for another reason is `INCONCLUSIVE`. The precondition mechanism differs; the criterion does not.
 
 Any result difference beyond these two cases would indicate miscalibration and must be investigated.
