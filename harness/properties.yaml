@@ -1,0 +1,138 @@
+# Candidate property families: a reading aid for harness runs.
+#
+# NOT part of the frozen RFCs. Not ratified. Open to revision.
+#
+# Every check the index knows (a row of VECTORS.md) and every effect probe the
+# harness runs is attached to the one family whose property it exercises most
+# directly. The attachment changes no vector, no status and no tally: the
+# 56-vector summary of a run is computed exactly as before. The property view
+# is a second reading of the same results.
+#
+# A property check (PX-<row>) is not listed here: it is counted under the
+# family of the row it exercises.
+#
+# EGP = execution-governance property. The identifiers are provisional.
+schema: reg-property-families/0
+status: candidate
+basis: >-
+  Families follow the three dimensions of RFC-0 §4 (Standing, Structure,
+  Commit) plus evidence. EGP-13 and EGP-14 restate properties of the frozen
+  RFC-2 (§2.5, §2.8, §3.3, §3.4) and RFC-0 §4.
+
+families:
+  EGP-01: {dimension: standing,  title: "Valid authority for every effect"}
+  EGP-11: {dimension: standing,  title: "Authority closure, in-flight work included"}
+  EGP-04: {dimension: structure, title: "Shared constraints hold under concurrency"}
+  EGP-13: {dimension: structure, title: "Degraded evidence never widens what is admitted"}
+  EGP-14: {dimension: structure, title: "Admissibility is distinct from authorization"}
+  EGP-02: {dimension: commit,    title: "The effect conforms to what was authorized"}
+  EGP-03: {dimension: commit,    title: "Validity holds until the effect, at the declared bound"}
+  EGP-05: {dimension: commit,    title: "A replay produces no additional effect"}
+  EGP-06: {dimension: commit,    title: "A refusal or a suspension produces no governed effect"}
+  EGP-09: {dimension: commit,    title: "Recovery without forbidden repetition"}
+  EGP-10: {dimension: commit,    title: "Uncertainty about the effect is preserved"}
+  EGP-12: {dimension: commit,    title: "Progress under declared conditions"}
+  EGP-07: {dimension: evidence,  title: "The justification is auditable and reproducible"}
+  EGP-08: {dimension: evidence,  title: "The history is tamper-evident"}
+
+# Outside the candidate core: bound to a model, a wire binding or a scope, or
+# about the claim rather than about the runtime.
+groups:
+  PROFILE-S:          {title: "Structural model S (profile)"}
+  PROFILE-WIRE:       {title: "HTTP wire binding (profile)"}
+  PROFILE-DELEGATION: {title: "Delegation (profile)"}
+  PROFILE-OVERRIDE:   {title: "Emergency override (profile)"}
+  CLAIMS:             {title: "Rules about the claim and the report"}
+
+# check id -> family or group. Index rows first, in the order of VECTORS.md,
+# then the effect probes.
+checks:
+  C1: EGP-01
+  C2: EGP-14
+  C3: EGP-03
+  C4: EGP-01
+  C5: EGP-05
+  CT-R4-001: EGP-12
+  CT-R4-002: EGP-02
+  CT-R4-003: EGP-05
+  CT-R4-004: EGP-03
+  CT-R4-005: EGP-03
+  CT-R4-006: EGP-06
+  CT-R4-007: EGP-07
+  CT-R4-008: EGP-08
+  CT-R4-009: EGP-07
+  CT-R4-010: EGP-10
+  CT-R4-011: EGP-10
+  CT-R4-012: EGP-10
+  CT-R4-013: EGP-09
+  CT-R0-001: EGP-07
+  CT-R0-002: CLAIMS
+  CT-R0-003: CLAIMS
+  CT-R0-004: CLAIMS
+  CT-R0-005: EGP-14
+  CT-R1-001: PROFILE-WIRE
+  CT-R1-002: PROFILE-WIRE
+  CT-R1-003: PROFILE-WIRE
+  CT-R1-004: PROFILE-WIRE
+  CT-R1-005: PROFILE-WIRE
+  CT-R1-006: PROFILE-WIRE
+  CT-R1-007: EGP-04
+  CT-R2-001: PROFILE-S
+  CT-R2-002: PROFILE-S
+  CT-R2-003: PROFILE-S
+  CT-R2-004: PROFILE-S
+  CT-R2-005: PROFILE-S
+  CT-R2-006: EGP-07
+  CT-R3-001: EGP-01
+  CT-R3-002: EGP-03
+  CT-R3-003: EGP-12
+  CT-R3-004: EGP-07
+  CT-R3-005: PROFILE-DELEGATION
+  CT-R3-006: EGP-03
+  CT-R3-007: EGP-01
+  CT-R3-008: EGP-03
+  CT-R5-001: EGP-07
+  CT-R5-002: EGP-07
+  CT-R5-003: EGP-08
+  CT-R5-004: EGP-08
+  CT-R5-005: EGP-08
+  CT-R6-001: PROFILE-OVERRIDE
+  CT-R6-002: PROFILE-OVERRIDE
+  CT-R6-003: PROFILE-OVERRIDE
+  CT-R6-004: PROFILE-OVERRIDE
+  CT-R7-001: CLAIMS
+  CT-R7-002: CLAIMS
+  CT-R7-003: CLAIMS
+  VEC-6-01: EGP-08
+  VEC-6-02: EGP-02
+  VEC-6-03: EGP-03
+  VEC-6-04: EGP-03
+  REG-STATE-001: EGP-13
+  REG-STATE-002: EGP-13
+  REG-STATE-003: EGP-13
+  REG-STATE-004: EGP-13
+  REG-STATE-005: EGP-13
+  REG-STATE-006: EGP-07
+  REG-STATE-007: EGP-07
+  REG-STATE-008: EGP-07
+  REG-STATE-009: EGP-07
+  REG-STATE-010: EGP-13
+  REG-STATE-011: EGP-07
+  REG-STATE-012: EGP-13
+  REG-STATE-013: EGP-13
+  REG-STATE-014: EGP-14
+  REG-STATE-015: EGP-13
+  REG-STATE-016: EGP-01
+  REG-STATE-017: EGP-01
+  REG-STATE-018: PROFILE-DELEGATION
+  REG-STATE-019: EGP-07
+  REG-STATE-020: EGP-03
+  REG-STATE-021: EGP-11
+  REG-STATE-022: EGP-11
+  REG-STATE-023: EGP-09
+  REG-STATE-024: EGP-12
+  # Effect probes (harness checks, not REG vectors)
+  HX-EFFECT-001: EGP-06
+  HX-EFFECT-002: EGP-12
+  HX-EFFECT-003: EGP-06
+  HX-EFFECT-004: EGP-12
