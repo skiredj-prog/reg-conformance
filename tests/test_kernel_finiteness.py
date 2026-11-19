@@ -45,11 +45,18 @@ def test_the_result_is_strict_json():
     json.dumps(r, allow_nan=False)
 
 
-def test_the_shim_refuses_a_boolean_measurement():
+@pytest.mark.parametrize("bad", [True, False, "0.2", "abc"], ids=repr)
+def test_the_shim_refuses_a_measurement_that_is_not_a_number(bad):
     pydantic = pytest.importorskip("pydantic")
     pytest.importorskip("fastapi")
     import shim
     with pytest.raises(pydantic.ValidationError):
-        shim.Measurements(pressure=True)
-    assert shim.Measurements(pressure=0.2).pressure == 0.2
-    assert shim.Measurements().pressure is None
+        shim.Measurements(pressure=bad)
+
+
+def test_the_shim_keeps_numbers_and_null():
+    pytest.importorskip("fastapi")
+    import shim
+    m = shim.Measurements(pressure=0.2, capacity=1)
+    assert (m.pressure, m.volatility, m.velocity, m.capacity) == (0.2, None, None, 1)
+    assert math.isnan(shim.Measurements(pressure=float("nan")).pressure)  # held by the kernel

@@ -15,10 +15,10 @@ require a credential matching REG_CREDENTIAL_TOKEN.
 
 import hashlib, hmac, json, logging, os, sys, time, uuid
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 from fastapi import FastAPI, Header, HTTPException
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, StrictFloat, StrictInt
 
 sys.path.insert(0, str(Path(__file__).parent))
 from kernel.policy_engine import PolicyEngine, unmeasured_axes
@@ -62,18 +62,13 @@ class Action(BaseModel):
 class Measurements(BaseModel):
     # Unknown is an explicit null on the wire (decision of 19 November 2026).
     # An omitted or null axis is unmeasured: it contributes no favourable value.
-    pressure:   Optional[float] = None
-    volatility: Optional[float] = None
-    velocity:   Optional[float] = None
-    capacity:   Optional[float] = None
-
-    @field_validator("pressure", "volatility", "velocity", "capacity", mode="before")
-    @classmethod
-    def _no_boolean(cls, value):
-        # Lax float parsing would read true as 1.0: a boolean is not a measurement.
-        if isinstance(value, bool):
-            raise ValueError("a boolean is not a measurement")
-        return value
+    # A measurement is a JSON number. Strict types refuse a boolean (lax
+    # parsing reads true as 1.0) and a numeric string, as the kernel does, and
+    # work under Pydantic 1 and 2.
+    pressure:   Optional[Union[StrictInt, StrictFloat]] = None
+    volatility: Optional[Union[StrictInt, StrictFloat]] = None
+    velocity:   Optional[Union[StrictInt, StrictFloat]] = None
+    capacity:   Optional[Union[StrictInt, StrictFloat]] = None
 
 class EvaluationRequest(BaseModel):
     protocol_version: str = "reg-1.0"
