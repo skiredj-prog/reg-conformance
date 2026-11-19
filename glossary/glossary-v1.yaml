@@ -35,6 +35,13 @@ sources:
   pr_76_claims: {head: 182190c, base: feat/property-view, status: "draft, not merged"}
   rfc: reg-standards-baseline/rfc/ (frozen texts)
   rn_001: reg-standards-baseline/notes/RN-001-flag-time-drift.md (ratified 2026-11-18)
+  author_decision_2026_11_19: >
+    Aziz, project thread, 19 November 2026 03:07 UTC: which object carries a
+    bound (authorization vs held attempt); FAILED is a runtime label, not a
+    term of the canonical vocabulary v6.3; expiry records CONFIRMED_NONEXECUTION
+    or UNKNOWN with reconciliation (B3).
+  rfc_4_v0_3: "revisions/rfc-4-v0.3-2026-11-19.md (draft outside the baseline, PRs #80 and #81; RFC-4 v0.2 stays frozen)"
+  canonical_vocabulary_v6_3: "cited by the author; no file of that name or version was found in the five repositories (searched 2026-11-19). Terms below are taken from the decision and RFC-4 v0.3 §2.3, not from a v6.3 text."
 
 terms:
 
@@ -106,6 +113,7 @@ terms:
       the implementation. Its exhaustion applies the pre-declared exhaustion
       policy. A bound the policy declares fail-safe refuses alone (RN-001 §2a).
     defined_in: "RFC-0 §6; RFC-5 §1; RN-001 §2a"
+    bound_carried_by: GL-BOUND-HELD-ATTEMPT   # τ_K is the declared bound of a held attempt, never of an authorization
     variants: {"τ_K^comp": "collective window of a composition, RFC-3 §6.4"}
     implementations: ["tenir_governance HoldManager tau_k_seconds", "composition/simulator.py (composition window)", "harness/port.py B_TAU_K and harness/scenarios.py, RFC-5 sense (PR #76, verified at #80 head)"]
     manuscript_v7_2:
@@ -120,7 +128,8 @@ terms:
     definition: >
       Receipt qualification window: how long an admitted attempt in AWAITING
       waits for a qualifying receipt. At t >= τ_R the attempt becomes UNKNOWN.
-      Expiry never yields FAILED or RESOLVED.
+      Expiry never yields a resolution or a failure label (runtime RESOLVED or
+      FAILED); the recorded state is UNKNOWN (GL-STATE-RECORDED).
     defined_in: "this glossary (new name for the manuscript's receipt bound)"
     manuscript_v7_2:
       written_as: "τ_K"
@@ -139,17 +148,122 @@ terms:
   - id: GL-VERDICT-AGE
     canonical: "verdict age"
     kind: time-quantity
-    definition: "Time elapsed since an admission (PASS or FLAG) was rendered. An epistemic input to readjudication; it does not refuse alone unless the policy also declares it fail-safe."
+    status: withdrawn-as-rule
+    superseded_by: GL-BOUND-AUTHORIZATION
+    definition: "Time elapsed since an admission (PASS or FLAG) was rendered."
     defined_in: "RN-001 §2b, §3"
+    withdrawn_by: "author decision 2026-11-19; RFC-4 v0.3 §4"
+    note: >
+      RN-001 §2b read verdict age as "an epistemic input to readjudication".
+      That reading is withdrawn as a rule: an expiry is both a block and a
+      record, and which constraint applies depends on the object that carries
+      the bound. Do not use "epistemic input" or "barrier" as a global
+      qualifier of an expiry.
     symbol: none
     finding: verified
 
   - id: GL-FRESHNESS
     canonical: "freshness threshold"
     kind: policy-parameter
+    status: withdrawn-as-rule
+    superseded_by: GL-BOUND-AUTHORIZATION
     definition: "Policy-declared age beyond which a verdict cannot be dispatched without a fresh adjudication that includes its age."
     defined_in: "RN-001 §3.1; vector CT-R4-014 (PR #77)"
-    symbol: none   # θ_F reserved if one is ever needed; not introduced
+    withdrawn_by: "RFC-4 v0.3 §4: CT-R4-014 and CT-R4-015 superseded_by CT-R4-004a; CT-R4-016 superseded_by CT-R4-004b"
+    symbol: none
+    finding: verified
+
+  # ------------------------------------------------------------------ which object carries a bound
+  - id: GL-BOUND-AUTHORIZATION
+    canonical: "bound of an authorization"
+    kind: bound-object
+    definition: >
+      The declared bound carried by an authorization (grant, approval, permit;
+      e.g. valid_until). Passing it extinguishes the right to act under that
+      authorization: no effect may be produced, or attributed, under it. A
+      fresh authorization may follow only as an explicitly declared deployment
+      policy that is a fresh evaluation against the current state, whose effect
+      carries the new authorization's own identity and evidence, and never the
+      expired one's. REG fixes no duration.
+    defined_in: "author decision 2026-11-19 (object 1); RFC-4 v0.3 §2.1"
+    vector: CT-R4-004a
+    not_to_be_confused_with: GL-BOUND-HELD-ATTEMPT
+    finding: verified
+
+  - id: GL-BOUND-HELD-ATTEMPT
+    canonical: "bound of a held attempt"
+    kind: bound-object
+    definition: >
+      The declared bound carried by a held attempt (HOLD, escalation); for a
+      HOLD this is τ_K. Reaching it applies the pre-declared disposition,
+      refusal by default, terminal for that attempt identity. A later effect
+      needs a new attempt identity. A late approval, resolution or exit
+      authorization does not reopen the attempt; readjudication is not an
+      automatic exit. A bound declared but not receivable by the runtime counts
+      as not applied.
+    defined_in: "author decision 2026-11-19 (object 2); RFC-4 v0.3 §2.2; RFC-0 §6; REG-STATE-024"
+    vector: CT-R4-004b
+    bound: GL-TAU-K
+    not_to_be_confused_with: GL-BOUND-AUTHORIZATION
+    finding: verified
+
+  - id: GL-CT-R4-004
+    canonical: "CT-R4-004 -> CT-R4-004a, CT-R4-004b"
+    kind: suite-vector
+    definition:
+      CT-R4-004: "v0.2 §5.2 item 4: valid_until passed before commit -> REJECT / EVALUATION_EXPIRED. Kept with its text and results (reference kernel PASS)."
+      CT-R4-004a: "Commit under an authorization whose declared bound has passed: no effect attributed to the expired authorization (GL-BOUND-AUTHORIZATION)."
+      CT-R4-004b: "Held attempt past its declared bound, then any advance under the same identity: no effect; pre-declared disposition recorded with the bound and the resulting state in canonical vocabulary (GL-BOUND-HELD-ATTEMPT)."
+    defined_in: "RFC-4 v0.3 §5 (draft)"
+    superseded: {CT-R4-004: [CT-R4-004a, CT-R4-004b], CT-R4-014: [CT-R4-004a], CT-R4-015: [CT-R4-004a], CT-R4-016: [CT-R4-004b]}
+    clash: >
+      v0.2 CT-R4-004 speaks of the window of an admission (object 1); later
+      scenarios read it as an expired HOLD (object 2). The split makes the two
+      impossible to read as one.
+    finding: verified
+
+  # ------------------------------------------------------------------ recorded states
+  - id: GL-STATE-RECORDED
+    canonical: "CONFIRMED_NONEXECUTION | UNKNOWN (reconciliation required)"
+    kind: enum
+    definition: >
+      What a record states is known about an attempt after an expiry (either
+      object) or a closing of a hold. Never dispatched: CONFIRMED_NONEXECUTION.
+      Dispatch possible: UNKNOWN, with reconciliation required. This record is
+      added to the blocking of GL-BOUND-AUTHORIZATION and GL-BOUND-HELD-ATTEMPT;
+      it never replaces it. Closing a hold does not establish what happened
+      outside.
+    defined_in: "author decision 2026-11-19 (B3); RFC-4 v0.3 §2.3; UNKNOWN also RFC-2 §3"
+    vocabulary: "canonical vocabulary v6.3 as cited by the author (text not located, see sources)"
+    finding: "verified (decision and RFC-4 v0.3 text); the v6.3 source itself not read"
+
+  - id: GL-RUNTIME-LABEL
+    canonical: "runtime label (not canonical)"
+    kind: label-namespace
+    definition: >
+      Attempt-status labels of a runtime or of the manuscript's model. They are
+      not terms of the canonical vocabulary and are mapped before a result is
+      reported. A report showing an unmapped label does not establish the
+      recorded state of RFC-4 v0.3 §2.2.
+    labels:
+      FAILED:
+        mapping:
+          never_dispatched: CONFIRMED_NONEXECUTION
+          possibly_dispatched: "UNKNOWN, reconciliation required"
+        used_in: ["manuscript v7.2 §4.1 σ, §4.3, §4.4, §4.5a (I3, I5, I7), §5", "tenir-conformance-s1-g1 (T7, T8)", "tenir_governance", "vectors CT-R4-012, CT-R4-013"]
+        open: >
+          The manuscript reaches FAILED also after a dispatch, on a verified
+          non-execution attestation (§4.4 `declare failed (T7)`, `reconcile,
+          FAILED`). Whether such an attestation counts as the reconciliation
+          that lets it map to CONFIRMED_NONEXECUTION, or whether it stays
+          UNKNOWN, is not decided by the 2026-11-19 text. Not mapped here.
+      RESOLVED: {mapping: "open: no canonical term named yet"}
+      PENDING: {mapping: "open"}
+      AWAITING: {mapping: "open"}
+      ESCALATED: {mapping: "open"}
+      UNKNOWN: {mapping: "UNKNOWN (same term; reconciliation required)"}
+    defined_in: "author decision 2026-11-19; RFC-4 v0.3 §2.3"
+    errata: ERR-7.2-05
     finding: verified
 
   # ------------------------------------------------------------------ vectors and checks
@@ -166,7 +280,7 @@ terms:
       - {source: "RFC-4 §5.2 item 5", says: "REJECT / STATE_DRIFT"}
       - {source: "vectors/commit.yaml on main b943f06", says: "expected: HARD_VETO"}
       - {source: "PR #77", says: "no effect; terminal refusal, or suspension with a declared resumption condition"}
-    resolution: "PR #77 text is canonical. RFC-4 v0.3 §2.2 and §5.2 take the RN-001 §4 wording."
+    resolution: "PR #77 text is canonical; RFC-4 v0.3 §3 (draft) carries the RN-001 §4 outcome and supersedes the v0.2 §2.2 HARD_VETO sentence."
     manuscript_v7_2:
       same_meaning: false
       locations: ["l.10 changelog 7.1", "l.61 §1.1 (traceability list)", "l.647 §10.1"]
@@ -188,10 +302,15 @@ terms:
   - id: GL-LIFECYCLE-T
     canonical: "T6, T7, T8"
     kind: lifecycle-transition
+    labels: runtime   # RESOLVED, FAILED, UNKNOWN below are runtime labels, see GL-RUNTIME-LABEL
     definition:
       T6: "UNKNOWN or AWAITING -> RESOLVED, only on qualified evidence (vector CT-R4-011)"
       T7: "UNKNOWN/AWAITING/PENDING -> FAILED, only on a verified non-execution attestation (vector CT-R4-012)"
       T8: "FAILED with verified non-execution and retry_eligible -> new attempt allowed, never automatic execution (vector CT-R4-013)"
+    canonical_reading: >
+      T7 and T8 are reported in canonical terms only after mapping FAILED
+      (GL-RUNTIME-LABEL). T8's "new attempt" is the new attempt identity that
+      GL-BOUND-HELD-ATTEMPT requires for any later effect.
     defined_in: "tenir-conformance-s1-g1 at 8bc0e5e (pinned in .github/workflows/lifecycle.yml); runner.py header"
     manuscript_v7_2:
       names_only: T7      # §4.4 'declare failed (T7)'
@@ -209,7 +328,7 @@ terms:
   - id: GL-RETRY-ELIGIBLE
     canonical: retry_eligible
     kind: field
-    definition: "Flag on a FAILED attempt. At tenir-conformance-s1-g1 d42499b it is an audit annotation only; from 8bc0e5e it is a further admission condition."
+    definition: "Flag on an attempt with runtime label FAILED (GL-RUNTIME-LABEL). At tenir-conformance-s1-g1 d42499b it is an audit annotation only; from 8bc0e5e it is a further admission condition."
     defined_in: "manuscript/v7.2.md §4.4 (both revisions named)"
     note: "CT-R4-013 follows 8bc0e5e, the revision the suite pins, not d42499b, the revision the paper evaluates. Not a contradiction; cite the revision with the result."
     finding: verified

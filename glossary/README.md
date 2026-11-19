@@ -15,7 +15,11 @@ are read through `aliases`.
 | `I1`–`I8` | Manuscript §4.5a invariants | Suite used `I8` for budget conservation until catalogue v1.1.0, now `BUD` |
 | `τ_K` | HOLD resolution window (RFC-0 §6, RFC-5 §1, RN-001 §2a) | v7.2 §2.2, §4.4, §6.1, §7.1 write `τ_K` for the receipt window |
 | `τ_R` | Receipt qualification window, AWAITING → UNKNOWN | New name; ERR-7.2-01 |
-| verdict age, freshness threshold | RN-001 §2b, §3; no symbol | — |
+| bound of an authorization | Passing it: no effect under or attributed to that authorization; a fresh authorization only as a declared policy (RFC-4 v0.3 §2.1) | CT-R4-004a |
+| bound of a held attempt | Reaching it: pre-declared disposition, refusal by default, terminal for that attempt identity (RFC-4 v0.3 §2.2, RFC-0 §6) | CT-R4-004b; v0.2 CT-R4-004 mixed the two objects |
+| `CONFIRMED_NONEXECUTION`, `UNKNOWN` | Recorded state at expiry: never dispatched / dispatch possible, reconciliation required | Adds to the block, never replaces it |
+| `FAILED` (and other σ labels) | Runtime label, not canonical (v6.3 as cited by the author); mapped before reporting | v7.2 and T7/T8 use it as a state (ERR-7.2-05); FAILED after an attested dispatch is unmapped (open) |
+| verdict age, freshness threshold | Withdrawn as a rule (RFC-4 v0.3 §4) | RN-001 §2b "epistemic input" reading |
 | `CT-R4-005` | Suite vector: governance state changes between verdict and commit; outcome per RN-001 §4 | RFC-4 §2.2 says HARD_VETO, RFC-4 §5.2 says REJECT; v7.2 §10.1 uses the id for the S11 commit binding (ERR-7.2-02) |
 | T6, T7, T8 | Lifecycle transitions of `tenir-conformance-s1-g1@8bc0e5e` | v7.2 names only T7; suite citations of "v7.2 §4.4, T6/T8" are wrong |
 | `PASS` | Disposition (RFC-0 §4) or test outcome (CLAIMS) | Qualify as `disposition PASS` / `outcome PASS` |
