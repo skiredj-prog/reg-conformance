@@ -77,10 +77,14 @@ for that attempt identity. A later effect requires a new attempt identity. The
 transition MUST be recorded with the bound, the disposition applied and the
 resulting state, expressed in the canonical vocabulary.
 
-The record MUST distinguish what is known: an attempt never dispatched is
-recorded as established non-execution; an attempt that may have been
-dispatched is recorded as unknown, with reconciliation required. Closing the
-hold does not establish what happened outside.
+The record MUST distinguish what the available evidence establishes, not
+what the dispatch history suggests. Non-execution is established when the
+attempt was never dispatched, or when it was dispatched and a qualified,
+verified non-execution attestation exists: the attempt is then recorded as
+established non-execution. When dispatch was possible and the evidence does
+not establish the outcome (attestation absent, contradictory or not
+qualified), the attempt is recorded as unknown, with reconciliation required.
+Closing the hold does not establish what happened outside.
 
 A bound that the deployment declares but that the runtime cannot receive or
 apply counts as not applied. A late approval, resolution or exit authorization
@@ -88,12 +92,20 @@ arriving after the bound does not reopen the attempt.
 
 ### 2.3 The epistemic axis is orthogonal
 
-Every expiry, of either object, also produces a record of what is known:
+Every expiry, of either object, also produces a record of what is known. The
+recorded state follows what the available evidence establishes, not the
+history of the dispatch. `CONFIRMED_NONEXECUTION` means that the available
+evidence establishes that the outcome was not executed (canonical vocabulary,
+as cited by the author).
 
-| Situation at expiry | Recorded state |
+| What the available evidence establishes at expiry | Recorded state |
 |---|---|
-| never dispatched | `CONFIRMED_NONEXECUTION` |
-| dispatch possible | `UNKNOWN`, reconciliation required |
+| Non-execution: the attempt was never dispatched, or it was dispatched and a qualified, verified non-execution attestation exists | `CONFIRMED_NONEXECUTION` |
+| Dispatch was possible and the outcome is not established: attestation absent, contradictory or not qualified | `UNKNOWN`, reconciliation required |
+
+Example: dispatch occurred, but a qualified attestation establishes
+non-execution: `CONFIRMED_NONEXECUTION`. A verified attestation completes the
+reconciliation; the dispatch does not keep the attempt `UNKNOWN`.
 
 This record adds to the blocking of §2.1 and §2.2; it never replaces it.
 "Epistemic input" and "barrier" are not two options: every expiry is both. The
@@ -101,8 +113,10 @@ question each clause answers is which constraint applies, according to which
 object carries the bound.
 
 `FAILED` is not a term of the canonical vocabulary (v6.3, as cited by the
-author). It is a runtime label and MUST be mapped: to `CONFIRMED_NONEXECUTION`
-when the attempt was never dispatched, to `UNKNOWN` with reconciliation
+author). It is a runtime label and MUST be mapped by the rule above: to
+`CONFIRMED_NONEXECUTION` when the evidence establishes non-execution (never
+dispatched, or dispatched with a qualified, verified non-execution attestation,
+as in the manuscript v7.2 transition T7), to `UNKNOWN` with reconciliation
 otherwise. A report that shows `FAILED` without this mapping does not establish
 the recorded state of §2.2.
 

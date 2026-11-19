@@ -81,7 +81,7 @@
       "category": "commit",
       "property": "Held Attempt at Its Declared Bound",
       "input": "Held attempt (HOLD, escalation) left past its declared bound, then an advance under the same attempt identity",
-      "intended": "Pre-declared disposition, refusal by default, terminal for that attempt identity; recorded with the bound, the disposition and the resulting state (CONFIRMED_NONEXECUTION if never dispatched, UNKNOWN with reconciliation if dispatch was possible)",
+      "intended": "Pre-declared disposition, refusal by default, terminal for that attempt identity; recorded with the bound, the disposition and the resulting state as the available evidence establishes it (CONFIRMED_NONEXECUTION if never dispatched or if a qualified, verified non-execution attestation exists; otherwise UNKNOWN with reconciliation)",
       "expected": "no effect under that attempt identity; terminal refusal recorded",
       "status": "proposal",
       "native": "ADAPTER_REQUIRED",
