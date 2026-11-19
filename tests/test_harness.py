@@ -27,7 +27,7 @@ KERNEL = str(Path(__file__).resolve().parents[1] / "kernel" / "tenir_policies.ya
 def test_reference_port_matches_legacy_native_mode_on_every_vector():
     legacy = {r.vector_id: r.status for r in R.NativeKernelAdapter(KERNEL).run_all()}
     ported = {r.vector_id: r.status for r in PortAdapter(ReferencePort()).run_all()}
-    assert len(legacy) == 59
+    assert len(legacy) == 61
     assert ported == legacy
 
 
@@ -260,7 +260,7 @@ def test_every_indexed_check_and_every_probe_has_exactly_one_family():
 def test_property_view_counts_probes_and_leaves_the_vector_tally_alone():
     adapter, results, _, view = _view(_Fixture())
     summary = R.generate_report(adapter, results)["summary"]
-    assert summary["PASS"] == 0 and summary["ADAPTER_REQUIRED"] == 59
+    assert summary["PASS"] == 0 and summary["ADAPTER_REQUIRED"] == 61
     assert view["families"]["EGP-06"]["PASS"] == 2 and view["families"]["EGP-12"]["PASS"] == 2
     assert view["summary"] == {"families": 14, "has_pass": 2, "has_fail": 0,
                                "inconclusive": 0, "not_exercised": 12}
@@ -749,7 +749,7 @@ def test_reference_kernel_on_the_property_checks():
     # A failing check marks the family, whatever else passes in it.
     assert view["families"]["EGP-01"]["PASS"] == 1
     assert view["families"]["EGP-01"]["state"] == "has_fail"
-    assert (view["index"]["PASS"], view["index"]["FAIL"]) == (17, 2)
+    assert (view["index"]["PASS"], view["index"]["FAIL"]) == (18, 2)
 
 
 def test_bundle_verdict_lists_property_checks_apart_from_the_vectors():

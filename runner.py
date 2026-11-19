@@ -2,7 +2,7 @@
 """
 REG Conformance Suite v0.4.0 — RFC-0 through RFC-7 + T6–T8 Lifecycle
 ====================================================================
-Registers 21 core/commit vectors (incl. T6–T8 attempt lifecycle) and 38 extended vectors.
+Registers 23 core/commit vectors (incl. T6–T8 attempt lifecycle) and 38 extended vectors.
 Results separate vector coverage, observed conformance status, and evidence level.
 Extended vectors without an executable adapter report IMPLEMENTATION_GAP.
 
@@ -90,7 +90,11 @@ CORE_VECTORS: dict[str, TestVector] = {
     "CT-R4-003":TestVector("CT-R4-003","RFC-4 §2.1","Replay Rejection",
                     "Consumed nonce reused → REJECT/REPLAY_DETECTED."),
     "CT-R4-004":TestVector("CT-R4-004","RFC-4 §2","Expired Grant Rejection",
-                    "valid_until passed, no fresh adjudication → no effect; REJECT/EVALUATION_EXPIRED is the reference outcome (RFC-4 v0.3 §2.3.2). Superseded as an anchor by CT-R4-014..016 (RN-001 §3)."),
+                    "valid_until passed before commit → REJECT/EVALUATION_EXPIRED. Superseded by CT-R4-004a and CT-R4-004b (RFC-4 v0.3 revision §5); kept with its results."),
+    "CT-R4-004a":TestVector("CT-R4-004a","RFC-4 v0.3 revision §2.1","Authority Valid at the Time of the Effect",
+                    "Commit under an authorization whose declared bound has passed → no effect under that authorization; any refusal mechanism satisfies the clause."),
+    "CT-R4-004b":TestVector("CT-R4-004b","RFC-4 v0.3 revision §2.2–2.3; RFC-0 §6; REG-STATE-024","Held Attempt at Its Declared Bound",
+                    "Held attempt past its declared bound → pre-declared disposition (default terminal refusal) for that attempt identity, recorded as CONFIRMED_NONEXECUTION or UNKNOWN + reconciliation."),
     "CT-R4-005":TestVector("CT-R4-005","RFC-4 §2.2","Commit-State Binding / Race Detection",
                     "State (policy_epoch) changed between verdict and commit → no effect; terminal refusal, or suspension with a declared resumption condition (RN-001 §4)."),
     "CT-R4-006":TestVector("CT-R4-006","RFC-4 §1","Non-PASS Cannot Cross Commit",
@@ -110,11 +114,11 @@ CORE_VECTORS: dict[str, TestVector] = {
     "CT-R4-013":TestVector("CT-R4-013","Lifecycle T8 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)","FAILED + retry_eligible → new attempt",
                     "retry_eligible=true on FAILED allows issuing a new attempt_id on the same LEI. New attempt_id ≠ old attempt_id. LEI lock released only on (RESOLVED + qualified) or explicit reconciliation."),
     "CT-R4-014":TestVector("CT-R4-014","RFC-4 §1.1, §5.2; RN-001 §3","No Dispatch on a Stale Verdict",
-                    "Verdict older than the policy's freshness threshold → no effect without a fresh adjudication that includes the verdict's age."),
+                    "Verdict older than the policy's freshness threshold → no effect without a fresh adjudication that includes the verdict's age. Withdrawn reading; superseded by CT-R4-004a (RFC-4 v0.3 revision §4)."),
     "CT-R4-015":TestVector("CT-R4-015","RFC-2 §3.4; RN-001 §3","Age Never Improves a Disposition",
-                    "All else equal, readjudication at a greater verdict age yields an equal or more restrictive disposition."),
+                    "All else equal, readjudication at a greater verdict age yields an equal or more restrictive disposition. Withdrawn reading; superseded by CT-R4-004a (RFC-4 v0.3 revision §4)."),
     "CT-R4-016":TestVector("CT-R4-016","RFC-5 §2; RFC-0 §6; RN-001 §2a, §3","Fail-Safe Bound Refuses Alone",
-                    "A bound the policy declares fail-safe (e.g. τ_K on a HOLD) refuses alone when exhausted, wherever the operation could advance."),
+                    "A bound the policy declares fail-safe (e.g. τ_K on a HOLD) refuses alone when exhausted, wherever the operation could advance. Merged into CT-R4-004b (RFC-4 v0.3 revision §4)."),
 }
 
 # ── Extended vectors — 38 (RFC-0/1/2/3/5/6/7) ────────────────────────────────
@@ -207,7 +211,7 @@ EXTENDED_VECTORS: dict[str, TestVector] = {
                     "Two independent implementations agree on disposition for same inputs."),
 }
 
-# All 59 vectors
+# All 61 vectors
 VECTORS = {**CORE_VECTORS, **EXTENDED_VECTORS}
 
 # Gap notes for the 36 extended vectors that are IMPLEMENTATION_GAP
@@ -491,14 +495,32 @@ class HTTPAdapter(BaseAdapter):
             return self._ar("CT-R4-004",
                 "/admin/expire-eval absent — cannot trigger expiry without wait")
         cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
-        detail = cr.get("detail", "") if isinstance(cr, dict) else cr
-        if cc == 409 and "EXPIRED" in str(detail):
-            return self._pass("CT-R4-004", "EVALUATION_EXPIRED on force-expired grant")
+        return (self._pass("CT-R4-004","EVALUATION_EXPIRED on force-expired grant")
+                if cc == 409 and "EXPIRED" in cr.get("detail","")
+                else self._fail("CT-R4-004", f"expected 409 EXPIRED, got {cc}: {cr}"))
+
+    # CT-R4-004a — RFC-4 v0.3 revision §2.1: the observable is the effect, not the refusal code
+    def _v_ct_r4_004a(self):
+        c, r = self._post("/evaluations", self._eb(
+            measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
+        if self._disp(r) != "PASS":
+            return self._fail("CT-R4-004a", "could not obtain PASS")
+        eid = r.get("evaluation_id")
+        ec, er = self._post(f"/admin/expire-eval/{eid}", {})
+        if ec != 200:
+            return self._ar("CT-R4-004a",
+                "/admin/expire-eval absent — cannot pass the authorization's bound without waiting")
+        cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         if cc in (200, 201):
-            # RFC-4 v0.3 §2.3.2 item 3: an unrecorded readjudication counts as a dispatch on a stale verdict
-            return self._fail("CT-R4-004", "commit accepted on a grant past valid_until, with no recorded fresh adjudication")
-        return self._inconclusive("CT-R4-004",
-            f"commit not accepted, but refusal on verdict age was not established (HTTP {cc}: {cr})")
+            return self._fail("CT-R4-004a", f"commit accepted under the expired authorization {eid}")
+        if 400 <= cc < 500:
+            return self._pass("CT-R4-004a", f"commit refused under the expired authorization (HTTP {cc}: {cr})")
+        return self._inconclusive("CT-R4-004a", f"outcome of the commit not established (HTTP {cc}: {cr})")
+
+    # CT-R4-004b — RFC-4 v0.3 revision §2.2
+    def _v_ct_r4_004b(self):
+        return self._ar("CT-R4-004b",
+            "The shim has no HOLD and no declared bound on a held attempt: an adapter that can hold an attempt and pass its bound is required.")
 
     # CT-R4-005  (uses /admin/reload-policy)
     def _v_ct_r4_005(self):
@@ -599,16 +621,16 @@ class HTTPAdapter(BaseAdapter):
     # CT-R4-014..016 — RN-001 §3; registered, not exercised yet
     def _v_ct_r4_014(self):
         return self._gap("CT-R4-014",
-            "Not exercised yet. CT-R4-004 covers the refusal branch only; the readjudication "
-            "branch needs a freshness threshold and an adjudication record from the subject.")
+            "Superseded by CT-R4-004a (RFC-4 v0.3 revision §4): the readjudication reading is "
+            "withdrawn. Registered, never exercised.")
 
     def _v_ct_r4_015(self):
         return self._gap("CT-R4-015",
-            "Not exercised yet: needs an entry point that readjudicates the same inputs at two verdict ages.")
+            "Superseded by CT-R4-004a (RFC-4 v0.3 revision §4). Registered, never exercised.")
 
     def _v_ct_r4_016(self):
         return self._gap("CT-R4-016",
-            "Not exercised yet: needs a subject whose policy declares a fail-safe bound such as τ_K on a HOLD.")
+            "Merged into CT-R4-004b (RFC-4 v0.3 revision §4). Registered, never exercised.")
 
     # CT-R4-011..013 — lifecycle vectors (lab membrane validation only)
     def _v_ct_r4_011(self):
@@ -877,12 +899,22 @@ class NativeKernelAdapter(BaseAdapter):
         stale = self._inject_stale()
         try:
             self._commit(stale["evaluation_id"],action_id=stale["action_id"],nonce=stale["nonce"])
-            return self._fail("CT-R4-004","Expired grant accepted with no recorded fresh adjudication")
+            return self._fail("CT-R4-004","Expired grant accepted")
         except ValueError as e:
             return (self._pass("CT-R4-004","EVALUATION_EXPIRED on stale grant (native)")
-                    if "EXPIRED" in str(e) else
-                    self._inconclusive("CT-R4-004",
-                        f"commit refused, but refusal on verdict age was not established (native): {e}"))
+                    if "EXPIRED" in str(e) else self._fail("CT-R4-004",str(e)))
+
+    def _v_ct_r4_004a(self):
+        stale = self._inject_stale()
+        try:
+            self._commit(stale["evaluation_id"],action_id=stale["action_id"],nonce=stale["nonce"])
+            return self._fail("CT-R4-004a","commit accepted under the expired authorization (native)")
+        except ValueError as e:
+            return self._pass("CT-R4-004a", f"commit refused under the expired authorization (native): {e}")
+
+    def _v_ct_r4_004b(self):
+        return self._ar("CT-R4-004b",
+            "The bundled kernel has no HOLD and no declared bound on a held attempt: a port that declares them is required (harness/scenarios.py r4_004b).")
 
     def _v_ct_r4_005(self):
         g = self._evaluate("a","valid","wt",0.2,0.2,0.90,uuid.uuid4().hex)
@@ -952,16 +984,16 @@ class NativeKernelAdapter(BaseAdapter):
 
     def _v_ct_r4_014(self):
         return self._gap("CT-R4-014",
-            "Not exercised yet. CT-R4-004 covers the refusal branch only; the readjudication "
-            "branch needs a freshness threshold and an adjudication record from the subject.")
+            "Superseded by CT-R4-004a (RFC-4 v0.3 revision §4): the readjudication reading is "
+            "withdrawn. Registered, never exercised.")
 
     def _v_ct_r4_015(self):
         return self._gap("CT-R4-015",
-            "Not exercised yet: needs an entry point that readjudicates the same inputs at two verdict ages.")
+            "Superseded by CT-R4-004a (RFC-4 v0.3 revision §4). Registered, never exercised.")
 
     def _v_ct_r4_016(self):
         return self._gap("CT-R4-016",
-            "Not exercised yet: needs a subject whose policy declares a fail-safe bound such as τ_K on a HOLD.")
+            "Merged into CT-R4-004b (RFC-4 v0.3 revision §4). Registered, never exercised.")
 
     def _v_ct_r4_011(self):
         return _run_lifecycle_membrane_vector(self, "CT-R4-011")

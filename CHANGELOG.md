@@ -1,15 +1,5 @@
 # Changelog
 
-## Non publié
-
-### Added
-
-- **RFC-4 v0.3** (`reg-standards-baseline/rfc/rfc-4.md`, statut brouillon, la v0.2 reste le texte gelé jusqu'à ratification) : intègre RN-001. Borne fail-safe (τ_K sur un HOLD) contre âge du verdict, entrée épistémique (§2.3) ; résultat exigé sur dérive d'état (§2.2) ; reçu de suspension avec τ_K et condition de reprise (§3.2) ; CT-R4-014 à CT-R4-016 dans l'ensemble minimal (§5.2) ; réconciliation τ_K / âge du verdict (§7).
-
-### Changed
-
-- **CT-R4-004 réécrit** (RFC-4 v0.3 §5.2 item 4) : branche de refus du verdict périmé, dans `runner.py` et `harness/scenarios.py`. Commit accepté sans réadjudication enregistrée : `FAIL` ; refus `EVALUATION_EXPIRED` : `PASS` ; refus pour une autre raison : `INCONCLUSIVE` (auparavant `FAIL`). Résultats natif et HTTP inchangés (`PASS`).
-
 ## v0.7.0 — 2026-11-19
 
 Cohérence REG / REG+ / suite, RN-001 inscrit dans le registre des vecteurs, harness neutre et `CLAIMS.md` en vigueur. Une seule version de chaque chose. Détail et état : `python tools/check_coherence.py`.
@@ -18,8 +8,10 @@ Ce que cette version ne contient pas : RFC-4 v0.3 (non ratifiée, pull request #
 
 ### Added
 
-- **Suite v0.4.0** (`runner.py`, `spec.md`, `reg_common.py`) : 59 vecteurs au lieu de 56 (v0.3.2). Les rapports se distinguent ainsi de ceux de v0.6.x.
+- **Suite v0.4.0** (`runner.py`, `spec.md`, `reg_common.py`) : 61 vecteurs au lieu de 56 (v0.3.2). Les rapports se distinguent ainsi de ceux de v0.6.x.
 - `harness/` : port neutre (`RuntimePort`), scénarios écrits une fois, port de référence, port TENIR-Gov sur le chemin par défaut du gouverneur (correspondance des intentions et des refus provisoire, à confirmer par l'auteur du runtime), sondes d'effet `HX-EFFECT-001` à `004`, 17 contrôles de propriété, lecture par familles candidates `EGP-*` (non ratifiées). Workflow `REG Conformance - Run` (`conformance-run.yml`) et `tools/make_evidence_bundle.py` : une exécution, un paquet de preuve, `certifying: false`.
+- **Révision RFC-4 v0.3 du 19 novembre 2026** (`revisions/rfc-4-v0.3-2026-11-19.md`, brouillon hors baseline ; `reg-standards-baseline/rfc/rfc-4.md` v0.2 reste gelée et inchangée). La borne se lit selon l'objet qui la porte : l'autorisation (§2.1, aucun effet sous une autorisation dont la borne déclarée est dépassée ; une autorisation fraîche est une politique déclarée, à quatre conditions, attribuée à la nouvelle autorisation) ou la tentative retenue (§2.2, disposition pré-déclarée, refus terminal par défaut pour cette identité de tentative). Axe épistémique orthogonal (§2.3) : `CONFIRMED_NONEXECUTION` si jamais dispatchée, `UNKNOWN` et réconciliation sinon ; `FAILED` est une étiquette runtime à mapper. Résultat exigé sur dérive d'état (§3, RN-001 §4). Lecture « l'expiration force une réadjudication » de RN-001 §2b-§3 retirée (§4). Correspondance avec STA-EA-02 laissée ouverte (§6).
+- Vecteurs `CT-R4-004a` (autorité valide au moment de l'effet) et `CT-R4-004b` (tentative retenue à sa borne déclarée, REG-STATE-024), statut `RESERVED` tant que la révision n'est pas ratifiée. `CT-R4-004a` : `PASS` natif et HTTP sur le noyau de référence. `CT-R4-004b` : scénario harness ; `ADAPTER_REQUIRED` sur le noyau de référence, qui n'a pas de HOLD.
 - `CLAIMS.md` en vigueur : règle d'admission du FLAG (RN-001 B1) et évaluations par des tiers (D2). `RESULTS.md` : exécutions publiées et en attente de confirmation.
 
 - Vecteurs `CT-R4-014` (pas de dispatch sur un verdict périmé), `CT-R4-015` (l'âge n'améliore jamais une disposition) et `CT-R4-016` (une borne fail-safe refuse seule), enregistrés selon RN-001 §3 au statut `specified` ; le runner rend `IMPLEMENTATION_GAP` tant que les sondes n'existent pas. Le runner enregistre 59 identifiants au lieu de 56. `vectors/schema.json` accepte `superseded_by`.
@@ -36,7 +28,8 @@ Ce que cette version ne contient pas : RFC-4 v0.3 (non ratifiée, pull request #
 - **TENIR-Gov épinglé une seule fois.** Le job `lifecycle` installait `b65efba`, un commit hors `main` de `tenir_governance` qui se déclare lui aussi 5.7.0 sans l'être (142 commits après le tag). Il lit maintenant `conformance-target.json` (5.7.0, `47ef67e`, tag `v5.7.0`) comme les jobs `pinned-raft-conformance` et `coherence`, et vérifie la version installée. `standard_version` du manifeste passe de `v0.5.1` à `v0.7.0`.
 - Harness aligné sur RN-001 §4 : pour CT-R4-005, un commit refusé sous un autre libellé que `STATE_DRIFT`/`HARD_VETO` donne `INCONCLUSIVE`, plus `FAIL`, comme dans `runner.py`. CT-R4-014 à CT-R4-016 rattachés aux familles candidates `EGP-03`, `EGP-13` et `EGP-03` ; le port de référence rend pour eux le même `IMPLEMENTATION_GAP` que le runner.
 - `RESULTS.md` : l'exécution de référence du 16 novembre a tourné sur une branche hors de cette version ; son lien est retiré en attendant une exécution sur le commit v0.7.0.
-- **CT-R4-004 remplacé** par CT-R4-014 à CT-R4-016 (RN-001 §3) : `superseded_by` dans `vectors/commit.yaml` ; il reste enregistré avec son texte et ses résultats.
+- **CT-R4-004 remplacé** par CT-R4-004a et CT-R4-004b (révision RFC-4 v0.3, §5) : `superseded_by` dans `vectors/commit.yaml` ; il reste enregistré avec son texte et ses résultats. `CT-R4-014` et `CT-R4-015` (lecture réadjudication, retirée) passent `superseded_by` `CT-R4-004a`, `CT-R4-016` `superseded_by` `CT-R4-004b` ; aucun des trois n'avait de sonde ni de résultat.
+- `tools/check_coherence.py` : un identifiant de vecteur peut finir par une lettre minuscule (`CT-R4-004a`).
 - **C3 et CT-R4-005 : résultat exigé** (RN-001 §4) : aucun effet, et la classe d'état rapportée (refus terminal, ou suspension avec condition de reprise déclarée). `HARD_VETO` n'est plus exigé. Les sondes ne reconnaissent encore que la branche `HARD_VETO` ; un commit refusé sous un autre libellé donne `INCONCLUSIVE`, plus `FAIL`, pour CT-R4-005 comme déjà pour C3. Aucun résultat publié ne change.
 - **Invariant renommé : `I8` → `BUD`** (budget-ceiling-aggregate). Le manuscrit utilise `I8` pour un autre invariant (permanence de l'historique des tentatives). `tenir_governance` et les journaux de preuve antérieurs disent toujours `I8`. Les fiches `cap-i8-budget-*` deviennent `cap-budget-*`.
 - **Propriétés du contrat de consensus renommées : `C1`, `C2`, `C3` → `SAF`, `LIV`, `FT`.** `C1` à `C5` désignent des vecteurs de la suite.

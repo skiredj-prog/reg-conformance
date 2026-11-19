@@ -134,12 +134,45 @@ def r4_004(rt):
     try:
         rt.commit(d)
     except P.Refused as e:
-        if e.code == P.R_EXPIRED:
-            return PASS, "expired grant refused"
-        # RFC-4 v0.3 §5.2 item 4: no effect, but refusal on verdict age not established
-        return INCONCLUSIVE, f"commit refused, but not on verdict age: {e}"
-    # RFC-4 v0.3 §2.3.2 item 3: an unrecorded readjudication counts as a dispatch on a stale verdict
-    return FAIL, "expired grant accepted with no recorded fresh adjudication"
+        return (PASS, "expired grant refused") if e.code == P.R_EXPIRED else (FAIL, str(e))
+    return FAIL, "expired grant accepted"
+
+
+def r4_004a(rt):
+    """RFC-4 v0.3 revision §2.1: no effect under an authorization whose declared
+    bound has passed. The observable is the effect, not the refusal code."""
+    d = rt.stale_grant(action_type="wire_transfer")
+    try:
+        rt.commit(d)
+    except P.Refused as e:
+        return PASS, f"commit refused under the expired authorization ({e.code})"
+    return FAIL, "commit accepted under the expired authorization"
+
+
+def r4_004b(rt):
+    """RFC-4 v0.3 revision §2.2: a held attempt past its declared bound gets the
+    pre-declared disposition, refusal by default, terminal for that attempt
+    identity. A suspension that merely goes on is not a terminal refusal."""
+    if P.B_TAU_K not in rt.bounds:
+        return INCONCLUSIVE, "no bound declared for a held attempt"
+    if rt.exhaustion_policy == "fail-degraded":
+        return INCONCLUSIVE, "the deployment pre-declares a fail-degraded disposition: the default does not apply"
+    d = rt.evaluate(P.NEEDS_APPROVAL, principal=_principal("held"), action_type="wire_transfer")
+    if d.disposition != "HOLD":
+        return INCONCLUSIVE, f"no held attempt to observe (disposition={d.disposition})"
+    rt.elapse_past(P.B_TAU_K)
+    window = f"declared bound {rt.bounds[P.B_TAU_K]:g} s"
+    try:
+        rt.commit(d)
+    except P.Refused as e:
+        terminal = e.disposition == "HARD_VETO"
+    else:
+        return FAIL, f"the held attempt advanced under the same identity past its {window}"
+    if P.EFFECTS in rt.capabilities and _effects(rt, d):
+        return FAIL, f"an effect matched the held attempt past its {window}"
+    if terminal:
+        return PASS, f"held attempt refused with HARD_VETO past its {window}"
+    return INCONCLUSIVE, f"not executable past its {window}, but no terminal refusal was recorded"
 
 
 def r4_005(rt):
@@ -687,6 +720,13 @@ SCENARIOS = {s.vector_id: s for s in [
             *_ONE_REPLAY),
     _vector("CT-R4-004", {_C, P.STALE_GRANT}, r4_004, _none, EXEC,
             "the passage of time across the bound: the grant is created already expired"),
+    _vector("CT-R4-004a", {_C, P.STALE_GRANT}, r4_004a, _none, EXEC,
+            "the passage of time across the bound: the authorization is created already expired",
+            "an effect under a fresh authorization and its four conditions (RFC-4 v0.3 revision §2.1)"),
+    _vector("CT-R4-004b", {_E, _C, P.CLOCK}, r4_004b, _H, EXEC,
+            "a late approval, resolution or exit authorization: the port has no such primitive",
+            "the recorded resulting state (CONFIRMED_NONEXECUTION or UNKNOWN with reconciliation)",
+            "that the bound was derived from an organizational constraint"),
     _vector("CT-R4-005", {_E, _C, P.STATE_DRIFT}, r4_005, _A, EXEC,
             "which state changes count as relevant: the port picks one",
             "a change during the execution"),
