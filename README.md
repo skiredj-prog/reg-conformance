@@ -16,7 +16,7 @@ Four things live here. They answer different questions and are versioned separat
 | Layer | Question it answers | Where | Version |
 |---|---|---|---|
 | **REG** | What must a runtime do before, at and after it commits an action? | `reg-standards-baseline/rfc/` (RFC-0 to RFC-7) | frozen baseline |
-| **Conformance suite** | Does a given runtime do it? | `runner.py`, `harness/` ([how to hook a runtime](harness/README.md)), `vectors/`, [`VECTORS.md`](VECTORS.md), [`spec.md`](spec.md), `lifecycle/` ([status](LIFECYCLE_INTEGRATION.md)) | suite v0.3.2 |
+| **Conformance suite** | Does a given runtime do it? | `runner.py`, `harness/` ([how to hook a runtime](harness/README.md)), `vectors/`, [`VECTORS.md`](VECTORS.md), [`spec.md`](spec.md), `lifecycle/` ([status](LIFECYCLE_INTEGRATION.md)) | suite v0.4.0 |
 | **REG+** | In which deployment does a guarantee still hold, and what evidence shows it? | `catalog/`, `specs/`, `profiles/`, `capabilities/`, `tools/` | catalogue v1.2.0 |
 | **Crosswalk** | Which clause of another framework, or of another layer, does a mechanism relate to? | `crosswalk/` ([mapping policy](crosswalk/MAPPING_POLICY.md)) | — |
 

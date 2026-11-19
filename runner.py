@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-REG Conformance Suite v0.3.2 — RFC-0 through RFC-7 + T6–T8 Lifecycle
+REG Conformance Suite v0.4.0 — RFC-0 through RFC-7 + T6–T8 Lifecycle
 ====================================================================
 Registers 21 core/commit vectors (incl. T6–T8 attempt lifecycle) and 38 extended vectors.
 Results separate vector coverage, observed conformance status, and evidence level.
@@ -1115,7 +1115,7 @@ def generate_report(adapter, results, endpoint="", evidence_binding=None):
     for r in results: counts[r.status.value] += 1
     core_results = [r for r in results if r.vector_id in CORE_VECTORS]
     extended_results = [r for r in results if r.vector_id in EXTENDED_VECTORS]
-    return {"suite":"REG Conformance Suite v0.3.2",
+    return {"suite":"REG Conformance Suite v0.4.0",
             "rfc_refs":["RFC-4 (frozen)","RFC-7 (updated)"],
             "interface_mode":adapter.interface_mode,
             "evidence_level":int(adapter.evidence_level),
@@ -1141,7 +1141,7 @@ def generate_report(adapter, results, endpoint="", evidence_binding=None):
 
 
 def main():
-    p = argparse.ArgumentParser(description="REG Conformance Suite v0.3.2")
+    p = argparse.ArgumentParser(description="REG Conformance Suite v0.4.0")
     p.add_argument("--endpoint", default="")
     p.add_argument("--mode", choices=["http","native","both"], default="http")
     p.add_argument("--kernel", default="kernel/tenir_policies.yaml")
@@ -1162,14 +1162,14 @@ def main():
     p.add_argument("--subject-worktree-state", choices=["clean", "dirty", "unknown"], default="unknown")
     p.add_argument("--environment-digest", default="",
                    help="OCI image digest in sha256:<64 hex> form")
-    p.add_argument("--output", default="results/tenirlabs-v0.3.2.json")
+    p.add_argument("--output", default="results/tenirlabs-v0.4.0.json")
     args = p.parse_args()
 
     import os; os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
     all_reports = []
 
     def run(adapter, label, endpoint=""):
-        print(f"\nREG Conformance Suite v0.3.2 — {label}\n{'─'*66}")
+        print(f"\nREG Conformance Suite v0.4.0 — {label}\n{'─'*66}")
         results = adapter.run_all()
         for r in results:
             m = MARKS.get(r.status.value,"?")

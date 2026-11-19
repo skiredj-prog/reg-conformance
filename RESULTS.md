@@ -7,14 +7,14 @@ evidence bundle. Read [`CLAIMS.md`](CLAIMS.md) before quoting any of it. No
 line here is a certification.
 
 REG vectors, effect probes and property checks are counted apart. The suite
-has 56 REG vectors, 4 effect probes and 17 property checks. From the next
+has 59 REG vectors, 4 effect probes and 17 property checks. From the next
 published run on, each line will also give the property checks and the
 reading by candidate property family described in `CLAIMS.md`. The run below
 predates both.
 
 | Subject | Revision | Level | REG vectors | Effect probes | Run |
 |---|---|---|---|---|---|
-| Reference kernel bundled in this repository | `reg-conformance` `3023045` | 1, semantic mapping | 14 PASS, 1 not applicable, 41 implementation gaps | not testable: the kernel exposes no observable effect | [16 Nov 2026](https://github.com/skiredj-prog/reg-conformance/actions/runs/43946031476), artifact `reg-evidence-reference`, `sha256:a6c770d6…f220de` |
+| Reference kernel bundled in this repository | `reg-conformance` `3023045` | 1, semantic mapping | 14 PASS, 1 not applicable, 41 implementation gaps | not testable: the kernel exposes no observable effect | 16 Nov 2026, on a branch outside this release; artifact `reg-evidence-reference`, `sha256:a6c770d6…f220de`. To be replaced by a run on the v0.7.0 commit. |
 
 The reference kernel is a teaching implementation. Its passes are not results
 of the TENIR-Gov runtime or of any product.
