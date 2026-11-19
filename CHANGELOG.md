@@ -4,7 +4,7 @@
 
 Cohérence REG / REG+ / suite, RN-001 inscrit dans le registre des vecteurs, harness neutre et `CLAIMS.md` en vigueur. Une seule version de chaque chose. Détail et état : `python tools/check_coherence.py`.
 
-Ce que cette version ne contient pas : RFC-4 v0.3 (non ratifiée, pull request #78), le glossaire papier / suite et l'errata du manuscrit v7.2, une version 5.7.1 de TENIR-Gov. Aucune capacité n'est démontrée (0 sur 42 configurations admissibles) ; aucun résultat publié ne porte sur le runtime TENIR-Gov.
+RFC-4 v0.3 y figure comme révision datée hors baseline ; `rfc-4.md` v0.2 reste le texte gelé, et `CT-R4-004a` / `CT-R4-004b` restent `RESERVED` jusqu'à ratification. Ce que cette version ne contient pas : le glossaire papier / suite et l'errata du manuscrit v7.2, une version 5.7.1 de TENIR-Gov. Aucune capacité n'est démontrée (0 sur 42 configurations admissibles) ; aucun résultat publié ne porte sur le runtime TENIR-Gov.
 
 ### Added
 
@@ -14,7 +14,7 @@ Ce que cette version ne contient pas : RFC-4 v0.3 (non ratifiée, pull request #
 - Vecteurs `CT-R4-004a` (autorité valide au moment de l'effet) et `CT-R4-004b` (tentative retenue à sa borne déclarée, REG-STATE-024), statut `RESERVED` tant que la révision n'est pas ratifiée. `CT-R4-004a` : `PASS` natif et HTTP sur le noyau de référence. `CT-R4-004b` : scénario harness ; `ADAPTER_REQUIRED` sur le noyau de référence, qui n'a pas de HOLD.
 - `CLAIMS.md` en vigueur : règle d'admission du FLAG (RN-001 B1) et évaluations par des tiers (D2). `RESULTS.md` : exécutions publiées et en attente de confirmation.
 
-- Vecteurs `CT-R4-014` (pas de dispatch sur un verdict périmé), `CT-R4-015` (l'âge n'améliore jamais une disposition) et `CT-R4-016` (une borne fail-safe refuse seule), enregistrés selon RN-001 §3 au statut `specified` ; le runner rend `IMPLEMENTATION_GAP` tant que les sondes n'existent pas. Le runner enregistre 59 identifiants au lieu de 56. `vectors/schema.json` accepte `superseded_by`.
+- Vecteurs `CT-R4-014` (pas de dispatch sur un verdict périmé), `CT-R4-015` (l'âge n'améliore jamais une disposition) et `CT-R4-016` (une borne fail-safe refuse seule), enregistrés selon RN-001 §3 au statut `specified` ; le runner rend `IMPLEMENTATION_GAP` tant que les sondes n'existent pas. Remplacés dans la même version par `CT-R4-004a` et `CT-R4-004b` (voir Changed). `vectors/schema.json` accepte `superseded_by`.
 - `reg-standards-baseline/notes/RN-001-flag-time-drift.md` : note ratifiée le 18 novembre 2026. FLAG avec condition = admission, FLAG sans condition = lacune ; borne fail-safe contre temps écoulé épistémique ; remplacement annoncé de CT-R4-004 ; résultat exigé pour C3 et CT-R4-005. Aucun résultat ni compte de vecteurs ne change.
 - `tools/check_coherence.py`, `coherence-baseline.json`, job CI `coherence` : compare les registres, les documents et les fichiers publiés ; échoue sur toute contradiction nouvelle.
 - `README.md` : carte du dépôt (REG, suite de conformance, REG+, crosswalk) et couverture publiée par fondement.
