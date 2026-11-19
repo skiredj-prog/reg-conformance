@@ -110,12 +110,15 @@ Example: dispatch occurred, but a qualified attestation establishes
 non-execution: `CONFIRMED_NONEXECUTION`. A verified attestation completes the
 reconciliation; the dispatch does not keep the attempt `UNKNOWN`.
 
-A qualified, verified non-execution attestation is one that meets the
-conditions manuscript v7.2 §4.4 sets for `non_execution_attested`: qualifying
-evidence bound to the attempt (`id`, `LEI`, `nonce`) and fresh, an observed
-effect count of zero, and a signed attestation accepted under the path's
-verification rules. As there, it does not establish that the attestation is
-true of the external world.
+A qualified, verified non-execution attestation is one that meets all four
+conditions manuscript v7.2 §4.4 sets for `non_execution_attested`: the
+attempt is on a path eligible for T7 or reconcile-`FAILED` (non-terminal or
+`UNKNOWN`); qualifying evidence is bound to the attempt (`id`, `LEI`,
+`nonce`) and fresh; the observed effect count is zero; and a signed
+attestation is accepted under the path's verification rules. As there, it
+establishes neither that the attestation is true of the external world nor
+that the caller-supplied verification key is legitimate: those remain the
+manuscript's assumption A and its trust-root obligation (S7/D11).
 
 This record adds to the blocking of §2.1 and §2.2; it never replaces it.
 "Epistemic input" and "barrier" are not two options: every expiry is both. The
@@ -175,11 +178,12 @@ recorded result.
 ## 6. Mapping to STANAIC STA-EA-02 (a mapping, not a design question)
 
 REG admits both deployment models: a bounded grant, where the authorization
-carries the bound (§2.1), and a fresh adjudication at each crossing, which
-§2.1 admits as a declared policy under its four conditions. Whether STANAIC
-STA-EA-02 prefers one of them is for its author to say; a written answer has
-been announced. That answer maps her requirement onto §2.1 and §2.2. It does
-not change them, and no mapping is made here before it.
+carries the bound (§2.1), and a fresh adjudication at each crossing, that is,
+a fresh authorization in the sense of §2.1, admitted as a declared policy
+under its four conditions. Whether STANAIC STA-EA-02 is compatible with one
+or both of them, and which it prefers, is for its author to say; a written
+answer has been announced. That answer maps STA-EA-02 onto §2.1 and §2.2. It
+does not change them, and no mapping is made here before it.
 
 ## 7. Application to TENIR-Gov 5.7.0 (informative, as measured)
 
