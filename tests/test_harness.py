@@ -995,7 +995,7 @@ def _tenir_gov_has_policy_tau_k():
 
 
 @pytest.mark.skipif(not _tenir_gov_has_policy_tau_k(),
-                    reason="tenir-governance without a policy-declared tau_k (needs 5.7.1)")
+                    reason="tenir-governance without a policy-declared tau_k (needs the 5.7.5 line)")
 def test_tenir_gov_tau_k_port_on_the_fail_safe_bound():
     from harness.ports.tenir_gov import TenirGovTauKPort
     adapter = PortAdapter(TenirGovTauKPort())

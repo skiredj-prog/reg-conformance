@@ -194,7 +194,7 @@ written in the port by whoever can answer for them.
 |---|---|---|
 | `ports/reference.py` | bundled reference kernel, not the TENIR-Gov runtime | 1 |
 | `ports/tenir_gov.py` | installed `tenir-governance`, default governor path, in process | 2 |
-| `ports/tenir_gov.py:TenirGovTauKPort` | same, with a policy that declares `tau_k` (needs `tenir-governance` 5.7.1 or later; refuses to start otherwise) | 2 |
+| `ports/tenir_gov.py:TenirGovTauKPort` | same, with a policy that declares `tau_k` (needs the `tenir-governance` 5.7.5 line (#142) or later; refuses to start otherwise) | 2 |
 
 `tests/test_harness.py` checks the instrument itself: each effect probe and
 each property check is run against a deliberately faulty test double and must

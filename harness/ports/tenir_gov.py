@@ -254,7 +254,7 @@ _TAU_K_SOURCE = "REG harness deployment: declared for the run, not derived from 
 
 
 class TenirGovTauKPort(TenirGovPort):
-    """TENIR-Gov with a policy that declares τ_K (needs 5.7.1 or later).
+    """TENIR-Gov with a policy that declares τ_K (needs the 5.7.5 line, tenir_governance#142).
 
     What is under test: the same governor as TenirGovPort, built with
     `CompositionPolicy(hold_tau_k_seconds=1.0, hold_tau_k_source=...)`. That
