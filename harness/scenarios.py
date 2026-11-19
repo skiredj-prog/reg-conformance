@@ -140,11 +140,21 @@ def r4_004(rt):
 
 def r4_004a(rt):
     """RFC-4 v0.3 revision §2.1: no effect under an authorization whose declared
-    bound has passed. The observable is the effect, not the refusal code."""
+    bound has passed. The observable is the effect, not the refusal code.
+    Positive control first: a port that refuses every commit proves nothing."""
+    ok = rt.evaluate(P.ADMISSIBLE, principal="a", action_type="wire_transfer")
+    if not _admitted(ok):
+        return INCONCLUSIVE, f"could not establish a valid authorization (disposition={ok.disposition})"
+    try:
+        rt.commit(ok, action_type="wire_transfer")
+    except P.Refused as e:
+        return INCONCLUSIVE, f"a valid authorization was refused too, so a refusal proves nothing: {e}"
     d = rt.stale_grant(action_type="wire_transfer")
     try:
         rt.commit(d)
     except P.Refused as e:
+        if P.EFFECTS in rt.capabilities and _effects(rt, d):
+            return FAIL, f"commit refused ({e.code}) but an effect matched the expired authorization"
         return PASS, f"commit refused under the expired authorization ({e.code})"
     return FAIL, "commit accepted under the expired authorization"
 

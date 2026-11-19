@@ -7,7 +7,7 @@ evidence bundle. Read [`CLAIMS.md`](CLAIMS.md) before quoting any of it. No
 line here is a certification.
 
 REG vectors, effect probes and property checks are counted apart. The suite
-has 59 REG vectors, 4 effect probes and 17 property checks. From the next
+has 61 REG vectors, 4 effect probes and 17 property checks. From the next
 published run on, each line will also give the property checks and the
 reading by candidate property family described in `CLAIMS.md`. The run below
 predates both.
@@ -49,7 +49,7 @@ python -m harness --port harness.ports.reference:ReferencePort --probes --checks
 python -m pytest tests/test_harness.py
 ```
 
-The first command should print `PASS: 14  NOT_APPLICABLE: 1  IMPLEMENTATION_GAP: 44`
+The first command should print `PASS: 15  NOT_APPLICABLE: 1  ADAPTER_REQUIRED: 1  IMPLEMENTATION_GAP: 44`
 for the vectors. Of the seventeen property checks, five run on the reference
 kernel: three pass and two fail. `PX-CT-R3-001`: the kernel admits a blank
 credential, a gap its own register declares. `PX-REG-STATE-001`: it admits an

@@ -4,7 +4,7 @@
 
 Cohérence REG / REG+ / suite, RN-001 inscrit dans le registre des vecteurs, harness neutre et `CLAIMS.md` en vigueur. Une seule version de chaque chose. Détail et état : `python tools/check_coherence.py`.
 
-Ce que cette version ne contient pas : RFC-4 v0.3 (non ratifiée, pull request #78), le glossaire papier / suite et l'errata du manuscrit v7.2, une version 5.7.1 de TENIR-Gov. Aucune capacité n'est démontrée (0 sur 42 configurations admissibles) ; aucun résultat publié ne porte sur le runtime TENIR-Gov.
+RFC-4 v0.3 y figure comme révision datée hors baseline ; `rfc-4.md` v0.2 reste le texte gelé, et `CT-R4-004a` / `CT-R4-004b` restent `RESERVED` jusqu'à ratification. Ce que cette version ne contient pas : le glossaire papier / suite et l'errata du manuscrit v7.2, une version 5.7.1 de TENIR-Gov. Aucune capacité n'est démontrée (0 sur 42 configurations admissibles) ; aucun résultat publié ne porte sur le runtime TENIR-Gov.
 
 ### Added
 
@@ -14,7 +14,7 @@ Ce que cette version ne contient pas : RFC-4 v0.3 (non ratifiée, pull request #
 - Vecteurs `CT-R4-004a` (autorité valide au moment de l'effet) et `CT-R4-004b` (tentative retenue à sa borne déclarée, REG-STATE-024), statut `RESERVED` tant que la révision n'est pas ratifiée. `CT-R4-004a` : `PASS` natif et HTTP sur le noyau de référence. `CT-R4-004b` : scénario harness ; `ADAPTER_REQUIRED` sur le noyau de référence, qui n'a pas de HOLD.
 - `CLAIMS.md` en vigueur : règle d'admission du FLAG (RN-001 B1) et évaluations par des tiers (D2). `RESULTS.md` : exécutions publiées et en attente de confirmation.
 
-- Vecteurs `CT-R4-014` (pas de dispatch sur un verdict périmé), `CT-R4-015` (l'âge n'améliore jamais une disposition) et `CT-R4-016` (une borne fail-safe refuse seule), enregistrés selon RN-001 §3 au statut `specified` ; le runner rend `IMPLEMENTATION_GAP` tant que les sondes n'existent pas. Le runner enregistre 59 identifiants au lieu de 56. `vectors/schema.json` accepte `superseded_by`.
+- Vecteurs `CT-R4-014` (pas de dispatch sur un verdict périmé), `CT-R4-015` (l'âge n'améliore jamais une disposition) et `CT-R4-016` (une borne fail-safe refuse seule), enregistrés selon RN-001 §3 au statut `specified` ; le runner rend `IMPLEMENTATION_GAP` tant que les sondes n'existent pas. Remplacés dans la même version par `CT-R4-004a` et `CT-R4-004b` (voir Changed). `vectors/schema.json` accepte `superseded_by`.
 - `reg-standards-baseline/notes/RN-001-flag-time-drift.md` : note ratifiée le 18 novembre 2026. FLAG avec condition = admission, FLAG sans condition = lacune ; borne fail-safe contre temps écoulé épistémique ; remplacement annoncé de CT-R4-004 ; résultat exigé pour C3 et CT-R4-005. Aucun résultat ni compte de vecteurs ne change.
 - `tools/check_coherence.py`, `coherence-baseline.json`, job CI `coherence` : compare les registres, les documents et les fichiers publiés ; échoue sur toute contradiction nouvelle.
 - `README.md` : carte du dépôt (REG, suite de conformance, REG+, crosswalk) et couverture publiée par fondement.
@@ -26,6 +26,8 @@ Ce que cette version ne contient pas : RFC-4 v0.3 (non ratifiée, pull request #
 ### Changed
 
 - **TENIR-Gov épinglé une seule fois.** Le job `lifecycle` installait `b65efba`, un commit hors `main` de `tenir_governance` qui se déclare lui aussi 5.7.0 sans l'être (142 commits après le tag). Il lit maintenant `conformance-target.json` (5.7.0, `47ef67e`, tag `v5.7.0`) comme les jobs `pinned-raft-conformance` et `coherence`, et vérifie la version installée. `standard_version` du manifeste passe de `v0.5.1` à `v0.7.0`.
+- **Harness : FLAG sans condition = lacune** (`CLAIMS.md`, RN-001 §1). Un scénario qui a avancé sur un `FLAG` sans condition explicite rend `IMPLEMENTATION_GAP`, plus `PASS`. Le port de référence ne change pas (15 PASS). Exécution locale non publiée du port TENIR-Gov 5.7.0 : CT-R4-001 et CT-R4-002 passent de `PASS` à `IMPLEMENTATION_GAP` (le chemin par défaut admet sur un `FLAG` « risk warning » sans condition).
+- Harness : un port ne peut plus déclarer `not_applicable` un vecteur qui a un scénario neutre (même règle que pour `run_custom`).
 - Harness aligné sur RN-001 §4 : pour CT-R4-005, un commit refusé sous un autre libellé que `STATE_DRIFT`/`HARD_VETO` donne `INCONCLUSIVE`, plus `FAIL`, comme dans `runner.py`. CT-R4-014 à CT-R4-016 rattachés aux familles candidates `EGP-03`, `EGP-13` et `EGP-03` ; le port de référence rend pour eux le même `IMPLEMENTATION_GAP` que le runner.
 - `RESULTS.md` : l'exécution de référence du 16 novembre a tourné sur une branche hors de cette version ; son lien est retiré en attendant une exécution sur le commit v0.7.0.
 - **CT-R4-004 remplacé** par CT-R4-004a et CT-R4-004b (révision RFC-4 v0.3, §5) : `superseded_by` dans `vectors/commit.yaml` ; il reste enregistré avec son texte et ses résultats. `CT-R4-014` et `CT-R4-015` (lecture réadjudication, retirée) passent `superseded_by` `CT-R4-004a`, `CT-R4-016` `superseded_by` `CT-R4-004b` ; aucun des trois n'avait de sonde ni de résultat.

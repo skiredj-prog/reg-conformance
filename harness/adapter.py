@@ -80,10 +80,21 @@ class PortAdapter(R.BaseAdapter):
         except Exception as e:
             status = self._inconclusive if vid == "C3" else self._fail
             return status(vid, f"exception prevents a determinate result: {e}")
+        fact = self.facts.get(vid)
+        if (state == R.ReportingState.PASS.value and fact and fact.get("admitted_on") == "FLAG"
+                and not fact.get("flag_conditions")):
+            # CLAIMS.md and RN-001 §1: a FLAG without an explicit condition does not
+            # satisfy RFC-0 §4. The check went forward on it, so it is a gap, not a pass.
+            return self._gap(vid, f"went forward on a FLAG that carries no explicit condition "
+                                  f"(RN-001 §1, CLAIMS.md): {details}")
         return self._r(vid, R.ReportingState(state), details)
 
     def run_vector(self, vid):
         if vid in self.port.not_applicable:
+            if vid in SCENARIOS:
+                # Same rule as for run_custom: a port does not set aside a neutral scenario.
+                # A scenario that cannot run says so itself (ADAPTER_REQUIRED, INCONCLUSIVE).
+                raise ValueError(f"{vid}: a port may not declare a neutral scenario not applicable")
             return self._na(vid, self.port.not_applicable[vid])
         custom = self.port.run_custom(vid)
         if custom is not None:

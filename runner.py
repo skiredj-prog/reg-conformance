@@ -496,7 +496,7 @@ class HTTPAdapter(BaseAdapter):
                 "/admin/expire-eval absent — cannot trigger expiry without wait")
         cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         return (self._pass("CT-R4-004","EVALUATION_EXPIRED on force-expired grant")
-                if cc == 409 and "EXPIRED" in cr.get("detail","")
+                if cc == 409 and "EXPIRED" in str(cr.get("detail","") if isinstance(cr, dict) else cr)
                 else self._fail("CT-R4-004", f"expected 409 EXPIRED, got {cc}: {cr}"))
 
     # CT-R4-004a — RFC-4 v0.3 revision §2.1: the observable is the effect, not the refusal code
@@ -510,11 +510,24 @@ class HTTPAdapter(BaseAdapter):
         if ec != 200:
             return self._ar("CT-R4-004a",
                 "/admin/expire-eval absent — cannot pass the authorization's bound without waiting")
+        # Positive control, only once expiry is available: a valid authorization must
+        # commit, or a refusal proves nothing.
+        c0, r0 = self._post("/evaluations", self._eb(
+            measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
+        if self._disp(r0) != "PASS":
+            return self._fail("CT-R4-004a", "could not obtain PASS")
+        pc, pr = self._post(f"/evaluations/{r0.get('evaluation_id')}/events", self._commit_body(r0))
+        if pc not in (200, 201):
+            return self._inconclusive("CT-R4-004a",
+                f"a valid authorization was not committed either (HTTP {pc}: {pr}), so a refusal proves nothing")
         cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         if cc in (200, 201):
             return self._fail("CT-R4-004a", f"commit accepted under the expired authorization {eid}")
-        if 400 <= cc < 500:
+        if cc == 409:
             return self._pass("CT-R4-004a", f"commit refused under the expired authorization (HTTP {cc}: {cr})")
+        if 400 <= cc < 500:
+            return self._inconclusive("CT-R4-004a",
+                f"commit not accepted, but HTTP {cc} does not establish a refusal of the commit itself: {cr}")
         return self._inconclusive("CT-R4-004a", f"outcome of the commit not established (HTTP {cc}: {cr})")
 
     # CT-R4-004b — RFC-4 v0.3 revision §2.2
