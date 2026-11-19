@@ -82,11 +82,13 @@ resulting state, expressed in the canonical vocabulary.
 
 The record MUST distinguish what the available evidence establishes, not
 what the dispatch history suggests. Non-execution is established when the
-attempt was never dispatched, or when it was dispatched and a qualified,
-verified non-execution attestation exists: the attempt is then recorded as
+attempt was never dispatched, or when it was dispatched and either a
+qualified rejection of that dispatch was observed or a qualified, verified
+non-execution attestation exists: the attempt is then recorded as
 established non-execution. When dispatch was possible and the evidence does
-not establish the outcome (attestation absent, contradictory or not
-qualified), the attempt is recorded as unknown, with reconciliation required.
+not establish the outcome (no qualified rejection observed, and the
+attestation absent, contradictory or not qualified), the attempt is recorded
+as unknown, with reconciliation required.
 Closing the hold does not establish what happened outside.
 
 A bound that the deployment declares but that the runtime cannot receive or
@@ -103,12 +105,19 @@ as cited by the author).
 
 | What the available evidence establishes at expiry | Recorded state |
 |---|---|
-| Non-execution: the attempt was never dispatched, or it was dispatched and a qualified, verified non-execution attestation exists | `CONFIRMED_NONEXECUTION` |
-| Dispatch was possible and the outcome is not established: attestation absent, contradictory or not qualified | `UNKNOWN`, reconciliation required |
+| Non-execution: the attempt was never dispatched; or it was dispatched and a qualified rejection of that dispatch was observed, or a qualified, verified non-execution attestation exists | `CONFIRMED_NONEXECUTION` |
+| Dispatch was possible and the outcome is not established: no qualified rejection observed, and the attestation absent, contradictory or not qualified | `UNKNOWN`, reconciliation required |
 
 Example: dispatch occurred, but a qualified attestation establishes
 non-execution: `CONFIRMED_NONEXECUTION`. A verified attestation completes the
 reconciliation; the dispatch does not keep the attempt `UNKNOWN`.
+
+A qualified rejection is one that manuscript v7.2 §4.4 records as `dispatch,
+rejection observed`: the runtime observed the rejection of that dispatch, and
+the outcome is qualified with no effect recorded. Manuscript v7.2 §4.3 lets
+`NEA` hold on matching evidence: an observed rejection, a kernel veto before
+dispatch (one case of never dispatched), or an attestation accepted under
+`non_execution_attested`.
 
 A qualified, verified non-execution attestation is one that meets all four
 conditions manuscript v7.2 §4.4 sets for `non_execution_attested`: the
@@ -128,10 +137,11 @@ object carries the bound.
 `FAILED` is not a term of the canonical vocabulary (v6.3, as cited by the
 author). It is a runtime label and MUST be mapped by the rule above: to
 `CONFIRMED_NONEXECUTION` when the evidence establishes non-execution (never
-dispatched, or dispatched with a qualified, verified non-execution attestation,
-as in the manuscript v7.2 transition T7), to `UNKNOWN` with reconciliation
-otherwise. A report that shows `FAILED` without this mapping does not establish
-the recorded state of §2.2.
+dispatched; dispatched with a qualified rejection observed, as in the
+manuscript v7.2 row `dispatch, rejection observed`; or dispatched with a
+qualified, verified non-execution attestation, as in transition T7), to
+`UNKNOWN` with reconciliation otherwise. A report that shows `FAILED`
+without this mapping does not establish the recorded state of §2.2.
 
 ## 3. State drift at commit (carries RN-001 §4)
 
