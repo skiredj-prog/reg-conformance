@@ -54,6 +54,23 @@ def test_the_shim_refuses_a_measurement_that_is_not_a_number(bad):
         shim.Measurements(pressure=bad)
 
 
+@pytest.mark.parametrize("pressure, volatility",
+                         [(10**400, 1), (10**400, 0.5), (-0.04, 1.0), (None, 0.5), (0.04, None)],
+                         ids=repr)
+def test_a_velocity_that_cannot_be_derived_is_unmeasured(pressure, volatility):
+    pytest.importorskip("fastapi")
+    import shim
+    v = shim._derived_velocity(pressure, volatility)
+    assert v is None
+    assert ENGINE.evaluate(pressure, v, 0.9)["decision"] == "HOLD"
+
+
+def test_a_derived_velocity_is_kept():
+    pytest.importorskip("fastapi")
+    import shim
+    assert shim._derived_velocity(0.04, 1.0) == pytest.approx(0.2)
+
+
 def test_the_shim_keeps_numbers_and_null():
     pytest.importorskip("fastapi")
     import shim

@@ -24,6 +24,19 @@ sys.path.insert(0, str(Path(__file__).parent))
 from kernel.policy_engine import PolicyEngine, unmeasured_axes
 
 
+def _derived_velocity(pressure, volatility):
+    """V = sqrt(pressure × volatility) when no velocity is sent. A product that
+    is not a real number (an axis missing, a negative product, an integer too
+    large for a float) leaves V unmeasured, so the kernel holds the action."""
+    if pressure is None or volatility is None:
+        return None
+    try:
+        v = (pressure * volatility) ** 0.5
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return None if isinstance(v, complex) else v
+
+
 def _wire_measurements(P, V, K) -> dict:
     """JSON-safe measurements: a value that is not finite goes out as null, never NaN."""
     missing = set(unmeasured_axes(P, V, K))
@@ -186,13 +199,8 @@ async def evaluate(req: EvaluationRequest):
         m  = req.measurements
         P  = m.pressure
         V  = m.velocity
-        if V is None and m.pressure is not None and m.volatility is not None:
-            try:
-                V = (m.pressure * m.volatility) ** 0.5
-            except (TypeError, ValueError):
-                V = None
-        if isinstance(V, complex):
-            V = None
+        if V is None:
+            V = _derived_velocity(m.pressure, m.volatility)
         K  = m.capacity
         kr = _engine.evaluate(P, V, K)
         record = {
