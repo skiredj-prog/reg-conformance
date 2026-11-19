@@ -61,6 +61,13 @@ def test_port_cannot_override_a_neutral_scenario():
         PortAdapter(Cheater()).run_vector("C1")
 
 
+def test_port_cannot_set_aside_a_neutral_scenario_as_not_applicable():
+    class Dodger(TemplatePort):
+        not_applicable = {"C1": "not for us"}
+    with pytest.raises(ValueError):
+        PortAdapter(Dodger()).run_vector("C1")
+
+
 def test_declared_but_unimplemented_capability_is_not_a_pass():
     class Hollow(TemplatePort):
         capabilities = frozenset({P.EVALUATE})
@@ -154,7 +161,10 @@ def test_tenir_gov_port_reports_native_dispositions_unchanged():
 def test_tenir_gov_port_on_the_property_checks():
     from harness.ports.tenir_gov import TenirGovPort
     got = {r.vector_id: r.status.value for r in PortAdapter(TenirGovPort()).run_checks()}
-    assert got["PX-CT-R0-005"] == got["PX-REG-STATE-014"] == got["PX-VEC-6-02"] == "PASS"
+    # These go forward on the runtime's admission. On 5.7.0 the default path admits on a
+    # FLAG with no explicit condition ("risk warning"), which RN-001 §1 records as a gap.
+    assert {got["PX-CT-R0-005"], got["PX-REG-STATE-014"], got["PX-VEC-6-02"]} <= {
+        "PASS", "IMPLEMENTATION_GAP"}
     # The default path has no credential to malform and no revocation primitive.
     assert got["PX-CT-R3-001"] == got["PX-CT-R3-003"] == "ADAPTER_REQUIRED"
     # The scope check runs: its outcome belongs to the runtime version, not to this test.
@@ -162,7 +172,9 @@ def test_tenir_gov_port_on_the_property_checks():
     # The default path declares no bound: a HOLD it enters carries no tau_k.
     assert {got[c] for c in _AT_A_BOUND} == {"ADAPTER_REQUIRED"}
     # Unreadable evidence is held, and lower confidence widens nothing.
-    assert got["PX-REG-STATE-001"] == got["PX-REG-STATE-013"] == got["PX-REG-STATE-015"] == "PASS"
+    # (A check that goes forward on a FLAG without a condition is a gap, see above.)
+    assert {got["PX-REG-STATE-001"], got["PX-REG-STATE-013"], got["PX-REG-STATE-015"]} <= {
+        "PASS", "IMPLEMENTATION_GAP"}
     # Missing evidence: the check runs on every input; its outcome belongs to the version.
     assert got["PX-REG-STATE-010"] in ("PASS", "FAIL")
     # One value per measurement, no age: stale and contradictory cannot be produced.
@@ -195,10 +207,19 @@ def _two_phase(verdict, conditions=()):
     return adapter, {v: adapter.run_vector(v).status.value for v in ("CT-R4-001", "CT-R4-002")}
 
 
-def test_flag_admits_like_pass_and_is_recorded():
+def test_flag_with_a_condition_admits_like_pass_and_is_recorded():
     _, with_pass = _two_phase("PASS")
-    adapter, with_flag = _two_phase("FLAG")
+    adapter, with_flag = _two_phase("FLAG", ("dual control",))
     assert with_pass == with_flag == {"CT-R4-001": "PASS", "CT-R4-002": "PASS"}
+    assert adapter.facts["CT-R4-001"] == {"admitted_on": "FLAG",
+                                          "flag_conditions": ["dual control"]}
+
+
+def test_flag_without_a_condition_is_a_gap_not_a_pass():
+    # RN-001 §1 and CLAIMS.md: a FLAG that carries no explicit condition does not
+    # satisfy RFC-0 §4; a check that went forward on it is an implementation gap.
+    adapter, statuses = _two_phase("FLAG")
+    assert statuses == {"CT-R4-001": "IMPLEMENTATION_GAP", "CT-R4-002": "IMPLEMENTATION_GAP"}
     assert adapter.facts["CT-R4-001"] == {"admitted_on": "FLAG", "flag_conditions": []}
 
 
@@ -213,18 +234,26 @@ def test_a_suspension_or_a_refusal_is_never_an_admission(verdict):
     assert statuses == {"CT-R4-001": "FAIL", "CT-R4-002": "FAIL"}
 
 
-def _relabel(intent, disposition):
+def _relabel(intent, disposition, conditions=()):
     class F(_Fixture):
         def evaluate(self, asked, **kw):
             d = super().evaluate(asked, **kw)
             if asked == intent:
                 d.disposition = disposition
+                if conditions:
+                    d.conditions = conditions
             return d
     return {r.vector_id: r.status.value for r in PortAdapter(F()).run_probes()}
 
 
-def test_probes_accept_an_allow_given_as_flag():
-    assert set(_relabel(P.ADMISSIBLE, "FLAG").values()) == {"PASS"}
+def test_probes_accept_an_allow_given_as_flag_with_a_condition():
+    assert set(_relabel(P.ADMISSIBLE, "FLAG", ("monitoring",)).values()) == {"PASS"}
+
+
+def test_probes_do_not_pass_on_a_flag_without_a_condition():
+    # Only the probes that go forward on the admitted call (HX-EFFECT-002, 004) are affected.
+    r = _relabel(P.ADMISSIBLE, "FLAG")
+    assert r["HX-EFFECT-002"] == r["HX-EFFECT-004"] == "IMPLEMENTATION_GAP"
 
 
 def test_a_call_needing_approval_must_not_get_a_plain_pass():
