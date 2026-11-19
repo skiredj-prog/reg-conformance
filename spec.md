@@ -1,4 +1,4 @@
-# REG Conformance Spec — v0.3.2
+# REG Conformance Spec — v0.4.0
 **TENIR Labs** | 2026-09-29 | RFC-4 (frozen) · RFC-7 (updated)
 
 ---

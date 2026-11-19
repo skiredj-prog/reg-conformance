@@ -14,8 +14,11 @@ jobs:
           python-version: "3.12"
       - name: Install runner dependencies
         run: python -m pip install -r requirements.txt pytest
-      - name: Install pinned TENIR-Gov kernel candidate
-        run: python -m pip install "git+https://github.com/skiredj-prog/tenir_governance.git@b65efbaeda527b70fe2682ad38d2bc37cda1effc"
+      - name: Install the TENIR-Gov target pinned in conformance-target.json
+        run: |
+          commit=$(python -c 'import json; print(json.load(open("conformance-target.json"))["implementation"]["source_commit"])')
+          python -m pip install "git+https://github.com/skiredj-prog/tenir_governance.git@${commit}"
+          python tools/verify_conformance_target.py
       - name: Install pinned lab membrane PR candidate
         run: python -m pip install "git+https://github.com/skiredj-prog/tenir-conformance-s1-g1.git@8bc0e5e291f7ac64d601bb08d76b5f2c3f70562f"
       - name: Test T6-T8 lab probes and no native promotion

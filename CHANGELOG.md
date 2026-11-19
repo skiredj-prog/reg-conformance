@@ -1,12 +1,27 @@
 # Changelog
 
-## Non publié — cohérence REG / REG+ / suite (novembre 2026)
-
-Une seule version de chaque chose. Détail et état : `python tools/check_coherence.py`.
+## Non publié
 
 ### Added
 
 - **RFC-4 v0.3** (`reg-standards-baseline/rfc/rfc-4.md`, statut brouillon, la v0.2 reste le texte gelé jusqu'à ratification) : intègre RN-001. Borne fail-safe (τ_K sur un HOLD) contre âge du verdict, entrée épistémique (§2.3) ; résultat exigé sur dérive d'état (§2.2) ; reçu de suspension avec τ_K et condition de reprise (§3.2) ; CT-R4-014 à CT-R4-016 dans l'ensemble minimal (§5.2) ; réconciliation τ_K / âge du verdict (§7).
+
+### Changed
+
+- **CT-R4-004 réécrit** (RFC-4 v0.3 §5.2 item 4) : branche de refus du verdict périmé, dans `runner.py` et `harness/scenarios.py`. Commit accepté sans réadjudication enregistrée : `FAIL` ; refus `EVALUATION_EXPIRED` : `PASS` ; refus pour une autre raison : `INCONCLUSIVE` (auparavant `FAIL`). Résultats natif et HTTP inchangés (`PASS`).
+
+## v0.7.0 — 2026-11-19
+
+Cohérence REG / REG+ / suite, RN-001 inscrit dans le registre des vecteurs, harness neutre et `CLAIMS.md` en vigueur. Une seule version de chaque chose. Détail et état : `python tools/check_coherence.py`.
+
+Ce que cette version ne contient pas : RFC-4 v0.3 (non ratifiée, pull request #78), le glossaire papier / suite et l'errata du manuscrit v7.2, une version 5.7.1 de TENIR-Gov. Aucune capacité n'est démontrée (0 sur 42 configurations admissibles) ; aucun résultat publié ne porte sur le runtime TENIR-Gov.
+
+### Added
+
+- **Suite v0.4.0** (`runner.py`, `spec.md`, `reg_common.py`) : 59 vecteurs au lieu de 56 (v0.3.2). Les rapports se distinguent ainsi de ceux de v0.6.x.
+- `harness/` : port neutre (`RuntimePort`), scénarios écrits une fois, port de référence, port TENIR-Gov sur le chemin par défaut du gouverneur (correspondance des intentions et des refus provisoire, à confirmer par l'auteur du runtime), sondes d'effet `HX-EFFECT-001` à `004`, 17 contrôles de propriété, lecture par familles candidates `EGP-*` (non ratifiées). Workflow `REG Conformance - Run` (`conformance-run.yml`) et `tools/make_evidence_bundle.py` : une exécution, un paquet de preuve, `certifying: false`.
+- `CLAIMS.md` en vigueur : règle d'admission du FLAG (RN-001 B1) et évaluations par des tiers (D2). `RESULTS.md` : exécutions publiées et en attente de confirmation.
+
 - Vecteurs `CT-R4-014` (pas de dispatch sur un verdict périmé), `CT-R4-015` (l'âge n'améliore jamais une disposition) et `CT-R4-016` (une borne fail-safe refuse seule), enregistrés selon RN-001 §3 au statut `specified` ; le runner rend `IMPLEMENTATION_GAP` tant que les sondes n'existent pas. Le runner enregistre 59 identifiants au lieu de 56. `vectors/schema.json` accepte `superseded_by`.
 - `reg-standards-baseline/notes/RN-001-flag-time-drift.md` : note ratifiée le 18 novembre 2026. FLAG avec condition = admission, FLAG sans condition = lacune ; borne fail-safe contre temps écoulé épistémique ; remplacement annoncé de CT-R4-004 ; résultat exigé pour C3 et CT-R4-005. Aucun résultat ni compte de vecteurs ne change.
 - `tools/check_coherence.py`, `coherence-baseline.json`, job CI `coherence` : compare les registres, les documents et les fichiers publiés ; échoue sur toute contradiction nouvelle.
@@ -18,8 +33,10 @@ Une seule version de chaque chose. Détail et état : `python tools/check_cohere
 
 ### Changed
 
+- **TENIR-Gov épinglé une seule fois.** Le job `lifecycle` installait `b65efba`, un commit hors `main` de `tenir_governance` qui se déclare lui aussi 5.7.0 sans l'être (142 commits après le tag). Il lit maintenant `conformance-target.json` (5.7.0, `47ef67e`, tag `v5.7.0`) comme les jobs `pinned-raft-conformance` et `coherence`, et vérifie la version installée. `standard_version` du manifeste passe de `v0.5.1` à `v0.7.0`.
+- Harness aligné sur RN-001 §4 : pour CT-R4-005, un commit refusé sous un autre libellé que `STATE_DRIFT`/`HARD_VETO` donne `INCONCLUSIVE`, plus `FAIL`, comme dans `runner.py`. CT-R4-014 à CT-R4-016 rattachés aux familles candidates `EGP-03`, `EGP-13` et `EGP-03` ; le port de référence rend pour eux le même `IMPLEMENTATION_GAP` que le runner.
+- `RESULTS.md` : l'exécution de référence du 16 novembre a tourné sur une branche hors de cette version ; son lien est retiré en attendant une exécution sur le commit v0.7.0.
 - **CT-R4-004 remplacé** par CT-R4-014 à CT-R4-016 (RN-001 §3) : `superseded_by` dans `vectors/commit.yaml` ; il reste enregistré avec son texte et ses résultats.
-- **CT-R4-004 réécrit** (RFC-4 v0.3 §5.2 item 4) : branche de refus du verdict périmé. Commit accepté sans réadjudication enregistrée : `FAIL` ; refus `EVALUATION_EXPIRED` : `PASS` ; refus pour une autre raison : `INCONCLUSIVE` (auparavant `FAIL`). Résultats natif et HTTP inchangés (`PASS`).
 - **C3 et CT-R4-005 : résultat exigé** (RN-001 §4) : aucun effet, et la classe d'état rapportée (refus terminal, ou suspension avec condition de reprise déclarée). `HARD_VETO` n'est plus exigé. Les sondes ne reconnaissent encore que la branche `HARD_VETO` ; un commit refusé sous un autre libellé donne `INCONCLUSIVE`, plus `FAIL`, pour CT-R4-005 comme déjà pour C3. Aucun résultat publié ne change.
 - **Invariant renommé : `I8` → `BUD`** (budget-ceiling-aggregate). Le manuscrit utilise `I8` pour un autre invariant (permanence de l'historique des tentatives). `tenir_governance` et les journaux de preuve antérieurs disent toujours `I8`. Les fiches `cap-i8-budget-*` deviennent `cap-budget-*`.
 - **Propriétés du contrat de consensus renommées : `C1`, `C2`, `C3` → `SAF`, `LIV`, `FT`.** `C1` à `C5` désignent des vecteurs de la suite.
@@ -67,7 +84,7 @@ Tag posé sur le commit `a2ec724` (30 octobre 2026), celui qui a été cité com
 - JSON tranche 1 avec la séparation EV-001 ;
 - synchronisation des sondes signées du cycle de vie T6–T8.
 
-Limites de ce commit, dites plutôt que corrigées : le CHANGELOG du commit s'arrête à v0.5.1, il n'a pas de `conformance-target.json`, et l'invariant budgétaire s'y appelle encore `I8`. Le travail ultérieur de `main` (section « Non publié » ci-dessus) n'en fait pas partie et paraîtra en v0.7.0.
+Limites de ce commit, dites plutôt que corrigées : le CHANGELOG du commit s'arrête à v0.5.1, il n'a pas de `conformance-target.json`, et l'invariant budgétaire s'y appelle encore `I8`. Le travail ultérieur de `main` n'en fait pas partie : il paraît en v0.7.0 (ci-dessus).
 
 ## v0.6.1 — 2026-10-21
 

@@ -1,5 +1,5 @@
 """
-reg_common.py — REG Conformance Suite v0.3.2
+reg_common.py — REG Conformance Suite v0.4.0
 Shared primitives used by shim.py (HTTP adapter) and NativeKernelAdapter.
 """
 import base64, hashlib, json
