@@ -785,3 +785,151 @@ def test_bundle_verdict_carries_the_residue_of_each_observed_result():
     assert set(kept) == observed and set(CHECKS) <= observed
     assert kept["PX-CT-R3-001"]["not_observed"][0] == "that the rejection comes before evaluation"
     assert verdict["observation"]["conditions"]["declared_bounds_s"][P.B_TAU_K] == 120.0
+
+
+# -- CT-R4-004b with a late answer (RFC-4 v0.3 revision §2.2) ----------------
+
+class _Held(P.RuntimePort):
+    """Two-phase double with a HOLD, an answer to it, a simulated clock and a
+    declared tau_k. `fault` selects the defect."""
+    capabilities = frozenset({P.EVALUATE, P.COMMIT, P.APPROVE, P.CLOCK, P.EFFECTS})
+    intents = frozenset({P.NEEDS_APPROVAL})
+    bounds = {P.B_TAU_K: 30.0}
+    clock_mode = "simulated"
+    fault = None
+
+    def reset(self):
+        self.now, self.held, self.admitted, self.journal = 0.0, {}, set(), []
+        self.closed, self.late_commits = set(), 0
+
+    def evaluate(self, intent, *, principal, action_type, nonce=None):
+        token = uuid.uuid4().hex
+        self.held[token] = self.now
+        return P.Decision(token, "HOLD", action_type, principal, {})
+
+    def _late(self, d):
+        return self.now - self.held.get(d.decision_id, self.now) > self.bounds[P.B_TAU_K]
+
+    def approve(self, d):
+        if d.decision_id in self.closed:
+            raise P.Refused(P.R_EXPIRED, "HARD_VETO", "attempt closed")
+        if self.fault == "never_admits":
+            return P.Decision(d.decision_id, "HOLD", d.action_type, d.principal, {})
+        if self._late(d) and self.fault not in ("ignores_bound", "refuses_at_commit", "holds_on",
+                                                 "readmits", "recommits"):
+            raise P.Refused(P.R_EXPIRED, "HARD_VETO", "tau_k exhausted")
+        if self._late(d) and self.fault == "holds_on":
+            raise P.Refused(P.R_EXPIRED, None, "still held")
+        self.admitted.add(d.decision_id)
+        return P.Decision(d.decision_id, "PASS", d.action_type, d.principal, {})
+
+    def commit(self, d, *, action_type=None):
+        if d.decision_id not in self.admitted:
+            if self._late(d) and self.fault not in ("unanswered_held_on", "holds_on"):
+                self.closed.add(d.decision_id)
+                raise P.Refused(P.R_EXPIRED, "HARD_VETO", "tau_k exhausted")
+            raise P.Refused(P.R_INVALID_DISPOSITION, d.disposition, "not admitted")
+        if self._late(d) and self.fault in ("refuses_at_commit", "readmits", "recommits"):
+            self.late_commits += 1
+            if self.fault == "refuses_at_commit":
+                self.closed.add(d.decision_id)
+            if not (self.fault == "recommits" and self.late_commits > 1):
+                raise P.Refused(P.R_EXPIRED, "HARD_VETO", "tau_k exhausted at commit")
+        self.journal.append(d.decision_id)
+        return P.Committed(d.decision_id, {})
+
+    def elapse_past(self, bound):
+        self.now += self.bounds[bound] + 1
+        return self.bounds[bound] + 1
+
+    def observed_effects(self, d):
+        return self.journal.count(d.decision_id)
+
+
+def _r4_004b(fault=None, **attrs):
+    F = type("F", (_Held,), dict(fault=fault, **attrs))
+    return PortAdapter(F()).run_vector("CT-R4-004b")
+
+
+def test_ct_r4_004b_passes_when_the_late_answer_is_refused():
+    r = _r4_004b()
+    assert r.status == R.ReportingState.PASS
+    assert "at the answer" in r.details
+
+
+def test_ct_r4_004b_passes_when_the_refusal_comes_at_commit():
+    r = _r4_004b("refuses_at_commit")
+    assert r.status == R.ReportingState.PASS
+    assert "at the commit" in r.details and "the late answer itself gave PASS" in r.details
+
+
+def test_ct_r4_004b_does_not_conclude_when_the_same_attempt_is_admitted_again():
+    r = _r4_004b("readmits")
+    assert r.status == R.ReportingState.INCONCLUSIVE
+
+
+def test_ct_r4_004b_fails_when_the_same_attempt_is_committed_on_a_second_answer():
+    r = _r4_004b("recommits")
+    assert r.status == R.ReportingState.FAIL
+    assert "second answer" in r.details
+
+
+def test_ct_r4_004b_fails_when_the_late_answer_is_committed():
+    assert _r4_004b("ignores_bound").status == R.ReportingState.FAIL
+
+
+def test_ct_r4_004b_does_not_conclude_without_a_terminal_refusal():
+    assert _r4_004b("holds_on").status == R.ReportingState.INCONCLUSIVE
+
+
+def test_ct_r4_004b_does_not_pass_a_runtime_that_never_lets_a_hold_through():
+    r = _r4_004b("never_admits")
+    assert r.status == R.ReportingState.INCONCLUSIVE
+    assert "control" in r.details
+
+
+def test_ct_r4_004b_without_approve_runs_the_unanswered_case_only():
+    r = _r4_004b(capabilities=_Held.capabilities - {P.APPROVE})
+    assert r.status == R.ReportingState.PASS
+    assert "answered late" not in r.details
+
+
+def test_ct_r4_004b_late_case_does_not_lift_an_inconclusive_unanswered_case():
+    assert _r4_004b("unanswered_held_on").status == R.ReportingState.INCONCLUSIVE
+
+
+def test_ct_r4_004b_needs_a_declared_tau_k():
+    r = _r4_004b(bounds={})
+    assert r.status != R.ReportingState.PASS
+
+
+def test_ct_r4_004b_does_not_apply_the_default_under_fail_degraded():
+    assert _r4_004b(exhaustion_policy="fail-degraded").status == R.ReportingState.INCONCLUSIVE
+
+
+def _tenir_gov_has_policy_tau_k():
+    try:
+        from tenir_governance.composition import CompositionPolicy
+        CompositionPolicy(hold_tau_k_seconds=1.0, hold_tau_k_source="probe")
+        return True
+    except Exception:
+        return False
+
+
+@pytest.mark.skipif(not _tenir_gov_has_policy_tau_k(),
+                    reason="tenir-governance without a policy-declared tau_k (needs 5.7.1)")
+def test_tenir_gov_tau_k_port_on_the_fail_safe_bound():
+    from harness.ports.tenir_gov import TenirGovTauKPort
+    adapter = PortAdapter(TenirGovTauKPort())
+    got = {vid: adapter.run_vector(vid)
+           for vid in ("C5", "CT-R4-004a", "CT-R4-004b", "CT-R4-005")}
+    assert got["C5"].status == R.ReportingState.PASS
+    assert got["CT-R4-004b"].status == R.ReportingState.PASS
+    assert "answered late" in got["CT-R4-004b"].details
+    # No bound on an admitted operation or an approval: 004a cannot run.
+    assert got["CT-R4-004a"].status == R.ReportingState.ADAPTER_REQUIRED
+    # A quarantine refuses the commit but the port cannot show a terminal
+    # refusal or a declared resumption condition (RN-001 §4).
+    assert got["CT-R4-005"].status == R.ReportingState.INCONCLUSIVE
+    checks = {r.vector_id: r.status for r in adapter.run_checks()}
+    assert checks["PX-REG-STATE-024"] == R.ReportingState.PASS
