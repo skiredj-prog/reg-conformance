@@ -501,15 +501,6 @@ class HTTPAdapter(BaseAdapter):
 
     # CT-R4-004a — RFC-4 v0.3 revision §2.1: the observable is the effect, not the refusal code
     def _v_ct_r4_004a(self):
-        # Positive control: a valid authorization must commit, or a refusal proves nothing.
-        c0, r0 = self._post("/evaluations", self._eb(
-            measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
-        if self._disp(r0) != "PASS":
-            return self._fail("CT-R4-004a", "could not obtain PASS")
-        pc, pr = self._post(f"/evaluations/{r0.get('evaluation_id')}/events", self._commit_body(r0))
-        if pc not in (200, 201):
-            return self._inconclusive("CT-R4-004a",
-                f"a valid authorization was not committed either (HTTP {pc}: {pr}), so a refusal proves nothing")
         c, r = self._post("/evaluations", self._eb(
             measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
         if self._disp(r) != "PASS":
@@ -519,6 +510,16 @@ class HTTPAdapter(BaseAdapter):
         if ec != 200:
             return self._ar("CT-R4-004a",
                 "/admin/expire-eval absent — cannot pass the authorization's bound without waiting")
+        # Positive control, only once expiry is available: a valid authorization must
+        # commit, or a refusal proves nothing.
+        c0, r0 = self._post("/evaluations", self._eb(
+            measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
+        if self._disp(r0) != "PASS":
+            return self._fail("CT-R4-004a", "could not obtain PASS")
+        pc, pr = self._post(f"/evaluations/{r0.get('evaluation_id')}/events", self._commit_body(r0))
+        if pc not in (200, 201):
+            return self._inconclusive("CT-R4-004a",
+                f"a valid authorization was not committed either (HTTP {pc}: {pr}), so a refusal proves nothing")
         cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         if cc in (200, 201):
             return self._fail("CT-R4-004a", f"commit accepted under the expired authorization {eid}")
