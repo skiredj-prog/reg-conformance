@@ -1,0 +1,280 @@
+# REG vocabulary: canonical identifiers shared by the manuscript and the suite.
+#
+# This file is a versioned contract between layers (catalogue, TENIR proof,
+# projection, presentation). It names each term once, states which source
+# defines it, and records where the published manuscript v7.2 or the suite
+# uses the same word for another object.
+#
+# Rules:
+#   R1. The published manuscript is never edited. Where it and the suite
+#       disagree, the suite takes a new name and the manuscript gets a reading
+#       note in manuscript/ERRATA-v7.2.md.
+#   R2. The frozen RFCs keep their text. Where an RFC term is canonical, the
+#       suite and the next RFC revisions use it in the RFC sense only.
+#   R3. Historical evidence logs keep the identifiers they were written with.
+#       They are read through `aliases`, never rewritten.
+#   R4. A term listed under `pending` still has old uses in the files named
+#       there. tests/test_glossary.py tolerates those files and no others, so
+#       the list can shrink but cannot grow unnoticed.
+#
+# Provenance tags on every finding:
+#   verified  = read in the file and revision named in `sources`
+#   inferred  = reasoned from the text, not stated by it
+#
+# Change control: a change of meaning is a MAJOR bump; a new term or a new
+# alias is MINOR; a typo or a pending item closed is PATCH.
+
+version: "1.0.0"
+status: draft            # becomes "in force" when the author ratifies it
+date: "2026-11-19"
+
+sources:
+  manuscript: {file: manuscript/v7.2.md, release: "7.2", commit: 98bf685, doi: "10.5281/zenodo.24249646 (as stated in the repository; not checked on Zenodo)"}
+  suite_main: {commit: b943f06, tag_of_code: "v0.6.2 = a2ec724"}
+  pr_77_rn001_registry: {head: f4a4fb9, status: "draft, not merged"}
+  pr_76_claims: {head: 182190c, base: feat/property-view, status: "draft, not merged"}
+  rfc: reg-standards-baseline/rfc/ (frozen texts)
+  rn_001: reg-standards-baseline/notes/RN-001-flag-time-drift.md (ratified 2026-11-18)
+
+terms:
+
+  # ------------------------------------------------------------------ invariants
+  - id: GL-INV-MANUSCRIPT
+    canonical: "I1 … I8"
+    kind: invariant-namespace
+    definition: >
+      The identifiers I1 to I8 are reserved for the invariants of manuscript
+      v7.2 §4.5a, with the meanings given there. The suite uses an `I<n>`
+      identifier only when it imports that exact meaning (today: I2).
+    defined_in: manuscript/v7.2.md §4.5a
+    suite_ids_with_other_names: {BUD: "budget conservation", LIN: "linearizability", AGR: "agreement"}
+    finding: verified
+
+  - id: GL-INV-I2
+    canonical: I2
+    kind: invariant
+    definition: "A permit bound to an attempt and LEI authorizes at most one effect-producing dispatch and cannot be consumed again."
+    defined_in: manuscript/v7.2.md §4.5a (same text as v7.1)
+    suite: catalog/capabilities-v1.yaml normative_invariants[I2]
+    same_meaning: true
+    finding: verified
+    note: "contract_ref now cites v7.2 §4.5a; the definition is unchanged from v7.1."
+
+  - id: GL-INV-I8
+    canonical: I8
+    kind: invariant
+    definition: "Attempt-history permanence: for valid prefixes π1 ⊑ π2, the attempt records in π1 remain present and unaltered in π2."
+    defined_in: manuscript/v7.2.md §4.5a, §5.3
+    same_meaning: false
+    clash: >
+      Until catalogue v1.1.0 the suite used I8 for budget conservation, now BUD
+      (GL-INV-BUD). tenir_governance and earlier evidence logs still say I8 in
+      that budget sense.
+    finding: verified
+    note: "No suite vector or capability exercises the manuscript's I8 today."
+    guard:
+      pattern: '\bI8\b'
+      allowed:   # each file below says that I8 is the former name of BUD, or is history
+        - catalog/capabilities-v1.yaml
+        - crosswalk/data/crosswalk.json
+        - specs/evidence-type-specs-v1.md
+        - README.md
+        - CHANGELOG.md
+
+  - id: GL-INV-BUD
+    canonical: BUD
+    kind: invariant
+    definition: "Aggregate budget conservation: reserved + committed <= capacity, per resource_id, at every intermediate state."
+    defined_in: catalog/capabilities-v1.yaml normative_invariants[BUD]; specs/consensus-contract-v1.md §2.4
+    aliases:
+      - {alias: I8, where: "tenir_governance; catalogue <= v1.1.0 (tag v0.6.2 included); evidence logs written before the rename", read_as: BUD}
+      - {alias: I8_maintained, where: "evidence/test-fault-tolerance.log and other historical fault-injection logs", read_as: BUD_maintained}
+    finding: verified
+    pending:
+      - {where: "tenir_governance (other repository)", change: "rename I8 to BUD in code and docs, keeping I8 as a deprecated alias", owner: "TENIR-Gov 5.7.1 workstream"}
+
+  # ------------------------------------------------------------------ time bounds
+  - id: GL-TAU-K
+    canonical: "τ_K"
+    ascii: tau_K
+    kind: time-bound
+    definition: >
+      Organizational veto window: the maximum time allowed for human resolution
+      of a HOLD. Derived from documented organizational SLAs, never invented by
+      the implementation. Its exhaustion applies the pre-declared exhaustion
+      policy. A bound the policy declares fail-safe refuses alone (RN-001 §2a).
+    defined_in: "RFC-0 §6; RFC-5 §1; RN-001 §2a"
+    variants: {"τ_K^comp": "collective window of a composition, RFC-3 §6.4"}
+    implementations: ["tenir_governance HoldManager tau_k_seconds", "composition/simulator.py (composition window)"]
+    manuscript_v7_2:
+      same_meaning_in: ["§3.1 Ω component (inferred: Ω is not exercised in the paper)", "§9 composition simulator, 'τ_K is a supplied input' (verified against composition/simulator.py)"]
+      other_meaning_in: ["§2.2", "§4.4", "§6.1", "§7.1 S2"]   # see GL-TAU-R
+    finding: verified
+
+  - id: GL-TAU-R
+    canonical: "τ_R"
+    ascii: tau_R
+    kind: time-bound
+    definition: >
+      Receipt qualification window: how long an admitted attempt in AWAITING
+      waits for a qualifying receipt. At t >= τ_R the attempt becomes UNKNOWN.
+      Expiry never yields FAILED or RESOLVED.
+    defined_in: "this glossary (new name for the manuscript's receipt bound)"
+    manuscript_v7_2:
+      written_as: "τ_K"
+      locations: ["l.86 §2.2 (S2)", "l.229-230 §4.4 (admit and await, timeout)", "l.383 §6.1 (clock advance by τ_K)", "l.485 §7.1 (S2)"]
+      errata: ERR-7.2-01
+    suite_uses_needing_rename:
+      - "runner.py l.13, l.16, l.107, l.109 (T6/T7 descriptions)"
+      - "vectors/core.yaml CT-R4-011 input ('under τ_K discipline'), and vectors/dist/vectors.json"
+    finding: verified
+    pending:
+      - {where: [runner.py, vectors/core.yaml, vectors/dist/vectors.json], change: "τ_K -> τ_R where the receipt window is meant", after: "PR #77 merges (it edits the same files)"}
+    guard:
+      pattern: 'τ_K (qualification|discipline)|\(τ_K expiry\)|within τ_K'
+      allowed: []
+
+  - id: GL-VERDICT-AGE
+    canonical: "verdict age"
+    kind: time-quantity
+    definition: "Time elapsed since an admission (PASS or FLAG) was rendered. An epistemic input to readjudication; it does not refuse alone unless the policy also declares it fail-safe."
+    defined_in: "RN-001 §2b, §3"
+    symbol: none
+    finding: verified
+
+  - id: GL-FRESHNESS
+    canonical: "freshness threshold"
+    kind: policy-parameter
+    definition: "Policy-declared age beyond which a verdict cannot be dispatched without a fresh adjudication that includes its age."
+    defined_in: "RN-001 §3.1; vector CT-R4-014 (PR #77)"
+    symbol: none   # θ_F reserved if one is ever needed; not introduced
+    finding: verified
+
+  # ------------------------------------------------------------------ vectors and checks
+  - id: GL-CT-R4-005
+    canonical: CT-R4-005
+    kind: suite-vector
+    definition: >
+      Commit-state binding: the governance state (policy_epoch) changes between
+      verdict and commit. Required outcome: no effect under the changed state;
+      terminal refusal, or suspension with a declared resumption condition.
+    defined_in: "vectors/commit.yaml as rewritten by PR #77, per RN-001 §4"
+    internal_clash:
+      - {source: "RFC-4 §2.2 body", says: "MUST ... trigger HARD_VETO"}
+      - {source: "RFC-4 §5.2 item 5", says: "REJECT / STATE_DRIFT"}
+      - {source: "vectors/commit.yaml on main b943f06", says: "expected: HARD_VETO"}
+      - {source: "PR #77", says: "no effect; terminal refusal, or suspension with a declared resumption condition"}
+    resolution: "PR #77 text is canonical. RFC-4 v0.3 §2.2 and §5.2 take the RN-001 §4 wording."
+    manuscript_v7_2:
+      same_meaning: false
+      locations: ["l.10 changelog 7.1", "l.61 §1.1 (traceability list)", "l.647 §10.1"]
+      used_for: GL-MEM-COMMIT-BINDING
+      errata: ERR-7.2-02
+    finding: verified
+
+  - id: GL-MEM-COMMIT-BINDING
+    canonical: "harness commit binding (S11)"
+    kind: harness-check
+    definition: >
+      The check in tenir-conformance-s1-g1 that binds the transition and payload
+      hashes at verdict and at commit (§7.9, S11). It does not capture drift of
+      the external environment between verdict and commit.
+    defined_in: "manuscript/v7.2.md §7.9, §10.1"
+    closest_suite_vectors: ["CT-R4-001", "CT-R4-002"]   # inferred: they bind action/payload; CT-R4-005 binds governance state
+    finding: "verified (definition); inferred (closest vectors)"
+
+  - id: GL-LIFECYCLE-T
+    canonical: "T6, T7, T8"
+    kind: lifecycle-transition
+    definition:
+      T6: "UNKNOWN or AWAITING -> RESOLVED, only on qualified evidence (vector CT-R4-011)"
+      T7: "UNKNOWN/AWAITING/PENDING -> FAILED, only on a verified non-execution attestation (vector CT-R4-012)"
+      T8: "FAILED with verified non-execution and retry_eligible -> new attempt allowed, never automatic execution (vector CT-R4-013)"
+    defined_in: "tenir-conformance-s1-g1 at 8bc0e5e (pinned in .github/workflows/lifecycle.yml); runner.py header"
+    manuscript_v7_2:
+      names_only: T7      # §4.4 'declare failed (T7)'
+      absent: [T6, T8]
+    clash: >
+      vectors/core.yaml, runner.py and VECTORS.md cite "Manuscript v7.2 §4.4,
+      transition T6" and "transition T8". The manuscript names neither.
+    finding: verified
+    pending:
+      - {where: [vectors/core.yaml, vectors/dist/vectors.json, runner.py, VECTORS.md], change: "cite T6 and T8 to tenir-conformance-s1-g1@8bc0e5e; keep §4.4 only for T7 and for the untagged rows it mirrors", after: "PR #77 merges"}
+    guard:
+      pattern: 'v7\.2 §4\.4.*\bT[68]\b|\bT[68] \(manuscript v7\.2'
+      allowed: []
+
+  - id: GL-RETRY-ELIGIBLE
+    canonical: retry_eligible
+    kind: field
+    definition: "Flag on a FAILED attempt. At tenir-conformance-s1-g1 d42499b it is an audit annotation only; from 8bc0e5e it is a further admission condition."
+    defined_in: "manuscript/v7.2.md §4.4 (both revisions named)"
+    note: "CT-R4-013 follows 8bc0e5e, the revision the suite pins, not d42499b, the revision the paper evaluates. Not a contradiction; cite the revision with the result."
+    finding: verified
+
+  - id: GL-SCENARIO-S
+    canonical: "S1 … S12"
+    kind: scenario-namespace
+    definition: "Scenario campaign of tenir-conformance-s1-g1 (manuscript §7). Suffixed cases (S1a, S2c, S12f …) are sub-cases of the same campaign."
+    same_meaning: true
+    finding: verified
+
+  # ------------------------------------------------------------------ outcomes and statuses
+  - id: GL-DISPOSITION
+    canonical: "disposition: PASS | FLAG | HOLD | HARD_VETO"
+    kind: enum
+    definition: "The four execution dispositions of RFC-0 §4, also D(τ, Ω) in manuscript §3.1."
+    same_meaning: true
+    clash: >
+      `PASS` is also a test outcome (GL-OUTCOME). Write `disposition PASS` or
+      `outcome PASS` whenever both can be read. The manuscript's client
+      projection (UNKNOWN, HOLD) in §4.2 uses HOLD as the disposition shown to
+      the client; same meaning.
+    finding: verified
+
+  - id: GL-OUTCOME
+    canonical: "outcome: PASS | FAIL | INCONCLUSIVE | NOT_APPLICABLE | ADAPTER_REQUIRED | IMPLEMENTATION_GAP"
+    kind: enum
+    definition: "Result of one test in one run (CLAIMS.md, PR #76; vectors/schema.json `native`)."
+    finding: verified
+
+  - id: GL-CLAIM-LEVEL
+    canonical: "level 1 semantic mapping | level 2 adapter-tested | level 3 native-conformant"
+    kind: enum
+    definition: "How the subject was reached in a run (CLAIMS.md, PR #76)."
+    finding: verified
+    note: >
+      "Démontré" (demonstrated) is a catalogue status for a capability with a
+      verified attestation (capability-evidence-contract-v1.json,
+      effective_guarantee_demonstrated). Vectors have no "demonstrated"
+      status. For a vector on a runtime, say: "outcome PASS at level 2 on
+      <subject>@<revision>".
+
+  # ------------------------------------------------------------------ names
+  - id: GL-REG
+    canonical: REG
+    kind: name
+    definition: "An open, independent standard that describes required outcomes and never prescribes a mechanism. It is not TENIR's implementation."
+    defined_in: "repository doctrine (README); RFC-0"
+    manuscript_v7_2:
+      same_meaning: false
+      locations: ["l.120 §3 'an independent proof lifecycle (REG)' as one of four TENIR concerns"]
+      errata: ERR-7.2-03
+    finding: verified
+
+  - id: GL-E-IDS
+    canonical: "EXP-E1, EXP-E2 | EXT-E1 … EXT-E7"
+    kind: id-namespace
+    definition:
+      EXP: "Experiments of the manuscript: E1 bounded exploration, E2 four-world matrix (§6)."
+      EXT: "Entries of the exteriority registry (docs/exteriority-registry-v0.2.md)."
+    clash: "Both write E1, E2. CHANGELOG audit items E2–E7 (v0.4) are a third use; historical, left as is."
+    finding: verified
+    pending:
+      - {where: [docs/exteriority-registry-v0.2.md], change: "prefix entries EXT-", after: "next revision of the registry draft"}
+
+  - id: GL-C-IDS
+    canonical: "C1 … C5"
+    kind: id-namespace
+    definition: "Suite vectors of vectors/core.yaml. The former consensus properties C1–C3 are SAF, LIV, FT on main (CHANGELOG \"Non publié\", after tag v0.6.2)."
+    finding: verified

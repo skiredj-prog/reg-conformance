@@ -21,14 +21,14 @@ normative_invariants:
     description: >
       Un permis lié à une tentative et à un LEI ne peut autoriser qu'une seule
       dispatch produisant un effet, et ne peut pas être consommé à nouveau.
-      Définition importée du manuscrit REG/TENIR (v7.1, §2.3 et table des
-      invariants). Ne signifie pas seulement que les permis ne sont pas utilisés
+      Définition importée du manuscrit REG/TENIR (v7.2 §4.5a, texte
+      identique à v7.1). Ne signifie pas seulement que les permis ne sont pas utilisés
       en concurrence.
     applies_to: ["cap.dedup.local-registry", "cap.dedup.consensus-registry",
                  "cap.dedup.provider-key"]
     guarantee_records: ["cap-exactly-once-external"]
     verification: "a définir : aucun test de conformance ne l'exerce encore"
-    contract_ref: "manuscript/v7.1.md (I2 — Permit single-use)"
+    contract_ref: "manuscript/v7.2.md §4.5a (I2 — Permit single-use; same text as v7.1)"
 
   - id: "BUD"
     name: "budget-ceiling-aggregate"

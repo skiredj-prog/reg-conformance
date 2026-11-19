@@ -271,7 +271,7 @@ evidence: <text>                      # sortie de test ou capture
 # safety_violations: <count>
 # recovery_successful: <bool>
 # linearizability_maintained: <bool>
-# I8_maintained: <bool>
+# BUD_maintained: <bool>          # written I8_maintained before the I8 -> BUD rename
 ```
 
 **Protocole** :
@@ -285,7 +285,7 @@ evidence: <text>                      # sortie de test ou capture
 **Critères d'acceptation** :
 - `safety_violations` = 0
 - `linearizability_maintained` = true
-- `I8_maintained` = true
+- `BUD_maintained` = true (a historical log that writes `I8_maintained` is read as `BUD_maintained`; see `glossary/glossary-v1.yaml`, GL-INV-BUD)
 - `recovery_successful` = true
 - Les fautes injectées correspondent au modèle déclaré
 
