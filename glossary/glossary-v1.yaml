@@ -267,10 +267,28 @@ terms:
           reconciliation is done. FAILED reached after a dispatch on such an
           attestation (§4.4 `declare failed (T7)`, `reconcile, FAILED`) maps to
           CONFIRMED_NONEXECUTION. The dispatch history does not change it.
-      RESOLVED: {mapping: "open: no canonical term named yet"}
-      PENDING: {mapping: "open"}
-      AWAITING: {mapping: "open"}
-      ESCALATED: {mapping: "open"}
+      # The four entries below are PROPOSED (2026-11-19), not decided. Same rule:
+      # the canonical state follows what the available evidence establishes.
+      RESOLVED:
+        status: proposed
+        mapping: "CONFIRMED_EXECUTION (name to be checked against v6.3: the term for 'available evidence establishes that the outcome was executed')"
+        why: "RESOLVED is reached only on a qualified receipt bound to id, LEI and nonce, or on bound fresh reconcile evidence (v7.2 §4.4): the evidence establishes execution."
+        alternative: "Keep unmapped if v6.3 has no execution-established term."
+      PENDING:
+        status: proposed
+        mapping: "no recorded outcome while open; when closed with no dispatch claim -> CONFIRMED_NONEXECUTION; if dispatch cannot be excluded -> UNKNOWN, reconciliation required"
+        why: "An open attempt has no outcome to establish yet; once closed, the evidence decides, as for any other label. Whether PENDING precedes dispatch is inferred (v7.2 §4.4 dispatches from 'new' and allows T7 from PENDING)."
+        alternative: "Map PENDING to UNKNOWN unconditionally (stricter, but records an unknown where nothing happened)."
+      AWAITING:
+        status: proposed
+        mapping: "UNKNOWN (reconciliation required once τ_R has passed without a qualifying receipt)"
+        why: "The attempt was admitted and dispatched and no receipt yet establishes the outcome; τ_R only decides when reconciliation becomes required."
+        alternative: "No recorded outcome until τ_R passes (treats the window as in progress, like PENDING)."
+      ESCALATED:
+        status: proposed
+        mapping: "UNKNOWN, reconciliation required"
+        why: "ESCALATED follows contradictory evidence on a non-terminal attempt (v7.2 §4.4): contradictory evidence establishes nothing. As a held state it also carries a declared bound (GL-BOUND-HELD-ATTEMPT)."
+        alternative: "A dedicated canonical term for contradictory evidence, if v6.3 has one."
       UNKNOWN: {mapping: "UNKNOWN (same term; reconciliation required)"}
     defined_in: "author decisions 2026-11-19 03:07 and 06:11; RFC-4 v0.3 §2.3"
     errata: ERR-7.2-05
