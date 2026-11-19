@@ -56,8 +56,8 @@ class ReferencePort(P.RuntimePort):
     # says the latency is "not declared or measured": the port does not
     # declare one in its place. It has no time-limited credential, no request
     # timestamp and no signing key for credentials. Its only HOLD is the one
-    # for an unmeasured axis (insufficient evidence, decision 5), which has no
-    # declared bound.
+    # for insufficient evidence (an unmeasured axis, decision 5, or a score
+    # that cannot be computed); neither path has a declared bound.
     intents = frozenset({P.ADMISSIBLE, P.INADMISSIBLE, P.NO_STANDING, P.DENIED,
                          P.MALFORMED_CREDENTIAL})
     not_applicable = {"C4": "No transport layer in in-process kernel."}
