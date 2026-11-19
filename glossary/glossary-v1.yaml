@@ -80,6 +80,8 @@ terms:
         - specs/evidence-type-specs-v1.md
         - README.md
         - CHANGELOG.md
+    pending:
+      - {where: [harness/ports/tenir_gov.py], change: "write 'BUD (named I8 in tenir_governance)' for the budget invariant", after: "PR #76 / #80 merges (file not on main yet)"}
 
   - id: GL-INV-BUD
     canonical: BUD
@@ -105,7 +107,7 @@ terms:
       policy. A bound the policy declares fail-safe refuses alone (RN-001 §2a).
     defined_in: "RFC-0 §6; RFC-5 §1; RN-001 §2a"
     variants: {"τ_K^comp": "collective window of a composition, RFC-3 §6.4"}
-    implementations: ["tenir_governance HoldManager tau_k_seconds", "composition/simulator.py (composition window)"]
+    implementations: ["tenir_governance HoldManager tau_k_seconds", "composition/simulator.py (composition window)", "harness/port.py B_TAU_K and harness/scenarios.py, RFC-5 sense (PR #76, verified at #80 head)"]
     manuscript_v7_2:
       same_meaning_in: ["§3.1 Ω component (inferred: Ω is not exercised in the paper)", "§9 composition simulator, 'τ_K is a supplied input' (verified against composition/simulator.py)"]
       other_meaning_in: ["§2.2", "§4.4", "§6.1", "§7.1 S2"]   # see GL-TAU-R
