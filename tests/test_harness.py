@@ -953,14 +953,16 @@ def test_tenir_gov_tau_k_port_on_the_fail_safe_bound():
     got = {vid: adapter.run_vector(vid)
            for vid in ("C5", "CT-R4-004a", "CT-R4-004b", "CT-R4-005")}
     assert got["C5"].status == R.ReportingState.PASS
-    # Both cases observe the bound (refusal, no effect), but the in-window control
-    # went forward on a FLAG with no condition (TENIR-Gov's default), so the
-    # in-force rule (CLAIMS.md, RN-001 §1) makes the vector a gap, not a pass.
+    # Both cases observe the bound (refusal, no effect). The in-window control
+    # went forward on TENIR-Gov's default FLAG, which states no condition:
+    # PASS under the declared mapping, with the reserve (decision 3, 19 Nov),
+    # and the gap recorded as an implementation gap.
     r = got["CT-R4-004b"]
-    assert r.status == R.ReportingState.IMPLEMENTATION_GAP
-    assert "FLAG that carries no explicit condition" in r.gap_note
-    assert "unanswered: held attempt refused" in r.gap_note
-    assert "answered late" in r.gap_note
+    assert r.status == R.ReportingState.PASS
+    assert "unanswered: held attempt refused" in r.details
+    assert "answered late" in r.details
+    assert "the FLAG on this path states no condition" in r.gap_note
+    assert adapter.facts["CT-R4-004b"]["implementation_gap"]
     # No bound on an admitted operation or an approval: 004a cannot run.
     assert got["CT-R4-004a"].status == R.ReportingState.ADAPTER_REQUIRED
     # A quarantine refuses the commit but the port cannot show a terminal
