@@ -49,7 +49,7 @@ python -m harness --port harness.ports.reference:ReferencePort --probes --checks
 python -m pytest tests/test_harness.py
 ```
 
-The first command should print `PASS: 14  NOT_APPLICABLE: 1  IMPLEMENTATION_GAP: 41`
+The first command should print `PASS: 14  NOT_APPLICABLE: 1  IMPLEMENTATION_GAP: 44`
 for the vectors. Of the seventeen property checks, five run on the reference
 kernel: three pass and two fail. `PX-CT-R3-001`: the kernel admits a blank
 credential, a gap its own register declares. `PX-REG-STATE-001`: it admits an

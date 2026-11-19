@@ -19,6 +19,8 @@ jobs:
           commit=$(python -c 'import json; print(json.load(open("conformance-target.json"))["implementation"]["source_commit"])')
           python -m pip install "git+https://github.com/skiredj-prog/tenir_governance.git@${commit}"
           python tools/verify_conformance_target.py
+          # 5.7.0 is also what later, untagged commits report: check the commit itself.
+          python -c "import importlib.metadata as m, json, sys; d = json.loads(m.distribution('tenir-governance').read_text('direct_url.json')); got = d['vcs_info']['commit_id']; sys.exit(0 if got == '${commit}' else f'installed {got}, pinned ${commit}')"
       - name: Install pinned lab membrane PR candidate
         run: python -m pip install "git+https://github.com/skiredj-prog/tenir-conformance-s1-g1.git@8bc0e5e291f7ac64d601bb08d76b5f2c3f70562f"
       - name: Test T6-T8 lab probes and no native promotion
