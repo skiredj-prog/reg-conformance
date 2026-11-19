@@ -513,6 +513,8 @@ class HTTPAdapter(BaseAdapter):
             return self._ar("CT-R4-005", "Protected policy reload helper unavailable; configure REG_ADMIN_TOKEN and --admin-token")
         cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         refusal = cr.get("detail", {}) if isinstance(cr, dict) else {}
+        if not isinstance(refusal, dict):
+            refusal = {}
         if cc == 409 and refusal.get("code") == "STATE_DRIFT" and refusal.get("final_disposition") == "HARD_VETO":
             return self._pass("CT-R4-005",
                 f"STATE_DRIFT produced HARD_VETO (epoch {epoch_at_verdict}→{epoch_at_verdict+1})")
