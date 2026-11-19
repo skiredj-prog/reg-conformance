@@ -496,7 +496,7 @@ class HTTPAdapter(BaseAdapter):
                 "/admin/expire-eval absent — cannot trigger expiry without wait")
         cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         return (self._pass("CT-R4-004","EVALUATION_EXPIRED on force-expired grant")
-                if cc == 409 and "EXPIRED" in cr.get("detail","")
+                if cc == 409 and "EXPIRED" in str(cr.get("detail","") if isinstance(cr, dict) else cr)
                 else self._fail("CT-R4-004", f"expected 409 EXPIRED, got {cc}: {cr}"))
 
     # CT-R4-004a — RFC-4 v0.3 revision §2.1: the observable is the effect, not the refusal code
@@ -513,8 +513,11 @@ class HTTPAdapter(BaseAdapter):
         cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         if cc in (200, 201):
             return self._fail("CT-R4-004a", f"commit accepted under the expired authorization {eid}")
-        if 400 <= cc < 500:
+        if cc == 409:
             return self._pass("CT-R4-004a", f"commit refused under the expired authorization (HTTP {cc}: {cr})")
+        if 400 <= cc < 500:
+            return self._inconclusive("CT-R4-004a",
+                f"commit not accepted, but HTTP {cc} does not establish a refusal of the commit itself: {cr}")
         return self._inconclusive("CT-R4-004a", f"outcome of the commit not established (HTTP {cc}: {cr})")
 
     # CT-R4-004b — RFC-4 v0.3 revision §2.2
