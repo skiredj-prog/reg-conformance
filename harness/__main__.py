@@ -120,7 +120,7 @@ def main(argv=None):
         "flag_condition_observed": observed,
         # CLAIMS.md / RN-001 §1: a FLAG without a condition is an implementation gap,
         # recorded here; the result it went forward on carries the reserve.
-        "implementation_gaps": sorted(c for c, ok in observed.items() if not ok),
+        "implementation_gaps": sorted(c for c, f in adapter.facts.items() if f.get("implementation_gap")),
         "facts": adapter.facts}
     if on_flag:
         print(f"\n  {len(on_flag)} check(s) went forward on FLAG (ALLOW_WITH_MONITORING, RFC-0 §4): "

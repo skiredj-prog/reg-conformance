@@ -60,22 +60,22 @@ vectors:
     input: Commit under an authorization whose declared bound has passed
     intended: No effect attributed to the expired authorization; any refusal mechanism satisfies the clause. A fresh authorization is a declared policy, attributed to the new authorization with its own identity and evidence.
     expected: no effect under the expired authorization
-    status: proposal
+    status: implemented
     native: PASS
     observed: "commit refused under the expired authorization (EVALUATION_EXPIRED) (native)"
-    reference: RFC-4 v0.3 revision (2026-11-19) §2.1, §5
+    reference: RFC-4 v0.3 revision (ratified 2026-11-19) §2.1, §5
 
   - id: CT-R4-004b
     rfc: RFC-4 v0.3 revision §2.2, §2.3; RFC-0 §6; REG-STATE-024
     category: commit
     property: Held Attempt at Its Declared Bound
     input: Held attempt (HOLD, escalation) left past its declared bound, then an advance under the same attempt identity
-    intended: Pre-declared disposition, refusal by default, terminal for that attempt identity; recorded with the bound, the disposition and the resulting state (CONFIRMED_NONEXECUTION if never dispatched, UNKNOWN with reconciliation if dispatch was possible)
+    intended: Pre-declared disposition, refusal by default, terminal for that attempt identity; recorded with the bound, the disposition and the resulting state as the available evidence establishes it (CONFIRMED_NONEXECUTION if never dispatched or if a qualified, verified non-execution attestation exists; otherwise UNKNOWN with reconciliation)
     expected: no effect under that attempt identity; terminal refusal recorded
-    status: proposal
+    status: specified
     native: ADAPTER_REQUIRED
-    observed: "The bundled kernel has no HOLD and no declared bound on a held attempt."
-    reference: RFC-4 v0.3 revision (2026-11-19) §2.2, §2.3, §5; RFC-5 §2
+    observed: "The bundled kernel declares no bound on a held attempt (its only HOLD is insufficient evidence)."
+    reference: RFC-4 v0.3 revision (ratified 2026-11-19) §2.2, §2.3, §5; RFC-5 §2
   - id: CT-R4-005
     rfc: RFC-4 §2.2
     category: commit

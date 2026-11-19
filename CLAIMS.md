@@ -94,7 +94,7 @@ gives what that test does not establish.
 
 - That a subject is "REG-conformant", "REG-certified" or "REG-compliant" on the
   strength of a run. `verdict.json` always carries `certifying: false`.
-- That a result at level 1 describes a product. The 14 passes of the bundled
+- That a result at level 1 describes a product. The 15 passes of the bundled
   reference kernel are not results of any runtime.
 - That a result holds for another revision of the subject. Another commit is
   another run.

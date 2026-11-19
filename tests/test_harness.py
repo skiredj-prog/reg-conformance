@@ -253,8 +253,43 @@ def test_probes_accept_an_allow_given_as_flag_with_a_condition():
 
 def test_probes_on_a_flag_without_a_condition_pass_with_the_reserve():
     # Only the probes that go forward on the admitted call (HX-EFFECT-002, 004) carry it.
-    r = _relabel(P.ADMISSIBLE, "FLAG")
-    assert set(r.values()) == {"PASS"}
+    from harness.adapter import FLAG_RESERVE
+
+    class F(_Fixture):
+        def evaluate(self, asked, **kw):
+            d = super().evaluate(asked, **kw)
+            if asked == P.ADMISSIBLE:
+                d.disposition = "FLAG"
+            return d
+    adapter = PortAdapter(F())
+    probes = {r.vector_id: r for r in adapter.run_probes()}
+    assert {r.status.value for r in probes.values()} == {"PASS"}
+    reserved = {vid for vid, r in probes.items() if r.gap_note == FLAG_RESERVE}
+    assert reserved == {"HX-EFFECT-002", "HX-EFFECT-004"}
+    assert all(adapter.facts[vid]["implementation_gap"] for vid in reserved)
+
+
+def test_a_flag_without_a_condition_is_a_gap_whatever_the_result():
+    # The gap is recorded where the adapter sets it, for a FAIL as for a PASS;
+    # only a pass carries the reserve. The report reads that one marker.
+    from harness.adapter import FLAG_RESERVE
+    from harness.scenarios import Scenario
+    flagged = {"admitted_on": "FLAG", "flag_conditions": []}
+    adapter = PortAdapter(_Fixture())
+    failed = adapter._run_scenario("X-FAIL", Scenario("X-FAIL", frozenset(), lambda rt: ("FAIL", "x", dict(flagged))))
+    passed = adapter._run_scenario("X-PASS", Scenario("X-PASS", frozenset(), lambda rt: ("PASS", "x", dict(flagged))))
+    assert failed.status == R.ReportingState.FAIL and failed.gap_note != FLAG_RESERVE
+    assert passed.status == R.ReportingState.PASS and passed.gap_note == FLAG_RESERVE
+    assert adapter.facts["X-FAIL"]["implementation_gap"] and adapter.facts["X-PASS"]["implementation_gap"]
+
+
+def test_a_malformed_perimeter_declaration_is_refused():
+    exercised = next(iter(CHECKS.values())).exercises
+
+    class F(_Fixture):
+        not_in_perimeter = {exercised: {"declared_by": "", "reason": "x"}}
+    with pytest.raises(ValueError, match="not_in_perimeter"):
+        PortAdapter(F()).run_checks()
 
 
 def test_a_call_needing_approval_must_not_get_a_plain_pass():
@@ -323,6 +358,20 @@ def test_bundle_verdict_carries_the_property_summary_and_never_certifies():
     assert verdict["reg_vectors"]["summary"]["PASS"] == 0
     assert verdict["property_view"]["summary"]["has_pass"] == 2
     assert verdict["property_view"]["status"] == "candidate"
+
+
+def test_bundle_verdict_keeps_the_implementation_gaps():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+    import make_evidence_bundle as B
+    adapter, results, probes, view = _view(_Fixture())
+    report = R.generate_report(adapter, results)
+    report["harness_probes"] = {"results": [R.asdict(r) for r in probes]}
+    report["property_view"] = view
+    report["admission"] = {"rule": "RFC-0 §4", "checks_admitted_on_flag": ["CT-R4-001"],
+                           "flag_condition_observed": {"CT-R4-001": False},
+                           "implementation_gaps": ["CT-R4-001"]}
+    verdict = B.build_verdict(json.loads(json.dumps(report, default=str)))
+    assert verdict["admission"]["implementation_gaps"] == ["CT-R4-001"]
 
 
 # -- property checks: one indexed property each, never a vector ---------------

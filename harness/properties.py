@@ -34,8 +34,9 @@ def load(path: Path = FILE) -> dict:
 
 def index_rows(path: Path = INDEX) -> dict:
     """The rows of VECTORS.md: id -> its RFC anchor, property and status.
-    IMPLEMENTED and DECLARED rows are specified by the frozen RFCs; a RESERVED
-    row is a proposal the RFCs do not specify. Empty if the index is absent."""
+    IMPLEMENTED and DECLARED rows are specified by the frozen RFCs (RN-001
+    reading included) or by the ratified RFC-4 v0.3 revision; a RESERVED row
+    is a proposal no ratified text specifies. Empty if the index is absent."""
     rows = {}
     try:
         lines = Path(path).read_text(encoding="utf-8").splitlines()

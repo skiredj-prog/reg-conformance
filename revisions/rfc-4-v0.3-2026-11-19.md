@@ -2,7 +2,7 @@
 revision: RFC-4 v0.3
 title: Commit & Execution Proof — bounds on authorizations and on held attempts
 date: 2026-11-19
-status: Draft, outside the baseline (awaiting ratification by the author)
+status: Ratified by the author on 2026-11-19; in force from reg-conformance v0.7.0; outside the frozen baseline
 revises: reg-standards-baseline/rfc/rfc-4.md v0.2 (Frozen, 2026-10-02), not edited
 supersedes_clauses:
   - "RFC-4 v0.2 §5.2 item 4 (CT-R4-004): superseded_by CT-R4-004a, CT-R4-004b"
@@ -21,8 +21,11 @@ CT-R4-004) keep referring to that stable text.
 
 This revision is dated and sits outside the baseline. It states which v0.2
 clauses it supersedes (front matter); every other v0.2 clause stands as
-written. It enters the baseline only when the author ratifies it, under a new
-frozen version.
+written. The author ratified it on 19 November 2026. It is in force from
+reg-conformance v0.7.0 and stays outside the frozen baseline: RFC-4 v0.2 is not
+edited, and each superseded clause is named, with what supersedes it, in the
+front matter. Whether it later enters a new frozen version of the baseline is a
+separate decision.
 
 ## 1. Which object carries the bound
 
@@ -77,10 +80,14 @@ for that attempt identity. A later effect requires a new attempt identity. The
 transition MUST be recorded with the bound, the disposition applied and the
 resulting state, expressed in the canonical vocabulary.
 
-The record MUST distinguish what is known: an attempt never dispatched is
-recorded as established non-execution; an attempt that may have been
-dispatched is recorded as unknown, with reconciliation required. Closing the
-hold does not establish what happened outside.
+The record MUST distinguish what the available evidence establishes, not
+what the dispatch history suggests. Non-execution is established when the
+attempt was never dispatched, or when it was dispatched and a qualified,
+verified non-execution attestation exists: the attempt is then recorded as
+established non-execution. When dispatch was possible and the evidence does
+not establish the outcome (attestation absent, contradictory or not
+qualified), the attempt is recorded as unknown, with reconciliation required.
+Closing the hold does not establish what happened outside.
 
 A bound that the deployment declares but that the runtime cannot receive or
 apply counts as not applied. A late approval, resolution or exit authorization
@@ -88,12 +95,27 @@ arriving after the bound does not reopen the attempt.
 
 ### 2.3 The epistemic axis is orthogonal
 
-Every expiry, of either object, also produces a record of what is known:
+Every expiry, of either object, also produces a record of what is known. The
+recorded state follows what the available evidence establishes, not the
+history of the dispatch. `CONFIRMED_NONEXECUTION` means that the available
+evidence establishes that the outcome was not executed (canonical vocabulary,
+as cited by the author).
 
-| Situation at expiry | Recorded state |
+| What the available evidence establishes at expiry | Recorded state |
 |---|---|
-| never dispatched | `CONFIRMED_NONEXECUTION` |
-| dispatch possible | `UNKNOWN`, reconciliation required |
+| Non-execution: the attempt was never dispatched, or it was dispatched and a qualified, verified non-execution attestation exists | `CONFIRMED_NONEXECUTION` |
+| Dispatch was possible and the outcome is not established: attestation absent, contradictory or not qualified | `UNKNOWN`, reconciliation required |
+
+Example: dispatch occurred, but a qualified attestation establishes
+non-execution: `CONFIRMED_NONEXECUTION`. A verified attestation completes the
+reconciliation; the dispatch does not keep the attempt `UNKNOWN`.
+
+A qualified, verified non-execution attestation is one that meets the
+conditions manuscript v7.2 §4.4 sets for `non_execution_attested`: qualifying
+evidence bound to the attempt (`id`, `LEI`, `nonce`) and fresh, an observed
+effect count of zero, and a signed attestation accepted under the path's
+verification rules. As there, it does not establish that the attestation is
+true of the external world.
 
 This record adds to the blocking of §2.1 and §2.2; it never replaces it.
 "Epistemic input" and "barrier" are not two options: every expiry is both. The
@@ -101,8 +123,10 @@ question each clause answers is which constraint applies, according to which
 object carries the bound.
 
 `FAILED` is not a term of the canonical vocabulary (v6.3, as cited by the
-author). It is a runtime label and MUST be mapped: to `CONFIRMED_NONEXECUTION`
-when the attempt was never dispatched, to `UNKNOWN` with reconciliation
+author). It is a runtime label and MUST be mapped by the rule above: to
+`CONFIRMED_NONEXECUTION` when the evidence establishes non-execution (never
+dispatched, or dispatched with a qualified, verified non-execution attestation,
+as in the manuscript v7.2 transition T7), to `UNKNOWN` with reconciliation
 otherwise. A report that shows `FAILED` without this mapping does not establish
 the recorded state of §2.2.
 
@@ -148,12 +172,14 @@ recorded result.
 | CT-R4-004a | §2.1 | Commit under an authorization whose declared bound has passed | No effect attributed to the expired authorization. Any refusal mechanism satisfies the clause; an effect under that authorization fails. An effect under a fresh authorization is out of the probe and is checked against §2.1 conditions 1 to 4. |
 | CT-R4-004b | §2.2, §2.3; REG-STATE-024; RFC-0 §6 | Held attempt left past its declared bound, then any advance (commit, resolve, approval, dispatch) under the same attempt identity | No effect under that identity; pre-declared disposition (default refusal) recorded with the bound and the resulting state in the canonical vocabulary. A suspension that merely continues is not a terminal refusal. |
 
-## 6. Open, and not ours to decide
+## 6. Mapping to STANAIC STA-EA-02 (a mapping, not a design question)
 
-Whether STANAIC STA-EA-02 admits the fresh-authorization model of §2.1 in
-addition to the bounded-grant model is the question Maria has announced she
-will answer in writing. No mapping from §2.1 or §2.2 to STA-EA-02 is made here,
-and none is presumed until her letter.
+REG admits both deployment models: a bounded grant, where the authorization
+carries the bound (§2.1), and a fresh adjudication at each crossing, which
+§2.1 admits as a declared policy under its four conditions. Whether STANAIC
+STA-EA-02 prefers one of them is for its author to say; a written answer has
+been announced. That answer maps her requirement onto §2.1 and §2.2. It does
+not change them, and no mapping is made here before it.
 
 ## 7. Application to TENIR-Gov 5.7.0 (informative, as measured)
 
