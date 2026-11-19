@@ -21,7 +21,14 @@ from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
 sys.path.insert(0, str(Path(__file__).parent))
-from kernel.policy_engine import PolicyEngine
+from kernel.policy_engine import PolicyEngine, unmeasured_axes
+
+
+def _wire_measurements(P, V, K) -> dict:
+    """JSON-safe measurements: a value that is not finite goes out as null, never NaN."""
+    missing = set(unmeasured_axes(P, V, K))
+    return {name: (None if name in missing else round(float(x), 6))
+            for name, x in zip(("P", "V", "K"), (P, V, K))}
 from reg_common import (HashChainManifest, generate_keypair,
                         sign_receipt, verify_receipt_signature, pubkey_to_jwks)
 
@@ -53,10 +60,12 @@ class Action(BaseModel):
     params: dict = Field(default_factory=dict)
 
 class Measurements(BaseModel):
-    pressure:   float = 0.5
-    volatility: float = 0.5
+    # Unknown is an explicit null on the wire (decision of 19 November 2026).
+    # An omitted or null axis is unmeasured: it contributes no favourable value.
+    pressure:   Optional[float] = None
+    volatility: Optional[float] = None
     velocity:   Optional[float] = None
-    capacity:   float = 0.85
+    capacity:   Optional[float] = None
 
 class EvaluationRequest(BaseModel):
     protocol_version: str = "reg-1.0"
@@ -173,7 +182,14 @@ async def evaluate(req: EvaluationRequest):
     else:
         m  = req.measurements
         P  = m.pressure
-        V  = m.velocity if m.velocity is not None else (m.pressure * m.volatility) ** 0.5
+        V  = m.velocity
+        if V is None and m.pressure is not None and m.volatility is not None:
+            try:
+                V = (m.pressure * m.volatility) ** 0.5
+            except (TypeError, ValueError):
+                V = None
+        if isinstance(V, complex):
+            V = None
         K  = m.capacity
         kr = _engine.evaluate(P, V, K)
         record = {
@@ -189,7 +205,9 @@ async def evaluate(req: EvaluationRequest):
             "created_at":         time.time(),
             "valid_until":        time.time() + EVAL_WINDOW,
             "nonce":              req.nonce,
-            "measurements":       {"P": round(P,6), "V": round(V,6), "K": K},
+            "measurements":       _wire_measurements(P, V, K),
+            "unmeasured_axes":    unmeasured_axes(P, V, K),
+            **({"reason": kr["reason"]} if kr.get("reason") else {}),
             "external_effect_atomic": False,
         }
 

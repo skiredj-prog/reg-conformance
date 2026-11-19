@@ -51,9 +51,10 @@ python -m pytest tests/test_harness.py
 
 The first command should print `PASS: 15  NOT_APPLICABLE: 1  ADAPTER_REQUIRED: 1  IMPLEMENTATION_GAP: 44`
 for the vectors. Of the seventeen property checks, five run on the reference
-kernel: three pass and two fail. `PX-CT-R3-001`: the kernel admits a blank
-credential, a gap its own register declares. `PX-REG-STATE-001`: it admits an
-attempt whose measurement is not a number. The five checks that depend on a
+kernel: four pass and one fails. `PX-CT-R3-001`: the kernel admits a blank
+credential, a gap its own register declares. `PX-REG-STATE-001` passes since
+v0.7.0: a measurement that is not a finite number (None, NaN, inf) is held as
+insufficient evidence, never admitted. The five checks that depend on a
 declared bound do not run: the kernel declares none. The reading by candidate
 property family follows. The second command checks the instrument: each
 effect probe and each property check is run against a deliberately faulty

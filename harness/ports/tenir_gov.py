@@ -28,8 +28,10 @@ own behaviour; to be confirmed or corrected by the runtime's author):
                     composition policy escalates this to HOLD
     INVARIANT_VIOLATED  best-case inputs, amount above the registered budget
                     (membrane invariant I8); the same inputs as DENIED
-    OUT_OF_SCOPE    best-case inputs, from an agent registered with a
-                    capability set that does not contain the requested action
+    OUT_OF_SCOPE    not mapped. Scope is an L1 concern and TENIR-Gov does not
+                    read Agent.capabilities; mapping it there gave an appearance
+                    of coverage (author's decision 1, 19 November 2026). CT-R3-007
+                    is declared outside the perimeter instead (`not_in_perimeter`).
 
 Degraded evidence (DEGRADE), on each of the seven measurements this port
 supplies to `adjudicate` (pressure, velocity, capacity, option_space,
@@ -90,10 +92,7 @@ _INPUTS = {
     P.DENIED:         ({}, _CAPACITY * 5),
     P.NEEDS_APPROVAL: ({}, _CAPACITY * 0.9),
     P.INVARIANT_VIOLATED: ({}, _CAPACITY * 5),
-    P.OUT_OF_SCOPE:   ({}, None),
 }
-# The scope given to the agent of an OUT_OF_SCOPE attempt.
-_SCOPE = frozenset({"read"})
 # Levels of confidence in the evidence, from full down.
 _QUALITY = (1.0, 0.75, 0.5, 0.25, 0.0)
 _NOT_ADMITTED = ("failed", "hold", "escalated", "created")
@@ -128,6 +127,9 @@ class TenirGovPort(P.RuntimePort):
     combinations = frozenset({frozenset({P.NO_STANDING, P.NEEDS_APPROVAL}),
                               frozenset({P.INADMISSIBLE, P.NEEDS_APPROVAL})})
     not_applicable = {"C4": "No transport layer: the runtime is driven in process."}
+    not_in_perimeter = {"CT-R3-007": {
+        "declared_by": "the author of tenir_governance (decision 1, 19 November 2026)",
+        "reason": ("scope is an L1 concern; TENIR-Gov does not read Agent.capabilities")}}
 
     def __init__(self):
         import tenir_governance
@@ -153,7 +155,6 @@ class TenirGovPort(P.RuntimePort):
                                       action_type=action_type, nonce=nonce)
 
     def evaluate_combined(self, intents, *, principal, action_type, nonce=None):
-        from tenir_governance.objects import Agent
 
         overrides, amounts = {}, []
         for intent in intents:
@@ -164,10 +165,6 @@ class TenirGovPort(P.RuntimePort):
         if len(amounts) > 1:
             raise ValueError("one adjudication carries one amount")
         amount = amounts[0] if amounts else None
-        if P.OUT_OF_SCOPE in intents:
-            if action_type in _SCOPE:
-                raise ValueError(f"{action_type!r} is inside the scope used for OUT_OF_SCOPE")
-            self._state.register_agent(Agent(agent_id=principal, capabilities=_SCOPE))
         return self._adjudicate({**_BEST, **overrides}, amount, principal=principal,
                                 action_type=action_type, nonce=nonce)
 
