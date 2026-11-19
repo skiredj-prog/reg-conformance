@@ -9,6 +9,8 @@ from .port import (ALL_BOUNDS, ALL_CAPABILITIES, ALL_EPISTEMIC, ALL_INTENTS, CLO
                    CONFIDENCE, RuntimePort)
 from .scenarios import CHECKS, PROBES, SCENARIOS
 
+FLAG_RESERVE = ("obtained under a declared mapping interpretation, pending ratification; "
+                "the FLAG on this path states no condition.")
 HARNESS_GAP = ("HARNESS_GAP: no runtime-neutral scenario exists for this vector yet; "
                "the subject was not evaluated.")
 
@@ -83,10 +85,11 @@ class PortAdapter(R.BaseAdapter):
         fact = self.facts.get(vid)
         if (state == R.ReportingState.PASS.value and fact and fact.get("admitted_on") == "FLAG"
                 and not fact.get("flag_conditions")):
-            # CLAIMS.md and RN-001 §1: a FLAG without an explicit condition does not
-            # satisfy RFC-0 §4. The check went forward on it, so it is a gap, not a pass.
-            return self._gap(vid, f"went forward on a FLAG that carries no explicit condition "
-                                  f"(RN-001 §1, CLAIMS.md): {details}")
+            # Author's decision 3 (19 November 2026), CLAIMS.md, RN-001 §1: the check keeps
+            # its result under the declared admission mapping, with the reserve below, and
+            # the FLAG without a condition is recorded apart as an implementation gap.
+            fact["implementation_gap"] = "FLAG without an explicit condition (RFC-0 §4)"
+            return self._r(vid, R.ReportingState.PASS, details, gap_note=FLAG_RESERVE)
         return self._r(vid, R.ReportingState(state), details)
 
     def run_vector(self, vid):
@@ -117,6 +120,12 @@ class PortAdapter(R.BaseAdapter):
         travels with any result that is not a pass."""
         out = []
         for vid, s in CHECKS.items():
+            decl = self.port.not_in_perimeter.get(s.exercises)
+            if decl:
+                out.append(self._r(vid, R.ReportingState.NOT_IN_PERIMETER, gap_note=(
+                    f"declared_gap on {s.exercises}, declared by {decl['declared_by']}: "
+                    f"{decl['reason']}")))
+                continue
             r = self._run_scenario(vid, s)
             gap = self.port.declared_gaps.get(s.exercises)
             if gap and r.status != R.ReportingState.PASS:

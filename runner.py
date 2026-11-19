@@ -47,6 +47,9 @@ class ReportingState(str, Enum):
     NOT_APPLICABLE     = "NOT_APPLICABLE"
     ADAPTER_REQUIRED   = "ADAPTER_REQUIRED"
     IMPLEMENTATION_GAP = "IMPLEMENTATION_GAP"
+    # Neither PASS nor FAIL: the implementer declares the property outside the
+    # runtime's perimeter (harness property checks only; never a vector result).
+    NOT_IN_PERIMETER   = "NOT_IN_PERIMETER"
 
 class EvidenceLevel(int, Enum):
     SEMANTIC_MAPPING  = 1
@@ -732,6 +735,8 @@ class NativeKernelAdapter(BaseAdapter):
             g  = {"evaluation_id":eid,"action_id":action_id,"action_type":action_type,
                   "principal_id":principal_id,"final_disposition":kr["decision"],
                   "s_score":kr["s_score"],"nonce":nonce,
+                  "unmeasured_axes":kr.get("unmeasured_axes", []),
+                  **({"reason":kr["reason"]} if kr.get("reason") else {}),
                   "policy_version":kr["policy_version"],"policy_epoch":self._epoch,
                   "created_at":time.time(),"valid_until":time.time()+30,
                   "external_effect_atomic":False}

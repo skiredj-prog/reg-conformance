@@ -149,6 +149,11 @@ class RuntimePort:
     not_applicable: dict = {}
     # vector_id -> note. Gaps the implementer declares about its own runtime.
     declared_gaps: dict = {}
+    # row id -> {"reason": ..., "declared_by": ...}. Properties the implementer declares
+    # outside the runtime's perimeter. A property check on such a row reports
+    # NOT_IN_PERIMETER, neither PASS nor FAIL. If the subject's published documentation
+    # claims the property, it is inside the perimeter and this declaration is wrong.
+    not_in_perimeter: dict = {}
     # Sets of intents the port can produce together in one attempt (COMBINE).
     # Declare a set only when each condition comes from its own input, so that
     # asking for one does not undo another.

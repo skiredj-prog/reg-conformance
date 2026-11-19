@@ -161,20 +161,16 @@ def test_tenir_gov_port_reports_native_dispositions_unchanged():
 def test_tenir_gov_port_on_the_property_checks():
     from harness.ports.tenir_gov import TenirGovPort
     got = {r.vector_id: r.status.value for r in PortAdapter(TenirGovPort()).run_checks()}
-    # These go forward on the runtime's admission. On 5.7.0 the default path admits on a
-    # FLAG with no explicit condition ("risk warning"), which RN-001 §1 records as a gap.
-    assert {got["PX-CT-R0-005"], got["PX-REG-STATE-014"], got["PX-VEC-6-02"]} <= {
-        "PASS", "IMPLEMENTATION_GAP"}
+    # On 5.7.0 these go forward on a FLAG with no condition: PASS with the reserve.
+    assert got["PX-CT-R0-005"] == got["PX-REG-STATE-014"] == got["PX-VEC-6-02"] == "PASS"
     # The default path has no credential to malform and no revocation primitive.
     assert got["PX-CT-R3-001"] == got["PX-CT-R3-003"] == "ADAPTER_REQUIRED"
-    # The scope check runs: its outcome belongs to the runtime version, not to this test.
-    assert got["PX-CT-R3-007"] in ("PASS", "FAIL")
+    # Decision 1: scope is declared outside the runtime's perimeter, neither PASS nor FAIL.
+    assert got["PX-CT-R3-007"] == "NOT_IN_PERIMETER"
     # The default path declares no bound: a HOLD it enters carries no tau_k.
     assert {got[c] for c in _AT_A_BOUND} == {"ADAPTER_REQUIRED"}
     # Unreadable evidence is held, and lower confidence widens nothing.
-    # (A check that goes forward on a FLAG without a condition is a gap, see above.)
-    assert {got["PX-REG-STATE-001"], got["PX-REG-STATE-013"], got["PX-REG-STATE-015"]} <= {
-        "PASS", "IMPLEMENTATION_GAP"}
+    assert got["PX-REG-STATE-001"] == got["PX-REG-STATE-013"] == got["PX-REG-STATE-015"] == "PASS"
     # Missing evidence: the check runs on every input; its outcome belongs to the version.
     assert got["PX-REG-STATE-010"] in ("PASS", "FAIL")
     # One value per measurement, no age: stale and contradictory cannot be produced.
@@ -215,12 +211,17 @@ def test_flag_with_a_condition_admits_like_pass_and_is_recorded():
                                           "flag_conditions": ["dual control"]}
 
 
-def test_flag_without_a_condition_is_a_gap_not_a_pass():
-    # RN-001 §1 and CLAIMS.md: a FLAG that carries no explicit condition does not
-    # satisfy RFC-0 §4; a check that went forward on it is an implementation gap.
+def test_flag_without_a_condition_keeps_its_result_with_the_reserve():
+    # Author's decision 3, CLAIMS.md, RN-001 §1: the result stands under the declared
+    # mapping, carries the reserve, and the gap is recorded apart.
+    from harness.adapter import FLAG_RESERVE
     adapter, statuses = _two_phase("FLAG")
-    assert statuses == {"CT-R4-001": "IMPLEMENTATION_GAP", "CT-R4-002": "IMPLEMENTATION_GAP"}
-    assert adapter.facts["CT-R4-001"] == {"admitted_on": "FLAG", "flag_conditions": []}
+    assert statuses == {"CT-R4-001": "PASS", "CT-R4-002": "PASS"}
+    assert adapter.facts["CT-R4-001"]["admitted_on"] == "FLAG"
+    assert adapter.facts["CT-R4-001"]["flag_conditions"] == []
+    assert "implementation_gap" in adapter.facts["CT-R4-001"]
+    r = adapter.run_vector("CT-R4-001")
+    assert FLAG_RESERVE in r.gap_note
 
 
 def test_flag_condition_reported_by_the_port_is_kept():
@@ -250,10 +251,10 @@ def test_probes_accept_an_allow_given_as_flag_with_a_condition():
     assert set(_relabel(P.ADMISSIBLE, "FLAG", ("monitoring",)).values()) == {"PASS"}
 
 
-def test_probes_do_not_pass_on_a_flag_without_a_condition():
-    # Only the probes that go forward on the admitted call (HX-EFFECT-002, 004) are affected.
+def test_probes_on_a_flag_without_a_condition_pass_with_the_reserve():
+    # Only the probes that go forward on the admitted call (HX-EFFECT-002, 004) carry it.
     r = _relabel(P.ADMISSIBLE, "FLAG")
-    assert r["HX-EFFECT-002"] == r["HX-EFFECT-004"] == "IMPLEMENTATION_GAP"
+    assert set(r.values()) == {"PASS"}
 
 
 def test_a_call_needing_approval_must_not_get_a_plain_pass():
@@ -767,9 +768,8 @@ def test_reference_kernel_on_the_property_checks():
     got = {r.vector_id: r for r in checks}
     ran = {k: r.status.value for k, r in got.items() if r.status.value != "ADAPTER_REQUIRED"}
     assert ran == {"PX-CT-R3-001": "FAIL", "PX-CT-R3-003": "PASS", "PX-VEC-6-02": "PASS",
-                   "PX-REG-STATE-001": "FAIL", "PX-REG-STATE-010": "PASS"}
-    # The kernel admits an attempt whose measurement is not a number.
-    assert "capacity (PASS)" in got["PX-REG-STATE-001"].details
+                   "PX-REG-STATE-001": "PASS", "PX-REG-STATE-010": "PASS"}
+    # Since the finiteness guard, a measurement that is not a number is held, not admitted.
     # The kernel declares no bound: none of the checks at a bound runs on it.
     assert _AT_A_BOUND <= set(got) - set(ran)
     assert "Revocation propagation latency not declared" in got["PX-CT-R3-002"].gap_note
@@ -778,7 +778,7 @@ def test_reference_kernel_on_the_property_checks():
     # A failing check marks the family, whatever else passes in it.
     assert view["families"]["EGP-01"]["PASS"] == 1
     assert view["families"]["EGP-01"]["state"] == "has_fail"
-    assert (view["index"]["PASS"], view["index"]["FAIL"]) == (18, 2)
+    assert (view["index"]["PASS"], view["index"]["FAIL"]) == (19, 1)
 
 
 def test_bundle_verdict_lists_property_checks_apart_from_the_vectors():

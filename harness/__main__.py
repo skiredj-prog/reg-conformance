@@ -118,6 +118,9 @@ def main(argv=None):
                  "proceed. A FLAG proceeds only under an explicit condition or supervision."),
         "checks_admitted_on_flag": on_flag,
         "flag_condition_observed": observed,
+        # CLAIMS.md / RN-001 §1: a FLAG without a condition is an implementation gap,
+        # recorded here; the result it went forward on carries the reserve.
+        "implementation_gaps": sorted(c for c, ok in observed.items() if not ok),
         "facts": adapter.facts}
     if on_flag:
         print(f"\n  {len(on_flag)} check(s) went forward on FLAG (ALLOW_WITH_MONITORING, RFC-0 §4): "
