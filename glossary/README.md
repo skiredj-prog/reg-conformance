@@ -19,6 +19,7 @@ are read through `aliases`.
 | bound of a held attempt | Reaching it: pre-declared disposition, refusal by default, terminal for that attempt identity (RFC-4 v0.3 §2.2, RFC-0 §6) | CT-R4-004b; v0.2 CT-R4-004 mixed the two objects |
 | `CONFIRMED_NONEXECUTION`, `UNKNOWN` | Recorded state, by what the evidence establishes: not executed (never dispatched, or dispatched with a qualified attestation) / not established, reconciliation required | Adds to the block, never replaces it |
 | `FAILED` (and other σ labels) | Runtime label, not canonical (v6.3 as cited by the author); mapped before reporting | v7.2 and T7/T8 use it as a state (ERR-7.2-05); T7 (dispatch + verified attestation) maps to CONFIRMED_NONEXECUTION |
+| `RESOLVED`, `PENDING`, `AWAITING`, `ESCALATED` | Runtime labels, mapped by evidence: CONFIRMED_EXECUTION (name to confirm against v6.3) / no record while open, then by evidence / UNKNOWN / UNKNOWN | Decided 2026-11-19 |
 | verdict age, freshness threshold | Withdrawn as a rule (RFC-4 v0.3 §4) | RN-001 §2b "epistemic input" reading |
 | `CT-R4-005` | Suite vector: governance state changes between verdict and commit; outcome per RN-001 §4 | RFC-4 §2.2 says HARD_VETO, RFC-4 §5.2 says REJECT; v7.2 §10.1 uses the id for the S11 commit binding (ERR-7.2-02) |
 | T6, T7, T8 | Lifecycle transitions of `tenir-conformance-s1-g1@8bc0e5e` | v7.2 names only T7; suite citations of "v7.2 §4.4, T6/T8" are wrong |
