@@ -83,13 +83,14 @@ class PortAdapter(R.BaseAdapter):
             status = self._inconclusive if vid == "C3" else self._fail
             return status(vid, f"exception prevents a determinate result: {e}")
         fact = self.facts.get(vid)
-        if (state == R.ReportingState.PASS.value and fact and fact.get("admitted_on") == "FLAG"
-                and not fact.get("flag_conditions")):
-            # Author's decision 3 (19 November 2026), CLAIMS.md, RN-001 §1: the check keeps
-            # its result under the declared admission mapping, with the reserve below, and
-            # the FLAG without a condition is recorded apart as an implementation gap.
+        if fact and fact.get("admitted_on") == "FLAG" and not fact.get("flag_conditions"):
+            # Author's decision 3 (19 November 2026), CLAIMS.md, RN-001 §1: the FLAG
+            # without a condition is recorded apart as an implementation gap, whatever
+            # the result. The check keeps its result under the declared admission
+            # mapping; a pass carries the reserve below.
             fact["implementation_gap"] = "FLAG without an explicit condition (RFC-0 §4)"
-            return self._r(vid, R.ReportingState.PASS, details, gap_note=FLAG_RESERVE)
+            if state == R.ReportingState.PASS.value:
+                return self._r(vid, R.ReportingState.PASS, details, gap_note=FLAG_RESERVE)
         return self._r(vid, R.ReportingState(state), details)
 
     def run_vector(self, vid):
@@ -121,9 +122,13 @@ class PortAdapter(R.BaseAdapter):
         out = []
         for vid, s in CHECKS.items():
             decl = self.port.not_in_perimeter.get(s.exercises)
-            if decl:
+            if decl is not None:
+                if not (isinstance(decl, dict) and all(
+                        isinstance(decl.get(f), str) and decl[f].strip() for f in ("declared_by", "reason"))):
+                    raise ValueError(f"{s.exercises}: a not_in_perimeter declaration needs a "
+                                     "non-empty 'declared_by' and 'reason'")
                 out.append(self._r(vid, R.ReportingState.NOT_IN_PERIMETER, gap_note=(
-                    f"declared_gap on {s.exercises}, declared by {decl['declared_by']}: "
+                    f"not_in_perimeter on {s.exercises}, declared by {decl['declared_by']}: "
                     f"{decl['reason']}")))
                 continue
             r = self._run_scenario(vid, s)

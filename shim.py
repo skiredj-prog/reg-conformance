@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from fastapi import FastAPI, Header, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 sys.path.insert(0, str(Path(__file__).parent))
 from kernel.policy_engine import PolicyEngine, unmeasured_axes
@@ -66,6 +66,14 @@ class Measurements(BaseModel):
     volatility: Optional[float] = None
     velocity:   Optional[float] = None
     capacity:   Optional[float] = None
+
+    @field_validator("pressure", "volatility", "velocity", "capacity", mode="before")
+    @classmethod
+    def _no_boolean(cls, value):
+        # Lax float parsing would read true as 1.0: a boolean is not a measurement.
+        if isinstance(value, bool):
+            raise ValueError("a boolean is not a measurement")
+        return value
 
 class EvaluationRequest(BaseModel):
     protocol_version: str = "reg-1.0"

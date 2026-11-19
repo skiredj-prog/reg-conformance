@@ -34,6 +34,7 @@ Epsilon (1e-6) is identical to the full middleware canonical value.
 from __future__ import annotations
 
 import math
+import numbers
 
 import yaml
 from pathlib import Path
@@ -42,13 +43,16 @@ AXES = ("P", "V", "K")
 
 
 def unmeasured_axes(p, v, k) -> list:
-    """Axes whose value is not a finite real number (None, NaN, ±inf, non-numeric)."""
+    """Axes whose value is not a finite real number (None, NaN, ±inf, a bool,
+    a string, an int too large for a float, anything non-numeric)."""
     out = []
     for name, x in zip(AXES, (p, v, k)):
-        try:
-            ok = x is not None and not isinstance(x, bool) and math.isfinite(float(x))
-        except (TypeError, ValueError):
-            ok = False
+        ok = isinstance(x, numbers.Real) and not isinstance(x, bool)
+        if ok:
+            try:
+                ok = math.isfinite(float(x))
+            except (OverflowError, TypeError, ValueError):
+                ok = False
         if not ok:
             out.append(name)
     return out
@@ -113,6 +117,7 @@ class PolicyEngine:
         missing = unmeasured_axes(p, v, k)
         if missing:
             return self._insufficient(missing, "not a finite number")
+        p, v, k = float(p), float(v), float(k)
         denominator = (p * v) + self.epsilon
         s_score = k / denominator
         if not math.isfinite(s_score):

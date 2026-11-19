@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 from kernel.policy_engine import PolicyEngine  # noqa: E402
 
 ENGINE = PolicyEngine(ROOT / "kernel" / "tenir_policies.yaml")
-BAD = [float("nan"), float("inf"), float("-inf"), None, "0.9"[:0], object()]
+BAD = [float("nan"), float("inf"), float("-inf"), None, "0.9"[:0], "0.2", True, 10**400, object()]
 
 
 @pytest.mark.parametrize("axis", [0, 1, 2])
@@ -43,3 +43,13 @@ def test_the_result_is_strict_json():
     r = ENGINE.evaluate(0.2, 0.2, 0.9)
     assert math.isfinite(r["s_score"])
     json.dumps(r, allow_nan=False)
+
+
+def test_the_shim_refuses_a_boolean_measurement():
+    pydantic = pytest.importorskip("pydantic")
+    pytest.importorskip("fastapi")
+    import shim
+    with pytest.raises(pydantic.ValidationError):
+        shim.Measurements(pressure=True)
+    assert shim.Measurements(pressure=0.2).pressure == 0.2
+    assert shim.Measurements().pressure is None

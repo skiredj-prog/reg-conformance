@@ -110,6 +110,13 @@ Example: dispatch occurred, but a qualified attestation establishes
 non-execution: `CONFIRMED_NONEXECUTION`. A verified attestation completes the
 reconciliation; the dispatch does not keep the attempt `UNKNOWN`.
 
+A qualified, verified non-execution attestation is one that meets the
+conditions manuscript v7.2 §4.4 sets for `non_execution_attested`: qualifying
+evidence bound to the attempt (`id`, `LEI`, `nonce`) and fresh, an observed
+effect count of zero, and a signed attestation accepted under the path's
+verification rules. As there, it does not establish that the attestation is
+true of the external world.
+
 This record adds to the blocking of §2.1 and §2.2; it never replaces it.
 "Epistemic input" and "barrier" are not two options: every expiry is both. The
 question each clause answers is which constraint applies, according to which

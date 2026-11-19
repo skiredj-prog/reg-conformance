@@ -91,6 +91,7 @@ def build_verdict(report: dict) -> dict:
             "rule": admission.get("rule"),
             "checks_admitted_on_flag": admission.get("checks_admitted_on_flag", []),
             "flag_condition_observed": admission.get("flag_condition_observed", {}),
+            "implementation_gaps": admission.get("implementation_gaps", []),
         } if admission else None,
         # For each result that gave an observation: where it observed and what
         # it does not establish. A quoted result travels with these.
