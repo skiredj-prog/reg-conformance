@@ -153,6 +153,8 @@ def r4_004a(rt):
     try:
         rt.commit(d)
     except P.Refused as e:
+        if P.EFFECTS in rt.capabilities and _effects(rt, d):
+            return FAIL, f"commit refused ({e.code}) but an effect matched the expired authorization"
         return PASS, f"commit refused under the expired authorization ({e.code})"
     return FAIL, "commit accepted under the expired authorization"
 
