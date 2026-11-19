@@ -92,17 +92,20 @@ manuscript's I8 today.
 **Reading.** These are labels of the modelled membrane, not terms of REG's
 canonical vocabulary (v6.3, as cited by the author; decision of 19 November
 2026). A REG report maps them before stating a recorded state (glossary
-`GL-RUNTIME-LABEL`, `GL-STATE-RECORDED`): an attempt never dispatched is
-recorded as `CONFIRMED_NONEXECUTION`; an attempt that may have been dispatched
-is recorded as `UNKNOWN`, with reconciliation required. Within the paper's own
+`GL-RUNTIME-LABEL`, `GL-STATE-RECORDED`). The recorded state follows what the
+available evidence establishes, not the dispatch history:
+`CONFIRMED_NONEXECUTION` when the attempt was never dispatched, or was
+dispatched and a qualified, verified attestation establishes non-execution;
+`UNKNOWN`, with reconciliation required, when dispatch was possible and the
+attestation is absent, contradictory or not qualified. Within the paper's own
 argument (§4–§5), `FAILED` keeps the meaning the paper gives it, including the
 `NEA` condition.
 
-**Open.** v7.2 also reaches `FAILED` after a dispatch, on a verified
+**Example.** v7.2 reaches `FAILED` after a dispatch on a verified
 non-execution attestation (§4.4, `declare failed (T7)` and `reconcile,
-FAILED`). Whether that attestation counts as the reconciliation that allows
-`CONFIRMED_NONEXECUTION`, or the record stays `UNKNOWN`, is not decided. This
-note does not map that case.
+FAILED`). Dispatch occurred, but the qualified attestation establishes
+non-execution: the recorded state is `CONFIRMED_NONEXECUTION` (author's
+decision of 19 November 2026).
 
 **Effect on results.** None on the paper's results. A REG result quoted from
 the paper's runs states its mapped state, or says the label is unmapped.

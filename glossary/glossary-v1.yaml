@@ -228,12 +228,21 @@ terms:
     kind: enum
     definition: >
       What a record states is known about an attempt after an expiry (either
-      object) or a closing of a hold. Never dispatched: CONFIRMED_NONEXECUTION.
-      Dispatch possible: UNKNOWN, with reconciliation required. This record is
+      object) or a closing of a hold. The state follows what the available
+      evidence establishes, not the dispatch history.
+      CONFIRMED_NONEXECUTION: available evidence establishes that the outcome
+      was not executed (never dispatched; or dispatched, with a qualified,
+      verified non-execution attestation). UNKNOWN, reconciliation required:
+      dispatch possible and the evidence does not establish the outcome
+      (attestation absent, contradictory or not qualified). This record is
       added to the blocking of GL-BOUND-AUTHORIZATION and GL-BOUND-HELD-ATTEMPT;
       it never replaces it. Closing a hold does not establish what happened
       outside.
-    defined_in: "author decision 2026-11-19 (B3); RFC-4 v0.3 §2.3; UNKNOWN also RFC-2 §3"
+    defined_in: "author decisions 2026-11-19 03:07 (B3) and 06:11 (evidence criterion); RFC-4 v0.3 §2.3; UNKNOWN also RFC-2 §3"
+    examples:
+      - "never dispatched -> CONFIRMED_NONEXECUTION"
+      - "dispatch occurred, but qualified attestation establishes non-execution -> CONFIRMED_NONEXECUTION"
+      - "dispatch occurred, attestation absent, contradictory or not qualified -> UNKNOWN, reconciliation required"
     vocabulary: "canonical vocabulary v6.3 as cited by the author (text not located, see sources)"
     finding: "verified (decision and RFC-4 v0.3 text); the v6.3 source itself not read"
 
@@ -249,20 +258,21 @@ terms:
       FAILED:
         mapping:
           never_dispatched: CONFIRMED_NONEXECUTION
-          possibly_dispatched: "UNKNOWN, reconciliation required"
+          dispatched_with_verified_non_execution_attestation: CONFIRMED_NONEXECUTION   # T7, reconcile-FAILED; decision 2026-11-19 06:11
+          dispatch_possible_without_qualifying_evidence: "UNKNOWN, reconciliation required"
         used_in: ["manuscript v7.2 §4.1 σ, §4.3, §4.4, §4.5a (I3, I5, I7), §5", "tenir-conformance-s1-g1 (T7, T8)", "tenir_governance", "vectors CT-R4-012, CT-R4-013"]
-        open: >
-          The manuscript reaches FAILED also after a dispatch, on a verified
-          non-execution attestation (§4.4 `declare failed (T7)`, `reconcile,
-          FAILED`). Whether such an attestation counts as the reconciliation
-          that lets it map to CONFIRMED_NONEXECUTION, or whether it stays
-          UNKNOWN, is not decided by the 2026-11-19 text. Not mapped here.
+        decided: >
+          Author, 2026-11-19 06:11 UTC: a verified, qualified non-execution
+          attestation is the evidence that establishes non-execution; with it,
+          reconciliation is done. FAILED reached after a dispatch on such an
+          attestation (§4.4 `declare failed (T7)`, `reconcile, FAILED`) maps to
+          CONFIRMED_NONEXECUTION. The dispatch history does not change it.
       RESOLVED: {mapping: "open: no canonical term named yet"}
       PENDING: {mapping: "open"}
       AWAITING: {mapping: "open"}
       ESCALATED: {mapping: "open"}
       UNKNOWN: {mapping: "UNKNOWN (same term; reconciliation required)"}
-    defined_in: "author decision 2026-11-19; RFC-4 v0.3 §2.3"
+    defined_in: "author decisions 2026-11-19 03:07 and 06:11; RFC-4 v0.3 §2.3"
     errata: ERR-7.2-05
     finding: verified
 
