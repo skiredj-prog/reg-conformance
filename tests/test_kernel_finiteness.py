@@ -32,6 +32,32 @@ def test_a_non_finite_axis_is_held_never_admitted(axis, bad):
     assert r["s_score"] is None
 
 
+@pytest.mark.parametrize("axis", [0, 1], ids=["P", "V"])
+@pytest.mark.parametrize("bad", [None, float("nan"), float("inf"), "0.2"], ids=repr)
+def test_a_conclusive_veto_is_not_masked_by_an_unmeasured_axis(axis, bad):
+    # K = 0 vetoes whatever P and V (RFC-0 §4: the most restrictive applicable
+    # disposition governs). The unmeasured axis is still reported.
+    args = [0.9, 0.9, 0.0]
+    args[axis] = bad
+    r = ENGINE.evaluate(*args)
+    assert r["decision"] == "HARD_VETO"
+    assert r["unmeasured_axes"] == [("P", "V")[axis]]
+    assert r["s_score"] is None
+    json.dumps(r, allow_nan=False)
+
+
+def test_an_unmeasured_capacity_is_held_not_vetoed():
+    r = ENGINE.evaluate(0.9, 0.9, None)
+    assert (r["decision"], r["reason"], r["unmeasured_axes"]) == ("HOLD", "INSUFFICIENT_EVIDENCE", ["K"])
+
+
+def test_a_zero_denominator_does_not_raise():
+    eps = ENGINE.epsilon
+    held = ENGINE.evaluate(-eps, 1.0, 0.5)            # P × V + ε = 0
+    assert (held["decision"], held["reason"]) == ("HOLD", "INSUFFICIENT_EVIDENCE")
+    assert ENGINE.evaluate(-eps, 1.0, 0.0)["decision"] == "HARD_VETO"
+
+
 def test_finite_inputs_are_unchanged():
     assert ENGINE.evaluate(0.2, 0.2, 0.9)["decision"] == "PASS"
     assert ENGINE.evaluate(0.9, 0.9, 0.1)["decision"] == "HARD_VETO"
