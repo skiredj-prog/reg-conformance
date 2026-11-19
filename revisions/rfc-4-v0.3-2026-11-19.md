@@ -2,7 +2,7 @@
 revision: RFC-4 v0.3
 title: Commit & Execution Proof — bounds on authorizations and on held attempts
 date: 2026-11-19
-status: Draft, outside the baseline (awaiting ratification by the author)
+status: Ratified by the author on 2026-11-19; in force from reg-conformance v0.7.0; outside the frozen baseline
 revises: reg-standards-baseline/rfc/rfc-4.md v0.2 (Frozen, 2026-10-02), not edited
 supersedes_clauses:
   - "RFC-4 v0.2 §5.2 item 4 (CT-R4-004): superseded_by CT-R4-004a, CT-R4-004b"
@@ -21,8 +21,11 @@ CT-R4-004) keep referring to that stable text.
 
 This revision is dated and sits outside the baseline. It states which v0.2
 clauses it supersedes (front matter); every other v0.2 clause stands as
-written. It enters the baseline only when the author ratifies it, under a new
-frozen version.
+written. The author ratified it on 19 November 2026. It is in force from
+reg-conformance v0.7.0 and stays outside the frozen baseline: RFC-4 v0.2 is not
+edited, and each superseded clause is named, with what supersedes it, in the
+front matter. Whether it later enters a new frozen version of the baseline is a
+separate decision.
 
 ## 1. Which object carries the bound
 
@@ -162,12 +165,14 @@ recorded result.
 | CT-R4-004a | §2.1 | Commit under an authorization whose declared bound has passed | No effect attributed to the expired authorization. Any refusal mechanism satisfies the clause; an effect under that authorization fails. An effect under a fresh authorization is out of the probe and is checked against §2.1 conditions 1 to 4. |
 | CT-R4-004b | §2.2, §2.3; REG-STATE-024; RFC-0 §6 | Held attempt left past its declared bound, then any advance (commit, resolve, approval, dispatch) under the same attempt identity | No effect under that identity; pre-declared disposition (default refusal) recorded with the bound and the resulting state in the canonical vocabulary. A suspension that merely continues is not a terminal refusal. |
 
-## 6. Open, and not ours to decide
+## 6. Mapping to STANAIC STA-EA-02 (a mapping, not a design question)
 
-Whether STANAIC STA-EA-02 admits the fresh-authorization model of §2.1 in
-addition to the bounded-grant model is the question Maria has announced she
-will answer in writing. No mapping from §2.1 or §2.2 to STA-EA-02 is made here,
-and none is presumed until her letter.
+REG admits both deployment models: a bounded grant, where the authorization
+carries the bound (§2.1), and a fresh adjudication at each crossing, which
+§2.1 admits as a declared policy under its four conditions. Whether STANAIC
+STA-EA-02 prefers one of them is for its author to say; a written answer has
+been announced. That answer maps her requirement onto §2.1 and §2.2. It does
+not change them, and no mapping is made here before it.
 
 ## 7. Application to TENIR-Gov 5.7.0 (informative, as measured)
 

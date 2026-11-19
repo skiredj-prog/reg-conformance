@@ -92,7 +92,7 @@ CORE_VECTORS: dict[str, TestVector] = {
                     "Grant for action_A; commit attempts action_B → REJECT/BINDING_VIOLATION."),
     "CT-R4-003":TestVector("CT-R4-003","RFC-4 §2.1","Replay Rejection",
                     "Consumed nonce reused → REJECT/REPLAY_DETECTED."),
-    "CT-R4-004":TestVector("CT-R4-004","RFC-4 §2","Expired Grant Rejection",
+    "CT-R4-004":TestVector("CT-R4-004","RFC-4 §1.1, §5.2","Expired Grant Rejection",
                     "valid_until passed before commit → REJECT/EVALUATION_EXPIRED. Superseded by CT-R4-004a and CT-R4-004b (RFC-4 v0.3 revision §5); kept with its results."),
     "CT-R4-004a":TestVector("CT-R4-004a","RFC-4 v0.3 revision §2.1","Authority Valid at the Time of the Effect",
                     "Commit under an authorization whose declared bound has passed → no effect under that authorization; any refusal mechanism satisfies the clause."),
@@ -536,7 +536,7 @@ class HTTPAdapter(BaseAdapter):
     # CT-R4-004b — RFC-4 v0.3 revision §2.2
     def _v_ct_r4_004b(self):
         return self._ar("CT-R4-004b",
-            "The shim has no HOLD and no declared bound on a held attempt: an adapter that can hold an attempt and pass its bound is required.")
+            "The shim declares no bound on a held attempt (its only HOLD is insufficient evidence): an adapter that can hold an attempt under a declared bound and pass it is required.")
 
     # CT-R4-005  (uses /admin/reload-policy)
     def _v_ct_r4_005(self):
@@ -932,7 +932,7 @@ class NativeKernelAdapter(BaseAdapter):
 
     def _v_ct_r4_004b(self):
         return self._ar("CT-R4-004b",
-            "The bundled kernel has no HOLD and no declared bound on a held attempt: a port that declares them is required (harness/scenarios.py r4_004b).")
+            "The bundled kernel declares no bound on a held attempt (its only HOLD is insufficient evidence): a port that holds an attempt under a declared bound is required (harness/scenarios.py r4_004b).")
 
     def _v_ct_r4_005(self):
         g = self._evaluate("a","valid","wt",0.2,0.2,0.90,uuid.uuid4().hex)
@@ -1145,8 +1145,11 @@ def summary_by_basis(results):
     """Split the results by what the vector rests on.
 
     'specified_by_frozen_rfcs' counts vectors whose property is stated in the
-    frozen RFC text; 'outside_frozen_rfcs' counts registered ids that the RFCs
-    do not specify (proposals, and lifecycle vectors validated in the lab).
+    frozen RFC text or in a ratified reading of it (RN-001; the RFC-4 v0.3
+    revision of 19 November 2026, ratified and kept outside the frozen
+    baseline); 'outside_frozen_rfcs' counts registered ids that no ratified text
+    specifies (proposals, and lifecycle vectors validated in the lab). The key
+    names are kept so that reports stay comparable across versions.
     The classification is read from vectors/dist/vectors.json; None if absent.
     """
     try:
@@ -1242,8 +1245,8 @@ def main():
         by_basis = summary_by_basis(results)
         if by_basis:
             spec, other = by_basis["specified_by_frozen_rfcs"], by_basis["outside_frozen_rfcs"]
-            print(f"\n  Specified by the frozen RFCs: {spec['PASS']} PASS of {spec['total']}"
-                  f"   |   Registered ids outside the frozen RFCs: {other['total']}")
+            print(f"\n  Specified by the frozen RFCs or a ratified revision: {spec['PASS']} PASS of {spec['total']}"
+                  f"   |   Registered ids no ratified text specifies: {other['total']}")
         all_reports.append(generate_report(
             adapter, results, endpoint,
             build_evidence_binding(adapter, args)))

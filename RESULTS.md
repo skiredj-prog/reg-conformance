@@ -50,9 +50,7 @@ python -m pytest tests/test_harness.py
 ```
 
 The first command should print `PASS: 15  NOT_APPLICABLE: 1  ADAPTER_REQUIRED: 1  IMPLEMENTATION_GAP: 44`
-for the vectors. Of the 15 passes, 14 are on vectors in force; the fifteenth is
-CT-R4-004a, `RESERVED` until the RFC-4 v0.3 revision is ratified, and not
-conformance evidence before then. Of the seventeen property checks, five run on the reference
+for the vectors. Of the seventeen property checks, five run on the reference
 kernel: four pass and one fails. `PX-CT-R3-001`: the kernel admits a blank
 credential, a gap its own register declares. `PX-REG-STATE-001` passes since
 v0.7.0: a measurement that is not a finite number (None, NaN, inf) is held as
