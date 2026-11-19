@@ -5,7 +5,7 @@
 # Every check the index knows (a row of VECTORS.md) and every effect probe the
 # harness runs is attached to the one family whose property it exercises most
 # directly. The attachment changes no vector, no status and no tally: the
-# 56-vector summary of a run is computed exactly as before. The property view
+# vector summary of a run is computed exactly as before. The property view
 # is a second reading of the same results.
 #
 # A property check (PX-<row>) is not listed here: it is counted under the
@@ -65,6 +65,9 @@ checks:
   CT-R4-011: EGP-10
   CT-R4-012: EGP-10
   CT-R4-013: EGP-09
+  CT-R4-014: EGP-03
+  CT-R4-015: EGP-13
+  CT-R4-016: EGP-03
   CT-R0-001: EGP-07
   CT-R0-002: CLAIMS
   CT-R0-003: CLAIMS

@@ -145,8 +145,10 @@ class ReferencePort(P.RuntimePort):
     def run_custom(self, vector_id):
         # Runtime-specific results the legacy adapter reports for vectors that
         # have no neutral scenario: decision reproduction, external-effect
-        # evidence and the T6-T8 laboratory probes.
-        if vector_id in ("CT-R4-009", "CT-R4-010", "CT-R4-011", "CT-R4-012", "CT-R4-013"):
+        # evidence, the T6-T8 laboratory probes, and the RN-001 §3 vectors
+        # (CT-R4-014 to CT-R4-016), registered with no probe yet.
+        if vector_id in ("CT-R4-009", "CT-R4-010", "CT-R4-011", "CT-R4-012", "CT-R4-013",
+                         "CT-R4-014", "CT-R4-015", "CT-R4-016"):
             result = self._k.run_vector(vector_id)
             result.interface_mode = self.interface_mode
             result.evidence_level = int(self.evidence_level)

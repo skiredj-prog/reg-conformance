@@ -157,7 +157,7 @@ EGP-06 A refusal or a suspension produces no governed effect   PASS 2  FAIL 0  n
 - The families are candidates. They are not part of the frozen RFCs.
 - The view counts executed checks, vectors, probes and property checks alike,
   under the family each one exercises. It changes no result and no tally: the
-  56-vector summary is computed exactly as before.
+  vector summary is computed exactly as before.
 - `not run` counts rows and probes that have a check and gave no observation
   on this subject. `no check` counts rows of `VECTORS.md` that have neither a
   registered vector nor a property check.

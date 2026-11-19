@@ -27,7 +27,7 @@ KERNEL = str(Path(__file__).resolve().parents[1] / "kernel" / "tenir_policies.ya
 def test_reference_port_matches_legacy_native_mode_on_every_vector():
     legacy = {r.vector_id: r.status for r in R.NativeKernelAdapter(KERNEL).run_all()}
     ported = {r.vector_id: r.status for r in PortAdapter(ReferencePort()).run_all()}
-    assert len(legacy) == 56
+    assert len(legacy) == 59
     assert ported == legacy
 
 
@@ -260,7 +260,7 @@ def test_every_indexed_check_and_every_probe_has_exactly_one_family():
 def test_property_view_counts_probes_and_leaves_the_vector_tally_alone():
     adapter, results, _, view = _view(_Fixture())
     summary = R.generate_report(adapter, results)["summary"]
-    assert summary["PASS"] == 0 and summary["ADAPTER_REQUIRED"] == 56
+    assert summary["PASS"] == 0 and summary["ADAPTER_REQUIRED"] == 59
     assert view["families"]["EGP-06"]["PASS"] == 2 and view["families"]["EGP-12"]["PASS"] == 2
     assert view["summary"] == {"families": 14, "has_pass": 2, "has_fail": 0,
                                "inconclusive": 0, "not_exercised": 12}

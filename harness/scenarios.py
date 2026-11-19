@@ -148,7 +148,10 @@ def r4_005(rt):
     except P.Refused as e:
         if e.code == P.R_STATE_DRIFT and e.disposition == "HARD_VETO":
             return PASS, f"state drift produced HARD_VETO ({change})" + _via(d), _admission(d)
-        return FAIL, str(e), _admission(d)
+        # RN-001 §4: the outcome is required, not the HARD_VETO label. A refusal under
+        # another label prevents the effect but does not establish the state class.
+        return (INCONCLUSIVE, f"commit refused without establishing a terminal refusal or a "
+                f"suspension with a declared resumption condition: {e}", _admission(d))
     return FAIL, "state drift not detected", _admission(d)
 
 
@@ -201,7 +204,7 @@ def r2_003(rt):
 
 # -- harness probes: observe the effect, not only the verdict -----------------
 # These are NOT REG vectors. They are reported under their own ids and never
-# counted in the 56-vector totals. The property view (properties.py) counts
+# counted in the vector totals. The property view (properties.py) counts
 # them, as probes, under the candidate family they exercise.
 #
 # Some runtimes decide and dispatch in one step. For those, `evaluate` IS the
@@ -272,7 +275,7 @@ def hx_allow_after_refusal(rt):
 # -- property checks: one indexed property each, outside the vector set -------
 # A property check exercises a property that VECTORS.md indexes and that has
 # no executable vector. It is NOT a REG vector. It is reported under its own
-# id (PX-<index id>), never counted in the 56-vector totals, and counted by
+# id (PX-<index id>), never counted in the vector totals, and counted by
 # the property view under the family of the row it exercises. Registering one
 # as a vector is a ratification decision, not a harness change.
 #

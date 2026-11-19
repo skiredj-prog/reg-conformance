@@ -80,7 +80,7 @@ A statement about a result names all of the following:
 Example:
 
 > `<subject>` `<version>` at commit `<commit>`, run with reg-conformance at
-> `<commit>`, evidence level 2: 0 of 56 REG vectors executed (56 adapter
+> `<commit>`, evidence level 2: 0 of 59 REG vectors executed (59 adapter
 > required); 4 of 4 effect probes passed. By property: 2 of 14 candidate
 > families with a passing check, none with a failing check, 12 not exercised.
 > Bundle: `<link>`.
