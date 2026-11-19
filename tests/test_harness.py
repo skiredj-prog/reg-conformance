@@ -1028,3 +1028,18 @@ def test_tenir_gov_port_reports_flag_conditions_as_observed():
     assert _flag_conditions({"composed_decision": "FLAG",
                              "flag_conditions": ["review within 24 h"]}) == ("review within 24 h",)
     assert _flag_conditions({"composed_decision": "PASS", "flag_conditions": ["x"]}) == ()
+
+
+@pytest.mark.skipif(not _tenir_gov_has_policy_tau_k(),
+                    reason="tenir-governance without a policy-declared tau_k (needs 5.7.5 line)")
+def test_tenir_gov_tau_k_port_combines_needs_approval_instead_of_refusing():
+    """A port limitation must not read as a subject failure: the tau_k port
+    combines its NEEDS_APPROVAL (evidence unknown) with conditions on other
+    inputs, so CT-R0-005 measures the runtime, not an exception of the port."""
+    from harness import scenarios as S
+    from harness.ports.tenir_gov import TenirGovTauKPort
+    port = TenirGovTauKPort()
+    for pair in port.combinations:
+        port.reset()
+        d = port.evaluate_combined(tuple(pair), principal=S._principal("c"), action_type="wire_transfer")
+        assert d.disposition in ("PASS", "FLAG", "HOLD", "HARD_VETO")

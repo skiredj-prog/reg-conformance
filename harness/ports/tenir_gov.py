@@ -317,9 +317,19 @@ class TenirGovTauKPort(TenirGovPort):
         if P.NEEDS_APPROVAL not in intents:
             return super().evaluate_combined(intents, principal=principal,
                                              action_type=action_type, nonce=nonce)
-        if len(intents) > 1:
-            raise ValueError("NEEDS_APPROVAL is not combined on this port")
-        measured = {**_BEST, "evidence_quality": float("nan")}
+        # On this port NEEDS_APPROVAL is the evidence input alone (evidence_quality
+        # unknown). The other intents of `combinations` act on other inputs
+        # (authority, or pressure/velocity/capacity), so they combine without
+        # undoing it. They carry no amount.
+        overrides = {}
+        for intent in intents:
+            if intent == P.NEEDS_APPROVAL:
+                continue
+            changed, amount = _INPUTS[intent]
+            if amount or "evidence_quality" in changed:
+                raise ValueError(f"{intent} cannot be combined with NEEDS_APPROVAL on this port")
+            overrides.update(changed)
+        measured = {**_BEST, **overrides, "evidence_quality": float("nan")}
         return self._adjudicate(measured, None, principal=principal,
                                 action_type=action_type, nonce=nonce)
 
