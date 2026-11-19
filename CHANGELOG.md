@@ -4,7 +4,7 @@
 
 Cohérence REG / REG+ / suite, RN-001 inscrit dans le registre des vecteurs, harness neutre et `CLAIMS.md` en vigueur. Une seule version de chaque chose. Détail et état : `python tools/check_coherence.py`.
 
-RFC-4 v0.3 y figure comme révision datée hors baseline ; `rfc-4.md` v0.2 reste le texte gelé, et `CT-R4-004a` / `CT-R4-004b` restent `RESERVED` jusqu'à ratification. Ce que cette version ne contient pas : le glossaire papier / suite et l'errata du manuscrit v7.2, une version 5.7.1 de TENIR-Gov. Aucune capacité n'est démontrée (0 sur 42 configurations admissibles) ; aucun résultat publié ne porte sur le runtime TENIR-Gov.
+RFC-4 v0.3 y figure comme révision datée hors baseline ; `rfc-4.md` v0.2 reste le texte gelé, et `CT-R4-004a` / `CT-R4-004b` restent `RESERVED` jusqu'à ratification. Ce que cette version ne contient pas : le glossaire papier / suite et l'errata du manuscrit v7.2, le correctif τ_K de TENIR-Gov (prévu en 5.7.5, non publié). La seule version de TENIR-Gov épinglée et citée est 5.7.0 (`47ef67e`). Aucune capacité n'est démontrée (0 sur 42 configurations admissibles) ; aucun résultat publié ne porte sur le runtime TENIR-Gov.
 
 ### Added
 
