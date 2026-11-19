@@ -88,7 +88,7 @@ arriving after the bound does not reopen the attempt.
 
 ### 2.3 The epistemic axis is orthogonal
 
-Every expiry, of either object, also produces a record of what is known (B3):
+Every expiry, of either object, also produces a record of what is known:
 
 | Situation at expiry | Recorded state |
 |---|---|
