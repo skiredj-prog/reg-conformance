@@ -1,5 +1,7 @@
 # Sprint 1 — native evidence intake and receipt-byte checks
 
+The next optional layer is documented in [RECEIPT_TRUST_POLICY.md](RECEIPT_TRUST_POLICY.md): explicit evaluation time, receipt freshness, key acceptance windows and effective revocation relative to supplied references. It wraps the byte verifier; it does not establish native bundle semantics or independent policy provenance.
+
 Candidate implementation on `feat/proof01-native-evidence-intake`, based on the frozen W4 correction `107c3d8e1affec99843ad4eb3f78ffb36fc0efa9` (Draft PR #59). This contribution prepares the next verification boundary while treating archive availability as a planning assumption. Original archive hashes, original native suites and producer integration are **not reported as verified**.
 
 ## Implemented boundary
