@@ -1,0 +1,1 @@
+"""PROOF-01 W4 independent, offline evidence verifier (prototype)."""
