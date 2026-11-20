@@ -17,7 +17,7 @@ are read through `aliases`.
 | `τ_R` | Receipt qualification window, AWAITING → UNKNOWN | New name; ERR-7.2-01 |
 | bound of an authorization | Passing it: no effect under or attributed to that authorization; a fresh authorization only as a declared policy (RFC-4 v0.3 §2.1) | CT-R4-004a |
 | bound of a held attempt | Reaching it: pre-declared disposition, refusal by default, terminal for that attempt identity (RFC-4 v0.3 §2.2, RFC-0 §6) | CT-R4-004b; v0.2 CT-R4-004 mixed the two objects |
-| `CONFIRMED_NONEXECUTION`, `UNKNOWN` | Recorded state, by what the evidence establishes: not executed (never dispatched, or dispatched with a qualified attestation) / not established, reconciliation required | Adds to the block, never replaces it |
+| `CONFIRMED_NONEXECUTION`, `UNKNOWN` | Recorded state, by what the evidence establishes: not executed (never dispatched, or dispatched with a qualified rejection observed or a qualified attestation) / not established, reconciliation required | Adds to the block, never replaces it |
 | `FAILED` (and other σ labels) | Runtime label, not canonical (v6.3 as cited by the author); mapped before reporting | v7.2 and T7/T8 use it as a state (ERR-7.2-05); T7 (dispatch + verified attestation) maps to CONFIRMED_NONEXECUTION |
 | `RESOLVED`, `PENDING`, `AWAITING`, `ESCALATED` | Runtime labels, mapped by evidence: CONFIRMED_EXECUTION (name to confirm against v6.3) / no record while open, then by evidence / UNKNOWN / UNKNOWN | Decided 2026-11-19 |
 | verdict age, freshness threshold | Withdrawn as a rule (RFC-4 v0.3 §4) | RN-001 §2b "epistemic input" reading |

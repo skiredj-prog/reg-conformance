@@ -95,9 +95,12 @@ canonical vocabulary (v6.3, as cited by the author; decision of 19 November
 `GL-RUNTIME-LABEL`, `GL-STATE-RECORDED`). The recorded state follows what the
 available evidence establishes, not the dispatch history:
 `CONFIRMED_NONEXECUTION` when the attempt was never dispatched, or was
-dispatched and a qualified, verified attestation establishes non-execution;
-`UNKNOWN`, with reconciliation required, when dispatch was possible and the
-attestation is absent, contradictory or not qualified. Within the paper's own
+dispatched and either a qualified rejection of that dispatch was observed
+(§4.4 `dispatch, rejection observed`: outcome qualified, no effect recorded)
+or a qualified, verified attestation establishes non-execution; `UNKNOWN`,
+with reconciliation required, when dispatch was possible, no qualified
+rejection was observed, and the attestation is absent, contradictory or not
+qualified. These are the three paths of the paper's `NEA` predicate (§4.3). Within the paper's own
 argument (§4–§5), `FAILED` keeps the meaning the paper gives it, including the
 `NEA` condition.
 

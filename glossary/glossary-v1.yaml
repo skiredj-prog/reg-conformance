@@ -231,17 +231,19 @@ terms:
       object) or a closing of a hold. The state follows what the available
       evidence establishes, not the dispatch history.
       CONFIRMED_NONEXECUTION: available evidence establishes that the outcome
-      was not executed (never dispatched; or dispatched, with a qualified,
-      verified non-execution attestation). UNKNOWN, reconciliation required:
-      dispatch possible and the evidence does not establish the outcome
-      (attestation absent, contradictory or not qualified). This record is
+      was not executed (never dispatched; or dispatched, with a qualified
+      rejection observed or a qualified, verified non-execution attestation).
+      UNKNOWN, reconciliation required: dispatch possible and the evidence does
+      not establish the outcome (no qualified rejection observed, and the
+      attestation absent, contradictory or not qualified). This record is
       added to the blocking of GL-BOUND-AUTHORIZATION and GL-BOUND-HELD-ATTEMPT;
       it never replaces it. Closing a hold does not establish what happened
       outside.
-    defined_in: "author decisions 2026-11-19 03:07 (B3) and 06:11 (evidence criterion); RFC-4 v0.3 §2.3; UNKNOWN also RFC-2 §3"
+    defined_in: "author decisions 2026-11-19 03:07 (B3), 06:11 (evidence criterion) and 2026-11-20 02:20 (qualified rejection); RFC-4 v0.3 §2.3; UNKNOWN also RFC-2 §3"
     examples:
       - "never dispatched -> CONFIRMED_NONEXECUTION"
       - "dispatch occurred, but qualified attestation establishes non-execution -> CONFIRMED_NONEXECUTION"
+      - "dispatch occurred, and a qualified rejection of that dispatch was observed -> CONFIRMED_NONEXECUTION"
       - "dispatch occurred, attestation absent, contradictory or not qualified -> UNKNOWN, reconciliation required"
     vocabulary: "canonical vocabulary v6.3 as cited by the author (text not located, see sources)"
     finding: "verified (decision and RFC-4 v0.3 text); the v6.3 source itself not read"
@@ -258,6 +260,7 @@ terms:
       FAILED:
         mapping:
           never_dispatched: CONFIRMED_NONEXECUTION
+          dispatched_with_qualified_rejection_observed: CONFIRMED_NONEXECUTION   # v7.2 §4.4 'dispatch, rejection observed'; decision 2026-11-20 02:20
           dispatched_with_verified_non_execution_attestation: CONFIRMED_NONEXECUTION   # T7, reconcile-FAILED; decision 2026-11-19 06:11
           dispatch_possible_without_qualifying_evidence: "UNKNOWN, reconciliation required"
         used_in: ["manuscript v7.2 §4.1 σ, §4.3, §4.4, §4.5a (I3, I5, I7), §5", "tenir-conformance-s1-g1 (T7, T8)", "tenir_governance", "vectors CT-R4-012, CT-R4-013"]
@@ -267,6 +270,12 @@ terms:
           reconciliation is done. FAILED reached after a dispatch on such an
           attestation (§4.4 `declare failed (T7)`, `reconcile, FAILED`) maps to
           CONFIRMED_NONEXECUTION. The dispatch history does not change it.
+          Author, 2026-11-20 02:20 UTC: a qualified rejection observed after a
+          dispatch also maps to CONFIRMED_NONEXECUTION, as in the manuscript.
+          A qualified rejection is one that manuscript v7.2 §4.4 records as
+          `dispatch, rejection observed`: the runtime observed the rejection of
+          that dispatch, and the outcome is qualified with no effect recorded
+          (RFC-4 v0.3 §2.3).
       # The four entries below: decided by the author, 2026-11-19 06:21 UTC
       # ("OK" to the four recommendations). Same rule: the canonical state
       # follows what the available evidence establishes.
