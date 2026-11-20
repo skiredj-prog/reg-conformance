@@ -2,7 +2,9 @@
 revision: RFC-4 v0.3
 title: Commit & Execution Proof — bounds on authorizations and on held attempts
 date: 2026-11-19
-status: Ratified by the author on 2026-11-19; in force from reg-conformance v0.7.0; outside the frozen baseline
+status: Ratified by the author on 2026-11-19, amended by the author on 2026-11-20; in force from reg-conformance v0.7.0; outside the frozen baseline
+amendments:
+  - "2026-11-20, author's decision (02:20 UTC): a qualified rejection observed after dispatch establishes non-execution, as in manuscript v7.2 §4.3 and §4.4 (§2.2, §2.3)"
 revises: reg-standards-baseline/rfc/rfc-4.md v0.2 (Frozen, 2026-10-02), not edited
 supersedes_clauses:
   - "RFC-4 v0.2 §5.2 item 4 (CT-R4-004): superseded_by CT-R4-004a, CT-R4-004b"
@@ -21,7 +23,9 @@ CT-R4-004) keep referring to that stable text.
 
 This revision is dated and sits outside the baseline. It states which v0.2
 clauses it supersedes (front matter); every other v0.2 clause stands as
-written. The author ratified it on 19 November 2026. It is in force from
+written. The author ratified it on 19 November 2026 and amended §2.2 and §2.3
+on 20 November 2026, before the release: a qualified rejection observed after
+dispatch also establishes non-execution (§2.3). It is in force from
 reg-conformance v0.7.0 and stays outside the frozen baseline: RFC-4 v0.2 is not
 edited, and each superseded clause is named, with what supersedes it, in the
 front matter. Whether it later enters a new frozen version of the baseline is a
