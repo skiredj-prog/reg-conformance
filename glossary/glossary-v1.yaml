@@ -98,7 +98,7 @@ terms:
     defined_in: catalog/capabilities-v1.yaml normative_invariants[BUD]; specs/consensus-contract-v1.md §2.4
     aliases:
       - {alias: I8, where: "tenir_governance; catalogue <= v1.1.0 (tag v0.6.2 included); evidence logs written before the rename", read_as: BUD}
-      - {alias: I8_maintained, where: "evidence/test-fault-tolerance.log and other historical fault-injection logs", read_as: BUD_maintained}
+      - {alias: I8_maintained, where: "field name in specs/evidence-type-specs-v1.md (kept as is) and in historical fault-injection logs such as evidence/test-fault-tolerance.log", refers_to: BUD, note: "The field keeps its name. This glossary does not introduce BUD_maintained; a new field name needs a versioned revision of the evidence contract with an explicit compatibility rule (author's decision, 2026-11-20)."}
     finding: verified
     pending:
       - {where: "tenir_governance (other repository)", change: "rename I8 to BUD in code and docs, keeping I8 as a deprecated alias", owner: "TENIR-Gov 5.7.1 workstream"}
@@ -141,7 +141,7 @@ terms:
       - "vectors/core.yaml CT-R4-011 input ('under τ_K discipline'), and vectors/dist/vectors.json"
     finding: verified
     pending:
-      - {where: [runner.py, vectors/core.yaml, vectors/dist/vectors.json], change: "τ_K -> τ_R where the receipt window is meant", after: "next suite revision (#77 merged in v0.7.0 without this rename)"}
+      - {where: [runner.py, vectors/core.yaml, vectors/dist/vectors.json, lifecycle/register_core_lifecycle.py], change: "τ_K -> τ_R where the receipt window is meant", after: "next suite revision (#77 merged in v0.7.0 without this rename)"}
     guard:
       pattern: 'τ_K (qualification|discipline)|\(τ_K expiry\)|within τ_K'
       allowed: []
@@ -356,7 +356,7 @@ terms:
       transition T6" and "transition T8". The manuscript names neither.
     finding: verified
     pending:
-      - {where: [vectors/core.yaml, vectors/dist/vectors.json, runner.py, VECTORS.md], change: "cite T6 and T8 to tenir-conformance-s1-g1@8bc0e5e; keep §4.4 only for T7 and for the untagged rows it mirrors", after: "next suite revision (#77 merged in v0.7.0 without this change)"}
+      - {where: [vectors/core.yaml, vectors/dist/vectors.json, runner.py, VECTORS.md, lifecycle/register_core_lifecycle.py], change: "cite T6 and T8 to tenir-conformance-s1-g1@8bc0e5e; keep §4.4 only for T7 and for the untagged rows it mirrors", after: "next suite revision (#77 merged in v0.7.0 without this change)"}
     guard:
       pattern: 'v7\.2 §4\.4.*\bT[68]\b|\bT[68] \(manuscript v7\.2'
       allowed: []
