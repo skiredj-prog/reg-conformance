@@ -601,6 +601,19 @@ def x04():
     return out
 
 
+@check("COH-X06", "Across layers", "The REG-ARCH Markdown transcription matches the DOCX it is generated from")
+def x06():
+    script = ROOT / "tools" / "reg_arch_markdown.py"
+    target = ROOT / "specs" / "reg-arch" / "v0.4.1-candidate" / "REG-ARCH.md"
+    if not script.exists() or not target.exists():
+        return []
+    done = subprocess.run([sys.executable, str(script), "--check"], capture_output=True, text=True)
+    if done.returncode == 0:
+        return []
+    problems = [line[5:] for line in done.stdout.splitlines() if line.startswith("FAIL ")]
+    return problems or ["tools/reg_arch_markdown.py --check failed without naming a problem"]
+
+
 # ── driver ───────────────────────────────────────────────────────────────────
 
 def run_all():

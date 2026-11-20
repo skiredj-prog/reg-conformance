@@ -13,7 +13,7 @@ TRACKED = ["tools", "vectors", "catalog", "crosswalk", "capabilities", "profiles
            "reg-standards-baseline", "kernel", "lifecycle", "runner.py", "reg_common.py", "shim.py", "spec.md",
            "VECTORS.md", "README.md", "CHANGELOG.md", "validate_profiles.py", "compatibility-rules-v2.yaml",
            "coherence-baseline.json", "policy.json", "requirements.txt", "conformance-target.json",
-           "capability-evidence-contract-v1.json", "evidence"]
+           "capability-evidence-contract-v1.json", "evidence", "audits"]
 
 
 def run(root, *args):
@@ -141,3 +141,17 @@ def test_a_malformed_vector_reference_is_caught(copy):
     data = copy / "crosswalk/data/crosswalk.json"
     data.write_text(data.read_text(encoding="utf-8").replace('"vector_ref": "C3; CT-R4-005"', '"vector_ref": "c3 and CT-R4-005"'), encoding="utf-8")
     assert "COH-X05" in findings(copy)
+
+
+def test_a_hand_edit_of_the_reg_arch_transcription_is_seen(copy):
+    assert "COH-X06" not in findings(copy)
+    transcription = copy / "specs" / "reg-arch" / "v0.4.1-candidate" / "REG-ARCH.md"
+    text = transcription.read_text(encoding="utf-8")
+    assert "Distinction des statuts" in text
+    transcription.write_text(text.replace("Distinction des statuts", "Distinction des status"), encoding="utf-8")
+    assert "COH-X06" in findings(copy)
+
+
+def test_a_reg_arch_transcription_without_its_source_is_seen(copy):
+    (copy / "audits" / "reg-arch-v0.4.1" / "REG-ARCH_v0.4.1-candidate.docx").unlink()
+    assert "COH-X06" in findings(copy)
