@@ -22,14 +22,15 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install independent cryptographic verifier dependency
-        run: python -m pip install 'cryptography==46.0.7'
+        run: python -m pip install -r proof01_w4/requirements-verifier.txt
       - name: Record exact checkout and environment
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           git rev-parse HEAD | tee w4-checkout.txt
           test "$(cat w4-checkout.txt)" = "$EXPECTED_SHA"
-          python -c "import sys,platform,cryptography,json; print(json.dumps({'python':sys.version,'platform':platform.platform(),'cryptography':cryptography.__version__},indent=2))" > w4-environment.json
+          python -c "import sys,platform,cryptography,json,importlib.metadata as m; print(json.dumps({'python':sys.version,'platform':platform.platform(),'cryptography':cryptography.__version__,'jsonschema':m.version('jsonschema')},indent=2))" > w4-environment.json
+          python -m pip freeze > w4-dependencies.txt
       - name: Run offline adversarial unit tests
         shell: bash
         run: |
@@ -44,3 +45,4 @@ jobs:
             w4-checkout.txt
             w4-environment.json
             w4-tests.log
+            w4-dependencies.txt
