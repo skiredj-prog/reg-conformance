@@ -30,9 +30,10 @@ date: "2026-11-19"
 
 sources:
   manuscript: {file: manuscript/v7.2.md, release: "7.2", commit: 98bf685, doi: "10.5281/zenodo.24249646 (as stated in the repository; not checked on Zenodo)"}
-  suite_main: {commit: b943f06, tag_of_code: "v0.6.2 = a2ec724"}
-  pr_77_rn001_registry: {head: f4a4fb9, status: "draft, not merged"}
-  pr_76_claims: {head: 182190c, base: feat/property-view, status: "draft, not merged"}
+  suite_main: {commit: b943f06, tag_of_code: "v0.6.2 = a2ec724", note: "findings first read on this commit (2026-11-19)"}
+  suite_release: {tag: v0.7.0, commit: 20016d2, note: "references re-checked against this release on 2026-11-20"}
+  pr_77_rn001_registry: {head: f4a4fb9, status: "merged into main (028d25d), released in v0.7.0"}
+  pr_76_claims: {head: 182190c, base: feat/property-view, status: "merged (1c80ad2), released in v0.7.0; CLAIMS.md in force"}
   rfc: reg-standards-baseline/rfc/ (frozen texts)
   rn_001: reg-standards-baseline/notes/RN-001-flag-time-drift.md (ratified 2026-11-18)
   author_decision_2026_11_19: >
@@ -40,7 +41,7 @@ sources:
     bound (authorization vs held attempt); FAILED is a runtime label, not a
     term of the canonical vocabulary v6.3; expiry records CONFIRMED_NONEXECUTION
     or UNKNOWN with reconciliation (B3).
-  rfc_4_v0_3: "revisions/rfc-4-v0.3-2026-11-19.md (draft outside the baseline, PRs #80 and #81; RFC-4 v0.2 stays frozen)"
+  rfc_4_v0_3: "revisions/rfc-4-v0.3-2026-11-19.md (ratified by the author 2026-11-19, amended 2026-11-20; in force from v0.7.0; outside the frozen baseline; RFC-4 v0.2 stays frozen)"
   canonical_vocabulary_v6_3: "cited by the author; no file of that name or version was found in the five repositories (searched 2026-11-19). Terms below are taken from the decision and RFC-4 v0.3 §2.3, not from a v6.3 text."
 
 terms:
@@ -88,7 +89,7 @@ terms:
         - README.md
         - CHANGELOG.md
     pending:
-      - {where: [harness/ports/tenir_gov.py], change: "write 'BUD (named I8 in tenir_governance)' for the budget invariant", after: "PR #76 / #80 merges (file not on main yet)"}
+      - {where: [harness/ports/tenir_gov.py], change: "write 'BUD (named I8 in tenir_governance)' for the budget invariant", after: "next suite revision (file on main since v0.7.0; not renamed there)"}
 
   - id: GL-INV-BUD
     canonical: BUD
@@ -115,7 +116,7 @@ terms:
     defined_in: "RFC-0 §6; RFC-5 §1; RN-001 §2a"
     bound_carried_by: GL-BOUND-HELD-ATTEMPT   # τ_K is the declared bound of a held attempt, never of an authorization
     variants: {"τ_K^comp": "collective window of a composition, RFC-3 §6.4"}
-    implementations: ["tenir_governance HoldManager tau_k_seconds", "composition/simulator.py (composition window)", "harness/port.py B_TAU_K and harness/scenarios.py, RFC-5 sense (PR #76, verified at #80 head)"]
+    implementations: ["tenir_governance HoldManager tau_k_seconds", "composition/simulator.py (composition window)", "harness/port.py B_TAU_K and harness/scenarios.py, RFC-5 sense (from #76, in v0.7.0)"]
     manuscript_v7_2:
       same_meaning_in: ["§3.1 Ω component (inferred: Ω is not exercised in the paper)", "§9 composition simulator, 'τ_K is a supplied input' (verified against composition/simulator.py)"]
       other_meaning_in: ["§2.2", "§4.4", "§6.1", "§7.1 S2"]   # see GL-TAU-R
@@ -136,11 +137,11 @@ terms:
       locations: ["l.86 §2.2 (S2)", "l.229-230 §4.4 (admit and await, timeout)", "l.383 §6.1 (clock advance by τ_K)", "l.485 §7.1 (S2)"]
       errata: ERR-7.2-01
     suite_uses_needing_rename:
-      - "runner.py l.13, l.16, l.107, l.109 (T6/T7 descriptions)"
+      - "runner.py l.13, l.16, l.114, l.116 at v0.7.0 (T6/T7 descriptions; l.107, l.109 at b943f06)"
       - "vectors/core.yaml CT-R4-011 input ('under τ_K discipline'), and vectors/dist/vectors.json"
     finding: verified
     pending:
-      - {where: [runner.py, vectors/core.yaml, vectors/dist/vectors.json], change: "τ_K -> τ_R where the receipt window is meant", after: "PR #77 merges (it edits the same files)"}
+      - {where: [runner.py, vectors/core.yaml, vectors/dist/vectors.json], change: "τ_K -> τ_R where the receipt window is meant", after: "next suite revision (#77 merged in v0.7.0 without this rename)"}
     guard:
       pattern: 'τ_K (qualification|discipline)|\(τ_K expiry\)|within τ_K'
       allowed: []
@@ -168,7 +169,7 @@ terms:
     status: withdrawn-as-rule
     superseded_by: GL-BOUND-AUTHORIZATION
     definition: "Policy-declared age beyond which a verdict cannot be dispatched without a fresh adjudication that includes its age."
-    defined_in: "RN-001 §3.1; vector CT-R4-014 (PR #77)"
+    defined_in: "RN-001 §3.1; vector CT-R4-014 (from #77, in v0.7.0)"
     withdrawn_by: "RFC-4 v0.3 §4: CT-R4-014 and CT-R4-015 superseded_by CT-R4-004a; CT-R4-016 superseded_by CT-R4-004b"
     symbol: none
     finding: verified
@@ -214,7 +215,7 @@ terms:
       CT-R4-004: "v0.2 §5.2 item 4: valid_until passed before commit -> REJECT / EVALUATION_EXPIRED. Kept with its text and results (reference kernel PASS)."
       CT-R4-004a: "Commit under an authorization whose declared bound has passed: no effect attributed to the expired authorization (GL-BOUND-AUTHORIZATION)."
       CT-R4-004b: "Held attempt past its declared bound, then any advance under the same identity: no effect; pre-declared disposition recorded with the bound and the resulting state in canonical vocabulary (GL-BOUND-HELD-ATTEMPT)."
-    defined_in: "RFC-4 v0.3 §5 (draft)"
+    defined_in: "RFC-4 v0.3 §5 (in force from v0.7.0)"
     superseded: {CT-R4-004: [CT-R4-004a, CT-R4-004b], CT-R4-014: [CT-R4-004a], CT-R4-015: [CT-R4-004a], CT-R4-016: [CT-R4-004b]}
     clash: >
       v0.2 CT-R4-004 speaks of the window of an admission (object 1); later
@@ -309,13 +310,13 @@ terms:
       Commit-state binding: the governance state (policy_epoch) changes between
       verdict and commit. Required outcome: no effect under the changed state;
       terminal refusal, or suspension with a declared resumption condition.
-    defined_in: "vectors/commit.yaml as rewritten by PR #77, per RN-001 §4"
+    defined_in: "vectors/commit.yaml as rewritten by #77 (in v0.7.0), per RN-001 §4"
     internal_clash:
       - {source: "RFC-4 §2.2 body", says: "MUST ... trigger HARD_VETO"}
       - {source: "RFC-4 §5.2 item 5", says: "REJECT / STATE_DRIFT"}
       - {source: "vectors/commit.yaml on main b943f06", says: "expected: HARD_VETO"}
-      - {source: "PR #77", says: "no effect; terminal refusal, or suspension with a declared resumption condition"}
-    resolution: "PR #77 text is canonical; RFC-4 v0.3 §3 (draft) carries the RN-001 §4 outcome and supersedes the v0.2 §2.2 HARD_VETO sentence."
+      - {source: "#77, in v0.7.0", says: "no effect; terminal refusal, or suspension with a declared resumption condition"}
+    resolution: "The #77 text (v0.7.0) is canonical; RFC-4 v0.3 §3 (in force from v0.7.0) carries the RN-001 §4 outcome and supersedes the v0.2 §2.2 HARD_VETO sentence."
     manuscript_v7_2:
       same_meaning: false
       locations: ["l.10 changelog 7.1", "l.61 §1.1 (traceability list)", "l.647 §10.1"]
@@ -355,7 +356,7 @@ terms:
       transition T6" and "transition T8". The manuscript names neither.
     finding: verified
     pending:
-      - {where: [vectors/core.yaml, vectors/dist/vectors.json, runner.py, VECTORS.md], change: "cite T6 and T8 to tenir-conformance-s1-g1@8bc0e5e; keep §4.4 only for T7 and for the untagged rows it mirrors", after: "PR #77 merges"}
+      - {where: [vectors/core.yaml, vectors/dist/vectors.json, runner.py, VECTORS.md], change: "cite T6 and T8 to tenir-conformance-s1-g1@8bc0e5e; keep §4.4 only for T7 and for the untagged rows it mirrors", after: "next suite revision (#77 merged in v0.7.0 without this change)"}
     guard:
       pattern: 'v7\.2 §4\.4.*\bT[68]\b|\bT[68] \(manuscript v7\.2'
       allowed: []
@@ -391,13 +392,13 @@ terms:
   - id: GL-OUTCOME
     canonical: "outcome: PASS | FAIL | INCONCLUSIVE | NOT_APPLICABLE | ADAPTER_REQUIRED | IMPLEMENTATION_GAP"
     kind: enum
-    definition: "Result of one test in one run (CLAIMS.md, PR #76; vectors/schema.json `native`)."
+    definition: "Result of one test in one run (CLAIMS.md, in force from v0.7.0; vectors/schema.json `native`)."
     finding: verified
 
   - id: GL-CLAIM-LEVEL
     canonical: "level 1 semantic mapping | level 2 adapter-tested | level 3 native-conformant"
     kind: enum
-    definition: "How the subject was reached in a run (CLAIMS.md, PR #76)."
+    definition: "How the subject was reached in a run (CLAIMS.md, in force from v0.7.0)."
     finding: verified
     note: >
       "Démontré" (demonstrated) is a catalogue status for a capability with a
