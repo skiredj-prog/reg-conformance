@@ -1,0 +1,1 @@
+{"requested_operation": "alias-second-op", "returned_operation": "alias-first-op", "same_returned_receipt": true, "rows": 1, "scope": "Native component output-binding check; not a concurrency or external-effect test"}

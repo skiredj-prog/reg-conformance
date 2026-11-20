@@ -1,0 +1,24 @@
+{
+  "producer_sha": "f1ada7b78d9f4c13656efc7f9f8c5a165394a9fb",
+  "parent_sha": "02ea1d3bcf5c6fca8e4de6bd7bf5c69cb63f4413",
+  "files": [
+    {
+      "path": "w2_integration/proof_provider.py",
+      "git_blob": "5e64adc8f35e2698622c5a3ae47b2bd353946ba9"
+    },
+    {
+      "path": "w2_integration/i8_ledger.py",
+      "git_blob": "fd7da1e4e1882e97931a7784a006ef852ed54c49"
+    },
+    {
+      "path": "w2_integration/lab_s1_bridge.py",
+      "git_blob": "ca9acaf44ad6df99dc12b43dbfed6c5ad7ffa369"
+    },
+    {
+      "path": "w2_integration/test_w2_1.py",
+      "git_blob": "69e2822c9730af83dfd300fc936a307c7267cc57"
+    }
+  ],
+  "scope": "W4 partial native component reproduction; no integrated CEB/native G4-A qualification",
+  "associated_prs_at_inspection": []
+}

@@ -1,0 +1,31 @@
+{
+  "role": "Agent 3 / W4",
+  "pmo_plan": "PMO 1.0, 2026-10-28",
+  "producer": {
+    "repository": "skiredj-prog/tenir_governance",
+    "branch": "w2-lab-s1-integration",
+    "sha": "02ea1d3bcf5c6fca8e4de6bd7bf5c69cb63f4413",
+    "accepted_integration_lock": false,
+    "associated_prs_at_inspection": []
+  },
+  "files": [
+    {
+      "path": "w2_integration/proof_provider.py",
+      "git_blob": "ebc0cdee36f19e4adbcfc713b5b8370725714f9f"
+    },
+    {
+      "path": "w2_integration/lab_s1_bridge.py",
+      "git_blob": "1259d43323bee3c6cdc647608ccf123ca7daca82"
+    },
+    {
+      "path": "w2_integration/i8_ledger.py",
+      "git_blob": "fd7da1e4e1882e97931a7784a006ef852ed54c49"
+    }
+  ],
+  "execution_scope": "Static interface inspection only; W2 modules not imported, executed or modified",
+  "campaign_001": {
+    "sha256": "21757f5e5c9654a96ccba34ff7698c0bee91a7b462976b5c118f1b8f11e59103",
+    "producer_sha": "NOT_IDENTIFIED",
+    "relation_to_w2_commit": "NOT_ESTABLISHED"
+  }
+}

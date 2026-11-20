@@ -1,0 +1,219 @@
+{
+  "producer_sha": "f1ada7b78d9f4c13656efc7f9f8c5a165394a9fb",
+  "source_identities": [
+    {
+      "path": "w2_integration/proof_provider.py",
+      "git_blob": "5e64adc8f35e2698622c5a3ae47b2bd353946ba9",
+      "sha256": "13c6c64c1e091a3d5749bf92e718c74e2178866d5c1a15d4bdd3b244eb0be3a4"
+    },
+    {
+      "path": "w2_integration/i8_ledger.py",
+      "git_blob": "fd7da1e4e1882e97931a7784a006ef852ed54c49",
+      "sha256": "fd1543f785ef5e3c9d53a3f68b07dd91670f469d32306089ee399ced7fbd2e6d"
+    },
+    {
+      "path": "w2_integration/lab_s1_bridge.py",
+      "git_blob": "ca9acaf44ad6df99dc12b43dbfed6c5ad7ffa369",
+      "sha256": "1bbdc9b0f5f89605304e85e67b2aaa383bf6c9cb9e97507f1ecc2e4feeaa8a56"
+    },
+    {
+      "path": "w2_integration/test_w2_1.py",
+      "git_blob": "69e2822c9730af83dfd300fc936a307c7267cc57",
+      "sha256": "c7c81fb44ac5978c912edcee719729fde75ae786914cefca8c2b05090a96ca58"
+    }
+  ],
+  "environment": {
+    "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "platform": "Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+    "assertions_enabled": true,
+    "sqlite": "3.46.1"
+  },
+  "native_test_script": {
+    "result": "PASS",
+    "test_functions": 2,
+    "scope": "Two supplied test functions; restart function reopens B3 in same process"
+  },
+  "separate_process_component_reopen": {
+    "b3_rows_persist": true,
+    "i8_flag_persists": true,
+    "rc01_state_restored": false,
+    "key_continuity": false
+  },
+  "repair_order_observed": true,
+  "first_process": {
+    "native_summary": {
+      "op_id": "w4-restart-op",
+      "final_state": "RECONCILED_CONFIRMED",
+      "execute_count": 1,
+      "settlement_count": 1,
+      "receipt_status": "EXECUTED",
+      "traces": [
+        {
+          "ts": "2026-10-28T18:28:39.236973+00:00",
+          "op": "w4-restart-op",
+          "from": "INIT",
+          "to": "RESERVED",
+          "reason": "lab_s1_grant_assumed"
+        },
+        {
+          "ts": "2026-10-28T18:28:39.237796+00:00",
+          "op": "w4-restart-op",
+          "from": "RESERVED",
+          "to": "DISPATCHING",
+          "reason": "dispatch_intent"
+        },
+        {
+          "ts": "2026-10-28T18:28:39.250098+00:00",
+          "op": "w4-restart-op",
+          "from": "DISPATCHING",
+          "to": "UNKNOWN",
+          "reason": "ack_lost"
+        },
+        {
+          "ts": "2026-10-28T18:28:39.252196+00:00",
+          "op": "w4-restart-op",
+          "from": "UNKNOWN",
+          "to": "REPAIR",
+          "reason": "settle_failed"
+        },
+        {
+          "ts": "2026-10-28T18:28:39.253344+00:00",
+          "op": "w4-restart-op",
+          "from": "REPAIR",
+          "to": "RECONCILED_CONFIRMED",
+          "reason": "recovery"
+        }
+      ]
+    },
+    "observer_events": [
+      {
+        "kind": "TRANSITION_CALL",
+        "to": "RESERVED"
+      },
+      {
+        "kind": "TRANSITION_CALL",
+        "to": "DISPATCHING"
+      },
+      {
+        "kind": "TRANSITION_CALL",
+        "to": "UNKNOWN"
+      },
+      {
+        "kind": "SETTLE_EXCEPTION",
+        "message": "forced settle failure"
+      },
+      {
+        "kind": "SETTLE_RETURN",
+        "line": 37
+      },
+      {
+        "kind": "TRANSITION_CALL",
+        "to": "REPAIR"
+      },
+      {
+        "kind": "SETTLE_RETURN",
+        "line": 34
+      },
+      {
+        "kind": "TRANSITION_CALL",
+        "to": "RECONCILED_CONFIRMED"
+      }
+    ],
+    "observer_scope": "W4 sys.settrace in-process observation; not native durable journal",
+    "receipt_key_id": "8a131b76813d00ed1e979249979d8575627dbf4050dc236bad2e8dfe7a87af85",
+    "receipt_sequence": 1
+  },
+  "second_process": {
+    "effect_rows": 1,
+    "settlement_flag": 1,
+    "i8_row": [
+      "w4-restart-op",
+      100,
+      1,
+      0
+    ],
+    "receipt_key_id": "8a131b76813d00ed1e979249979d8575627dbf4050dc236bad2e8dfe7a87af85",
+    "new_constructor_key_id": "34675b5c42e53e75f138c0a2df14e4e873fae0999c708ed5ddbf0adc1db6f878",
+    "new_constructor_sequence": 0,
+    "rc01_loaded_states": {},
+    "rc01_constructor_parameters": []
+  },
+  "alias_binding": {
+    "requested_operation": "alias-second-op",
+    "returned_operation": "alias-first-op",
+    "same_returned_receipt": true,
+    "rows": 1,
+    "scope": "Native component output-binding check; not a concurrency or external-effect test"
+  },
+  "executions": [
+    {
+      "name": "native-test-script",
+      "command": [
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/.venv-linux/bin/python",
+        "-B",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-f1ada7b/sources/w2_integration/test_w2_1.py"
+      ],
+      "cwd": "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-f1ada7b/sources/w2_integration",
+      "exit_code": 0
+    },
+    {
+      "name": "native-scenario",
+      "command": [
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/.venv-linux/bin/python",
+        "-B",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-f1ada7b/reproduce.py",
+        "--sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-f1ada7b/sources/w2_integration",
+        "--worker",
+        "scenario",
+        "--store",
+        "/tmp/w4-w21-j18ojhoc"
+      ],
+      "cwd": "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-f1ada7b",
+      "exit_code": 0
+    },
+    {
+      "name": "new-process-reload",
+      "command": [
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/.venv-linux/bin/python",
+        "-B",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-f1ada7b/reproduce.py",
+        "--sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-f1ada7b/sources/w2_integration",
+        "--worker",
+        "reload",
+        "--store",
+        "/tmp/w4-w21-j18ojhoc"
+      ],
+      "cwd": "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-f1ada7b",
+      "exit_code": 0
+    },
+    {
+      "name": "native-alias-binding",
+      "command": [
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/.venv-linux/bin/python",
+        "-B",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-f1ada7b/reproduce.py",
+        "--sources",
+        "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-f1ada7b/sources/w2_integration",
+        "--worker",
+        "same-key-alias",
+        "--store",
+        "/tmp/w4-w21-j18ojhoc"
+      ],
+      "cwd": "/mnt/c/Users/hp/Documents/Codex/reg/proof01-sprint1-2026-10-28/w2-f1ada7b",
+      "exit_code": 0
+    }
+  ],
+  "limitations": [
+    "Cooperative process exit/reopen, not SIGKILL or power-loss durability",
+    "SQLite flags/rows are not independently observed external effects",
+    "Trace hook observes order but is not an authenticated durable native ledger",
+    "No integrated grant, native I8 convergence or CEB-01 validation",
+    "No W3 concurrency/privileged writer/same-UID campaign executed"
+  ],
+  "verdict": "W2_1_PARTIAL",
+  "integration_lock": "HOLD",
+  "e2e": "HOLD",
+  "production": "HOLD"
+}
