@@ -9,12 +9,12 @@ from pathlib import Path
 
 from proof01_w4.oracle import reconstruct, compare_report, OracleReject
 from proof01_w4.semantic import check, auth, trusted
-from test_semantic import TestW42 as SyntheticFixture
+import test_semantic
 
 
 class RFC7CandidateVectors(unittest.TestCase):
     def setUp(self):
-        self.fx = SyntheticFixture("test_bounded_verified")
+        self.fx = test_semantic.TestW42("test_bounded_verified")
         self.fx.setUp()
         self.addCleanup(self.fx.doCleanups)
 
@@ -36,6 +36,29 @@ class RFC7CandidateVectors(unittest.TestCase):
         report["balances"]["r1"]["committed"] = 0
         self.assertEqual(compare_report(report, self.authenticated())["reason"],
                          "DIFFERENTIAL_MISMATCH_BALANCES")
+
+    def test_rfc7_capacity_mismatch_is_not_hidden_by_balance_projection(self):
+        for mutation in ("changed", "missing"):
+            with self.subTest(mutation=mutation):
+                report = check(self.fx.root, self.fx.trust)
+                if mutation == "changed":
+                    report["balances"]["r1"]["capacity"] += 1
+                else:
+                    report["balances"]["r1"].pop("capacity")
+                self.assertEqual(compare_report(report, self.authenticated())["reason"],
+                                 "DIFFERENTIAL_MISMATCH_BALANCES")
+
+    def test_rfc7_final_state_mismatch_still_refuted(self):
+        report = check(self.fx.root, self.fx.trust)
+        report["final_states"]["a1"] = "REPAIR"
+        self.assertEqual(compare_report(report, self.authenticated())["reason"],
+                         "DIFFERENTIAL_MISMATCH_FINAL_STATES")
+
+    def test_rfc7_event_count_mismatch_still_refuted(self):
+        report = check(self.fx.root, self.fx.trust)
+        report["events"] -= 1
+        self.assertEqual(compare_report(report, self.authenticated())["reason"],
+                         "DIFFERENTIAL_MISMATCH_EVENTS")
 
     def test_rfc7_rollback_witness_checkpoint(self):
         # Earlier checkpoint signed by same witness, but no longer matches event tip.

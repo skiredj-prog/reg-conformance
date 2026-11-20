@@ -61,7 +61,10 @@ def reconstruct(events):
                 raise OracleReject("DUPLICATE_RECEIPT")
             provider_effect_ids.add(receipt)
         states[aid] = kind
-    return {"final_states": states, "balances": dict(budgets), "event_count": len(events)}
+    return {"final_states": states,
+            "balances": {rid: {"capacity": capacities[rid], **balance}
+                         for rid, balance in budgets.items()},
+            "event_count": len(events)}
 
 
 def compare_report(report, authenticated_events):
