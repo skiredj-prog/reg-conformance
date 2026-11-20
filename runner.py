@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-REG Conformance Suite v0.3.2 — RFC-0 through RFC-7 + T6–T8 Lifecycle
+REG Conformance Suite v0.4.0 — RFC-0 through RFC-7 + T6–T8 Lifecycle
 ====================================================================
-Registers 18 core/commit vectors (incl. T6–T8 attempt lifecycle) and 38 extended vectors.
+Registers 23 core/commit vectors (incl. T6–T8 attempt lifecycle) and 38 extended vectors.
 Results separate vector coverage, observed conformance status, and evidence level.
 Extended vectors without an executable adapter report IMPLEMENTATION_GAP.
 
@@ -47,6 +47,9 @@ class ReportingState(str, Enum):
     NOT_APPLICABLE     = "NOT_APPLICABLE"
     ADAPTER_REQUIRED   = "ADAPTER_REQUIRED"
     IMPLEMENTATION_GAP = "IMPLEMENTATION_GAP"
+    # Neither PASS nor FAIL: the implementer declares the property outside the
+    # runtime's perimeter (harness property checks only; never a vector result).
+    NOT_IN_PERIMETER   = "NOT_IN_PERIMETER"
 
 class EvidenceLevel(int, Enum):
     SEMANTIC_MAPPING  = 1
@@ -70,7 +73,7 @@ class ConformanceResult:
     gap_note:       str = ""
 
 
-# ── Core vectors — 18 (RFC-4 §5 + C-series + T6–T8 lifecycle) ────────────────
+# ── Core vectors — 21 (RFC-4 §5 + C-series + T6–T8 lifecycle + RN-001 §3) ───
 
 CORE_VECTORS: dict[str, TestVector] = {
     "C1":       TestVector("C1","RFC-3","Standing Gate",
@@ -78,7 +81,7 @@ CORE_VECTORS: dict[str, TestVector] = {
     "C2":       TestVector("C2","RFC-2","Structure Gate",
                     "P≥0.9, V≥0.9, K≤0.15 → FLAG or HARD_VETO, never PASS."),
     "C3":       TestVector("C3","RFC-3 §4.2; RFC-4 §2.2","Commit-State Binding — Standing Revocation",
-                    "Revocation after verdict and before/during commit must produce HARD_VETO and prevent the governed effect."),
+                    "Revocation after verdict and before/during commit → no effect; terminal refusal, or suspension with a declared resumption condition (RN-001 §4)."),
     "C4":       TestVector("C4","RFC-1","Fail-Closed Transport Safety",
                     "Transport fault → no execution. NOT_APPLICABLE for in-process kernels."),
     "C5":       TestVector("C5","RFC-1/4","Replay Soundness — Idempotency",
@@ -89,10 +92,14 @@ CORE_VECTORS: dict[str, TestVector] = {
                     "Grant for action_A; commit attempts action_B → REJECT/BINDING_VIOLATION."),
     "CT-R4-003":TestVector("CT-R4-003","RFC-4 §2.1","Replay Rejection",
                     "Consumed nonce reused → REJECT/REPLAY_DETECTED."),
-    "CT-R4-004":TestVector("CT-R4-004","RFC-4 §2","Expired Grant Rejection",
-                    "valid_until passed before commit → REJECT/EVALUATION_EXPIRED."),
+    "CT-R4-004":TestVector("CT-R4-004","RFC-4 §1.1, §5.2","Expired Grant Rejection",
+                    "valid_until passed before commit → REJECT/EVALUATION_EXPIRED. Superseded by CT-R4-004a and CT-R4-004b (RFC-4 v0.3 revision §5); kept with its results."),
+    "CT-R4-004a":TestVector("CT-R4-004a","RFC-4 v0.3 revision §2.1","Authority Valid at the Time of the Effect",
+                    "Commit under an authorization whose declared bound has passed → no effect under that authorization; any refusal mechanism satisfies the clause."),
+    "CT-R4-004b":TestVector("CT-R4-004b","RFC-4 v0.3 revision §2.2–2.3; RFC-0 §6; REG-STATE-024","Held Attempt at Its Declared Bound",
+                    "Held attempt past its declared bound → pre-declared disposition (default terminal refusal) for that attempt identity, recorded as CONFIRMED_NONEXECUTION or UNKNOWN + reconciliation."),
     "CT-R4-005":TestVector("CT-R4-005","RFC-4 §2.2","Commit-State Binding / Race Detection",
-                    "State (policy_epoch) changed between verdict and commit → REJECT/STATE_DRIFT."),
+                    "State (policy_epoch) changed between verdict and commit → no effect; terminal refusal, or suspension with a declared resumption condition (RN-001 §4)."),
     "CT-R4-006":TestVector("CT-R4-006","RFC-4 §1","Non-PASS Cannot Cross Commit",
                     "HOLD or HARD_VETO → commit attempt → REJECT/INVALID_DISPOSITION."),
     "CT-R4-007":TestVector("CT-R4-007","RFC-4 §3","Decision Receipt Generation",
@@ -109,6 +116,12 @@ CORE_VECTORS: dict[str, TestVector] = {
                     "FAILED requires evidence_qualified=true. Timeout (τ_K expiry) alone must NOT auto-transition to FAILED; UNKNOWN persists until qualification or explicit failure."),
     "CT-R4-013":TestVector("CT-R4-013","Lifecycle T8 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)","FAILED + retry_eligible → new attempt",
                     "retry_eligible=true on FAILED allows issuing a new attempt_id on the same LEI. New attempt_id ≠ old attempt_id. LEI lock released only on (RESOLVED + qualified) or explicit reconciliation."),
+    "CT-R4-014":TestVector("CT-R4-014","RFC-4 §1.1, §5.2; RN-001 §3","No Dispatch on a Stale Verdict",
+                    "Verdict older than the policy's freshness threshold → no effect without a fresh adjudication that includes the verdict's age. Withdrawn reading; superseded by CT-R4-004a (RFC-4 v0.3 revision §4)."),
+    "CT-R4-015":TestVector("CT-R4-015","RFC-2 §3.4; RN-001 §3","Age Never Improves a Disposition",
+                    "All else equal, readjudication at a greater verdict age yields an equal or more restrictive disposition. Withdrawn reading; superseded by CT-R4-004a (RFC-4 v0.3 revision §4)."),
+    "CT-R4-016":TestVector("CT-R4-016","RFC-5 §2; RFC-0 §6; RN-001 §2a, §3","Fail-Safe Bound Refuses Alone",
+                    "A bound the policy declares fail-safe (e.g. τ_K on a HOLD) refuses alone when exhausted, wherever the operation could advance. Merged into CT-R4-004b (RFC-4 v0.3 revision §4)."),
 }
 
 # ── Extended vectors — 38 (RFC-0/1/2/3/5/6/7) ────────────────────────────────
@@ -201,7 +214,7 @@ EXTENDED_VECTORS: dict[str, TestVector] = {
                     "Two independent implementations agree on disposition for same inputs."),
 }
 
-# All 56 vectors
+# All 61 vectors
 VECTORS = {**CORE_VECTORS, **EXTENDED_VECTORS}
 
 # Gap notes for the 36 extended vectors that are IMPLEMENTATION_GAP
@@ -486,8 +499,44 @@ class HTTPAdapter(BaseAdapter):
                 "/admin/expire-eval absent — cannot trigger expiry without wait")
         cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         return (self._pass("CT-R4-004","EVALUATION_EXPIRED on force-expired grant")
-                if cc == 409 and "EXPIRED" in cr.get("detail","")
+                if cc == 409 and "EXPIRED" in str(cr.get("detail","") if isinstance(cr, dict) else cr)
                 else self._fail("CT-R4-004", f"expected 409 EXPIRED, got {cc}: {cr}"))
+
+    # CT-R4-004a — RFC-4 v0.3 revision §2.1: the observable is the effect, not the refusal code
+    def _v_ct_r4_004a(self):
+        c, r = self._post("/evaluations", self._eb(
+            measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
+        if self._disp(r) != "PASS":
+            return self._fail("CT-R4-004a", "could not obtain PASS")
+        eid = r.get("evaluation_id")
+        ec, er = self._post(f"/admin/expire-eval/{eid}", {})
+        if ec != 200:
+            return self._ar("CT-R4-004a",
+                "/admin/expire-eval absent — cannot pass the authorization's bound without waiting")
+        # Positive control, only once expiry is available: a valid authorization must
+        # commit, or a refusal proves nothing.
+        c0, r0 = self._post("/evaluations", self._eb(
+            measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
+        if self._disp(r0) != "PASS":
+            return self._fail("CT-R4-004a", "could not obtain PASS")
+        pc, pr = self._post(f"/evaluations/{r0.get('evaluation_id')}/events", self._commit_body(r0))
+        if pc not in (200, 201):
+            return self._inconclusive("CT-R4-004a",
+                f"a valid authorization was not committed either (HTTP {pc}: {pr}), so a refusal proves nothing")
+        cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
+        if cc in (200, 201):
+            return self._fail("CT-R4-004a", f"commit accepted under the expired authorization {eid}")
+        if cc == 409:
+            return self._pass("CT-R4-004a", f"commit refused under the expired authorization (HTTP {cc}: {cr})")
+        if 400 <= cc < 500:
+            return self._inconclusive("CT-R4-004a",
+                f"commit not accepted, but HTTP {cc} does not establish a refusal of the commit itself: {cr}")
+        return self._inconclusive("CT-R4-004a", f"outcome of the commit not established (HTTP {cc}: {cr})")
+
+    # CT-R4-004b — RFC-4 v0.3 revision §2.2
+    def _v_ct_r4_004b(self):
+        return self._ar("CT-R4-004b",
+            "The shim declares no bound on a held attempt (its only HOLD is insufficient evidence): an adapter that can hold an attempt under a declared bound and pass it is required.")
 
     # CT-R4-005  (uses /admin/reload-policy)
     def _v_ct_r4_005(self):
@@ -502,12 +551,17 @@ class HTTPAdapter(BaseAdapter):
             return self._ar("CT-R4-005", "Protected policy reload helper unavailable; configure REG_ADMIN_TOKEN and --admin-token")
         cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         refusal = cr.get("detail", {}) if isinstance(cr, dict) else {}
-        return (self._pass("CT-R4-005",
-                    f"STATE_DRIFT produced HARD_VETO (epoch {epoch_at_verdict}→{epoch_at_verdict+1})")
-                if cc == 409 and refusal.get("code") == "STATE_DRIFT" and
-                   refusal.get("final_disposition") == "HARD_VETO"
-                else self._fail("CT-R4-005",
-                    f"expected 409 STATE_DRIFT/HARD_VETO, got {cc}: {cr}"))
+        if not isinstance(refusal, dict):
+            refusal = {}
+        if cc == 409 and refusal.get("code") == "STATE_DRIFT" and refusal.get("final_disposition") == "HARD_VETO":
+            return self._pass("CT-R4-005",
+                f"STATE_DRIFT produced HARD_VETO (epoch {epoch_at_verdict}→{epoch_at_verdict+1})")
+        if cc in (200, 201):
+            return self._fail("CT-R4-005", "commit accepted after the policy epoch changed")
+        # RN-001 §4: the outcome is required, not the HARD_VETO label; the state class is not established here
+        return self._inconclusive("CT-R4-005",
+            f"commit not accepted, but neither a terminal refusal nor a suspension with a declared "
+            f"resumption condition was established (HTTP {cc}: {cr})")
 
     # CT-R4-006
     def _v_ct_r4_006(self):
@@ -579,6 +633,20 @@ class HTTPAdapter(BaseAdapter):
         return self._gap("CT-R4-010",
             "The shim declares the post-commit evidence requirement but does not provide "
             "evidence of the external effect.")
+
+    # CT-R4-014..016 — RN-001 §3; registered, not exercised yet
+    def _v_ct_r4_014(self):
+        return self._gap("CT-R4-014",
+            "Superseded by CT-R4-004a (RFC-4 v0.3 revision §4): the readjudication reading is "
+            "withdrawn. Registered, never exercised.")
+
+    def _v_ct_r4_015(self):
+        return self._gap("CT-R4-015",
+            "Superseded by CT-R4-004a (RFC-4 v0.3 revision §4). Registered, never exercised.")
+
+    def _v_ct_r4_016(self):
+        return self._gap("CT-R4-016",
+            "Merged into CT-R4-004b (RFC-4 v0.3 revision §4). Registered, never exercised.")
 
     # CT-R4-011..013 — lifecycle vectors (lab membrane validation only)
     def _v_ct_r4_011(self):
@@ -667,6 +735,8 @@ class NativeKernelAdapter(BaseAdapter):
             g  = {"evaluation_id":eid,"action_id":action_id,"action_type":action_type,
                   "principal_id":principal_id,"final_disposition":kr["decision"],
                   "s_score":kr["s_score"],"nonce":nonce,
+                  "unmeasured_axes":kr.get("unmeasured_axes", []),
+                  **({"reason":kr["reason"]} if kr.get("reason") else {}),
                   "policy_version":kr["policy_version"],"policy_epoch":self._epoch,
                   "created_at":time.time(),"valid_until":time.time()+30,
                   "external_effect_atomic":False}
@@ -852,6 +922,18 @@ class NativeKernelAdapter(BaseAdapter):
             return (self._pass("CT-R4-004","EVALUATION_EXPIRED on stale grant (native)")
                     if "EXPIRED" in str(e) else self._fail("CT-R4-004",str(e)))
 
+    def _v_ct_r4_004a(self):
+        stale = self._inject_stale()
+        try:
+            self._commit(stale["evaluation_id"],action_id=stale["action_id"],nonce=stale["nonce"])
+            return self._fail("CT-R4-004a","commit accepted under the expired authorization (native)")
+        except ValueError as e:
+            return self._pass("CT-R4-004a", f"commit refused under the expired authorization (native): {e}")
+
+    def _v_ct_r4_004b(self):
+        return self._ar("CT-R4-004b",
+            "The bundled kernel declares no bound on a held attempt (its only HOLD is insufficient evidence): a port that holds an attempt under a declared bound is required (harness/scenarios.py r4_004b).")
+
     def _v_ct_r4_005(self):
         g = self._evaluate("a","valid","wt",0.2,0.2,0.90,uuid.uuid4().hex)
         if g["final_disposition"] != "PASS":
@@ -865,7 +947,9 @@ class NativeKernelAdapter(BaseAdapter):
             return (self._pass("CT-R4-005",
                         f"STATE_DRIFT produced HARD_VETO (epoch {epoch_before}→{self._epoch}) (native)")
                     if "STATE_DRIFT:HARD_VETO" in str(e) and
-                       g.get("commit_disposition") == "HARD_VETO" else self._fail("CT-R4-005",str(e)))
+                       g.get("commit_disposition") == "HARD_VETO" else
+                    self._inconclusive("CT-R4-005",
+                        f"commit refused, but the reported state class was not established (RN-001 §4): {e}"))
 
     def _v_ct_r4_006(self):
         g = self._evaluate("u","none","wt",0.2,0.2,0.90,uuid.uuid4().hex)
@@ -915,6 +999,19 @@ class NativeKernelAdapter(BaseAdapter):
         return self._gap("CT-R4-010",
             "The adapter reports the post-commit evidence requirement but does not provide "
             "evidence of an external effect.")
+
+    def _v_ct_r4_014(self):
+        return self._gap("CT-R4-014",
+            "Superseded by CT-R4-004a (RFC-4 v0.3 revision §4): the readjudication reading is "
+            "withdrawn. Registered, never exercised.")
+
+    def _v_ct_r4_015(self):
+        return self._gap("CT-R4-015",
+            "Superseded by CT-R4-004a (RFC-4 v0.3 revision §4). Registered, never exercised.")
+
+    def _v_ct_r4_016(self):
+        return self._gap("CT-R4-016",
+            "Merged into CT-R4-004b (RFC-4 v0.3 revision §4). Registered, never exercised.")
 
     def _v_ct_r4_011(self):
         return _run_lifecycle_membrane_vector(self, "CT-R4-011")
@@ -1048,8 +1145,11 @@ def summary_by_basis(results):
     """Split the results by what the vector rests on.
 
     'specified_by_frozen_rfcs' counts vectors whose property is stated in the
-    frozen RFC text; 'outside_frozen_rfcs' counts registered ids that the RFCs
-    do not specify (proposals, and lifecycle vectors validated in the lab).
+    frozen RFC text or in a ratified reading of it (RN-001; the RFC-4 v0.3
+    revision of 19 November 2026, ratified and kept outside the frozen
+    baseline); 'outside_frozen_rfcs' counts registered ids that no ratified text
+    specifies (proposals, and lifecycle vectors validated in the lab). The key
+    names are kept so that reports stay comparable across versions.
     The classification is read from vectors/dist/vectors.json; None if absent.
     """
     try:
@@ -1077,7 +1177,7 @@ def generate_report(adapter, results, endpoint="", evidence_binding=None):
     for r in results: counts[r.status.value] += 1
     core_results = [r for r in results if r.vector_id in CORE_VECTORS]
     extended_results = [r for r in results if r.vector_id in EXTENDED_VECTORS]
-    return {"suite":"REG Conformance Suite v0.3.2",
+    return {"suite":"REG Conformance Suite v0.4.0",
             "rfc_refs":["RFC-4 (frozen)","RFC-7 (updated)"],
             "interface_mode":adapter.interface_mode,
             "evidence_level":int(adapter.evidence_level),
@@ -1103,7 +1203,7 @@ def generate_report(adapter, results, endpoint="", evidence_binding=None):
 
 
 def main():
-    p = argparse.ArgumentParser(description="REG Conformance Suite v0.3.2")
+    p = argparse.ArgumentParser(description="REG Conformance Suite v0.4.0")
     p.add_argument("--endpoint", default="")
     p.add_argument("--mode", choices=["http","native","both"], default="http")
     p.add_argument("--kernel", default="kernel/tenir_policies.yaml")
@@ -1124,14 +1224,14 @@ def main():
     p.add_argument("--subject-worktree-state", choices=["clean", "dirty", "unknown"], default="unknown")
     p.add_argument("--environment-digest", default="",
                    help="OCI image digest in sha256:<64 hex> form")
-    p.add_argument("--output", default="results/tenirlabs-v0.3.2.json")
+    p.add_argument("--output", default="results/tenirlabs-v0.4.0.json")
     args = p.parse_args()
 
     import os; os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
     all_reports = []
 
     def run(adapter, label, endpoint=""):
-        print(f"\nREG Conformance Suite v0.3.2 — {label}\n{'─'*66}")
+        print(f"\nREG Conformance Suite v0.4.0 — {label}\n{'─'*66}")
         results = adapter.run_all()
         for r in results:
             m = MARKS.get(r.status.value,"?")
@@ -1145,8 +1245,8 @@ def main():
         by_basis = summary_by_basis(results)
         if by_basis:
             spec, other = by_basis["specified_by_frozen_rfcs"], by_basis["outside_frozen_rfcs"]
-            print(f"\n  Specified by the frozen RFCs: {spec['PASS']} PASS of {spec['total']}"
-                  f"   |   Registered ids outside the frozen RFCs: {other['total']}")
+            print(f"\n  Specified by the frozen RFCs or a ratified revision: {spec['PASS']} PASS of {spec['total']}"
+                  f"   |   Registered ids no ratified text specifies: {other['total']}")
         all_reports.append(generate_report(
             adapter, results, endpoint,
             build_evidence_binding(adapter, args)))

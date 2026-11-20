@@ -1,5 +1,5 @@
-# REG Conformance Spec — v0.3.2
-**TENIR Labs** | 2026-09-29 | RFC-4 (frozen) · RFC-7 (updated)
+# REG Conformance Spec — v0.4.0
+**TENIR Labs** | 2026-11-19 | RFC-4 (frozen) · RFC-7 (updated)
 
 ---
 
@@ -54,11 +54,13 @@ A report mixing native and adapter results without explicit labeling is non-conf
 |---|---|---|---|---|
 | C1 | RFC-3 | Standing Gate | Actor with invalid credential | `HARD_VETO` — no structural computation |
 | C2 | RFC-2 | Structure Gate | P≥0.9, V≥0.9, K≤0.15 | `FLAG` or `HARD_VETO` — never `PASS` |
-| C3 | RFC-3 §4.2; RFC-4 §2.2 | Standing Continuity at Commit | Standing revoked between verdict and commit | `HARD_VETO`; commit blocked. |
+| C3 | RFC-3 §4.2; RFC-4 §2.2 | Standing Continuity at Commit | Standing revoked between verdict and commit | No effect; terminal refusal, or suspension with a declared resumption condition (RN-001 §4). |
 | C4 | RFC-1 | Fail-Closed Transport Safety | Transport fault or 5xx | No execution proceeds — `NOT_APPLICABLE` for in-process kernels |
 | C5 | RFC-1/4 §2.1 | Replay Soundness — Idempotency | Duplicate nonce or request | `REJECT` / `NONCE_REPLAY` |
 
 C3 has three evidence outcomes. **C3-A:** revocation is established and commit is blocked with `HARD_VETO` → `PASS`. **C3-B:** commit is accepted after revocation → `FAIL`. **C3-C:** timing, veto, or commit outcome cannot be established → `INCONCLUSIVE`; uncertainty never becomes `PASS` or `FAIL` without evidence. The runner's single C3 probe applies this oracle to each execution.
+
+[RN-001](reg-standards-baseline/notes/RN-001-flag-time-drift.md) §4 makes the required outcome of C3 and CT-R4-005 "no effect, and the reported state class": a terminal refusal, or a suspension with a declared resumption condition. `HARD_VETO` is one terminal refusal; REG does not impose it. The current probes still recognise only the `HARD_VETO` branch. Until the adapter contract carries the resumption condition, a commit that is not accepted but is not reported as `HARD_VETO` gives `INCONCLUSIVE` for both vectors, never `FAIL`; `FAIL` is kept for a commit accepted after the change.
 
 ---
 
@@ -72,8 +74,10 @@ No HTTP paths. No interface shape. Adapters translate.
 | CT-R4-001 | Valid Grant Binding | Valid evaluation_id + matching action + nonce, within window | `GRANT` / `COMMITTED` |
 | CT-R4-002 | Action/Payload Binding Violation | Grant for action_A; commit attempts action_B | `REJECT` / `PAYLOAD_BINDING_VIOLATION` |
 | CT-R4-003 | Replay Rejection | Consumed nonce reused | `REJECT` / `REPLAY_DETECTED` |
-| CT-R4-004 | Expired Grant Rejection | `valid_until` passed before commit | `REJECT` / `EVALUATION_EXPIRED` |
-| CT-R4-005 | Commit-State Binding / Race Detection | Relevant state at commit differs from state at verdict | `HARD_VETO` / `STATE_DRIFT`; commit blocked |
+| CT-R4-004 | Expired Grant Rejection | `valid_until` passed before commit | `REJECT` / `EVALUATION_EXPIRED`. Superseded by CT-R4-004a and CT-R4-004b (RFC-4 v0.3 revision, ratified 19 November 2026); kept with its results. |
+| CT-R4-004a | Authority Valid at the Time of the Effect | Commit under an authorization whose declared bound has passed | No effect under that authorization; any refusal mechanism (RFC-4 v0.3 revision §2.1) |
+| CT-R4-004b | Held Attempt at Its Declared Bound | Held attempt past its declared bound, then an advance under the same identity | Pre-declared disposition, default terminal refusal for that identity; recorded state `CONFIRMED_NONEXECUTION` or `UNKNOWN` + reconciliation (§2.2–2.3) |
+| CT-R4-005 | Commit-State Binding / Race Detection | Relevant state at commit differs from state at verdict | No effect; terminal refusal, or suspension with a declared resumption condition (RN-001 §4) |
 | CT-R4-006 | Non-PASS Cannot Cross Commit | `HOLD` or `HARD_VETO` disposition → commit attempt | `REJECT` / `INVALID_DISPOSITION` |
 | CT-R4-007 | Decision Receipt Generation | Any disposition (including non-PASS) | Signed Decision Receipt independently verifiable |
 | CT-R4-008 | Evidence Manifest Integrity | Copy of manifest altered after closure | Integrity verification fails without changing the original |
@@ -84,7 +88,9 @@ No HTTP paths. No interface shape. Adapters translate.
 
 ## Current execution scope and known gaps (shim v0.3.1 / kernel-r5-1.0.0)
 
-The runner registers and dispatches 56 vectors: five C-series vectors, ten CT-R4 commit vectors, three CT-R4 lifecycle vectors (CT-R4-011 to CT-R4-013, added in v0.3.2; laboratory probes only, see [`LIFECYCLE_INTEGRATION.md`](LIFECYCLE_INTEGRATION.md)), and 38 extended RFC-0/1/2/3/5/6/7 vectors. The two RFC-2 math vectors have active probes; the other 36 extended vectors report `IMPLEMENTATION_GAP` because their adapter tests are not implemented. HTTP C4 is `ADAPTER_REQUIRED` because the generic adapter cannot establish that a transport failure prevented execution. Native C4 is `NOT_APPLICABLE`. CT-R4-009 remains a gap because the manifest lacks enough inputs and policy state for independent decision reproduction. CT-R4-010 remains a gap because the implementation does not provide external-effect evidence. Protected administrative test helpers require `REG_ADMIN_TOKEN` on the shim and `--admin-token` on the runner. Reports record harness/specification hashes and disclose missing target/environment bindings; they are not externally certifiable without a clean pinned subject and reproducible environment. The per-vector inventory is maintained in [`VECTORS.md`](VECTORS.md).
+The runner registers and dispatches 61 vectors: five C-series vectors, twelve CT-R4 commit vectors (CT-R4-001 to CT-R4-010, plus CT-R4-004a and CT-R4-004b, which rest on the ratified RFC-4 v0.3 revision), three CT-R4 lifecycle vectors (CT-R4-011 to CT-R4-013, added in v0.3.2; laboratory probes only, see [`LIFECYCLE_INTEGRATION.md`](LIFECYCLE_INTEGRATION.md)), three CT-R4 vectors registered under RN-001 §3 (CT-R4-014 to CT-R4-016, `IMPLEMENTATION_GAP` until probes exist), and 38 extended RFC-0/1/2/3/5/6/7 vectors. The two RFC-2 math vectors have active probes; the other 36 extended vectors report `IMPLEMENTATION_GAP` because their adapter tests are not implemented. HTTP C4 is `ADAPTER_REQUIRED` because the generic adapter cannot establish that a transport failure prevented execution. CT-R4-004b is `ADAPTER_REQUIRED` because the bundled kernel and the shim declare no bound on a held attempt; the harness scenario runs it on a port that does. Native C4 is `NOT_APPLICABLE`. CT-R4-009 remains a gap because the manifest lacks enough inputs and policy state for independent decision reproduction. CT-R4-010 remains a gap because the implementation does not provide external-effect evidence. Protected administrative test helpers require `REG_ADMIN_TOKEN` on the shim and `--admin-token` on the runner. Reports record harness/specification hashes and disclose missing target/environment bindings; they are not externally certifiable without a clean pinned subject and reproducible environment. The per-vector inventory is maintained in [`VECTORS.md`](VECTORS.md).
+
+The [RFC-4 v0.3 revision of 19 November 2026](revisions/rfc-4-v0.3-2026-11-19.md) (ratified by the author on 19 November 2026, outside the frozen baseline; RFC-4 v0.2 stays frozen) supersedes CT-R4-004 by two vectors, according to which object carries the bound. **CT-R4-004a** (§2.1): no effect under an authorization whose declared bound has passed; any refusal mechanism satisfies it; a fresh authorization is a declared deployment policy, attributed to the new authorization. **CT-R4-004b** (§2.2): a held attempt past its declared bound gets the pre-declared disposition, refusal by default, terminal for that attempt identity, recorded as `CONFIRMED_NONEXECUTION` or `UNKNOWN` with reconciliation. CT-R4-004 stays registered with its results. CT-R4-014 and CT-R4-015 (readjudication reading of RN-001 §3, withdrawn) are superseded by CT-R4-004a, CT-R4-016 by CT-R4-004b; none of the three had a probe.
 
 ---
 
@@ -132,7 +138,7 @@ The suite runs in two modes. **Conformance is declared per mode.** Native does n
 
 ### Same vectors, same criteria — different interface only
 
-Both modes run the same 56 registered IDs from `VECTORS`. Pass/fail criteria are identical where an executable probe exists. The only legitimate differences between modes:
+Both modes run the same 61 registered IDs from `VECTORS`. Pass/fail criteria are identical where an executable probe exists. The only legitimate differences between modes:
 
 - **C4** (`Fail-Closed Transport Safety`) — `NOT_APPLICABLE` for native: no transport layer exists. This is architectural, not a permissiveness concession.
 - **CT-R4-004** (`Expired Grant Rejection`) — native uses `_inject_stale_grant()` to set `valid_until = now - 1 s`, rather than waiting 30 s. The normative property tested is identical: commit on an expired grant must be rejected with `EVALUATION_EXPIRED`. The precondition mechanism differs; the criterion does not.

@@ -16,7 +16,7 @@ Four things live here. They answer different questions and are versioned separat
 | Layer | Question it answers | Where | Version |
 |---|---|---|---|
 | **REG** | What must a runtime do before, at and after it commits an action? | `reg-standards-baseline/rfc/` (RFC-0 to RFC-7) | frozen baseline |
-| **Conformance suite** | Does a given runtime do it? | `runner.py`, `vectors/`, [`VECTORS.md`](VECTORS.md), [`spec.md`](spec.md), `lifecycle/` ([status](LIFECYCLE_INTEGRATION.md)) | suite v0.3.2 |
+| **Conformance suite** | Does a given runtime do it? | `runner.py`, `harness/` ([how to hook a runtime](harness/README.md)), `vectors/`, [`VECTORS.md`](VECTORS.md), [`spec.md`](spec.md), `lifecycle/` ([status](LIFECYCLE_INTEGRATION.md)) | suite v0.4.0 |
 | **REG+** | In which deployment does a guarantee still hold, and what evidence shows it? | `catalog/`, `specs/`, `profiles/`, `capabilities/`, `tools/` | catalogue v1.2.0 |
 | **Crosswalk** | Which clause of another framework, or of another layer, does a mechanism relate to? | `crosswalk/` ([mapping policy](crosswalk/MAPPING_POLICY.md)) | — |
 
@@ -24,11 +24,19 @@ Four things live here. They answer different questions and are versioned separat
 
 **Passing vectors and holding a REG+ capability are different claims.** A vector exercises one runtime through one interface. A REG+ profile states the deployment in which a property is claimed and the evidence required. Neither implies the other. The rows that relate them are in the crosswalk, each with its stated limit.
 
-**Coverage today.** [`VECTORS.md`](VECTORS.md) indexes 59 properties that the frozen RFCs specify: 14 are exercised by the runner, 17 are registered and not yet tested, 28 are not yet registered. A further 25 registered ids are proposals that the frozen RFCs do not specify; three of them, the lifecycle vectors, rest on the manuscript and are validated in the laboratory only. REG+ enumerates 144 configurations, of which 42 are admissible; none is marked demonstrated yet.
+**Coverage today.** [`VECTORS.md`](VECTORS.md) indexes 64 properties in force, 62 specified by the frozen RFCs (three of them as read by RN-001) and two, CT-R4-004a and CT-R4-004b, by the RFC-4 v0.3 revision of 19 November 2026, ratified and kept outside the frozen baseline ([`revisions/`](revisions/rfc-4-v0.3-2026-11-19.md)): 15 are exercised by the runner, 21 are registered and not yet tested, 28 are not yet registered. A further 25 registered ids are proposals that no ratified text specifies; three of them, the lifecycle vectors, rest on the manuscript and are validated in the laboratory only. REG+ enumerates 144 configurations, of which 42 are admissible; none is marked demonstrated yet.
 
 **Target.** [`conformance-target.json`](conformance-target.json) names the one implementation revision that CI exercises: `tenir-governance` 5.7.0. Evidence produced on an earlier revision says so and has not been replayed on the target.
 
 **Check that this page is still true.** `python tools/check_coherence.py` compares the registries, the documents and the published files, and lists what disagrees. Points that are known and open are in [`coherence-baseline.json`](coherence-baseline.json).
+
+**Run it against a runtime.** `harness/` runs the same scenarios against any runtime through a small port that declares what the runtime really does. Nothing passes by default: a scenario whose capability the port does not declare is reported `ADAPTER_REQUIRED`.
+
+```
+python -m harness --port harness.ports.reference:ReferencePort --probes
+```
+
+**What a result means.** A run observes behaviour on chosen cases, for one revision of one subject. It is not a proof and not a certification. [`CLAIMS.md`](CLAIMS.md) states what may be said from a result; [`RESULTS.md`](RESULTS.md) lists the runs published so far.
 
 **Explore.** [Vector lab](https://skiredj-prog.github.io/reg-conformance/lab/) · [Crosswalk](https://skiredj-prog.github.io/reg-conformance/crosswalk/)
 

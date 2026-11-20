@@ -16,7 +16,18 @@ Verdicts map to the full middleware decision surface as follows:
     ─────────────    ─────────────────────────    ───────────────────────────
     PASS             allow                        S ≥ flag_below
     FLAG             allow_with_alert             hard_veto_below ≤ S < flag_below
-    HARD_VETO        block (intended)             S < hard_veto_below
+    HARD_VETO        block (intended)             S < hard_veto_below, or K = 0
+    HOLD             suspend                      an axis is unmeasured (None, NaN, inf,
+                                                  non-numeric) and no veto holds
+                                                  without S: insufficient evidence
+
+Finiteness guard (decision of 19 November 2026): every comparison with NaN is
+false, so `S < floor` never fires on NaN and a kernel without this guard admits
+it. A measure that is not a finite number is an insufficiency of evidence and
+never yields PASS. The result names the axes in `unmeasured_axes`, and
+`s_score` is null. A veto that holds without S is still applied (RFC-0 §4, the
+most restrictive applicable disposition governs): K = 0 gives HARD_VETO even
+when P or V is unmeasured.
 
 Default thresholds are intentionally conservative (demonstrator profile).
 Institutional deployments should define domain-specific YAML policies.
@@ -25,8 +36,29 @@ Epsilon (1e-6) is identical to the full middleware canonical value.
 """
 from __future__ import annotations
 
+import math
+import numbers
+
 import yaml
 from pathlib import Path
+
+AXES = ("P", "V", "K")
+
+
+def unmeasured_axes(p, v, k) -> list:
+    """Axes whose value is not a finite real number (None, NaN, ±inf, a bool,
+    a string, an int too large for a float, anything non-numeric)."""
+    out = []
+    for name, x in zip(AXES, (p, v, k)):
+        ok = isinstance(x, numbers.Real) and not isinstance(x, bool)
+        if ok:
+            try:
+                ok = math.isfinite(float(x))
+            except (OverflowError, TypeError, ValueError):
+                ok = False
+        if not ok:
+            out.append(name)
+    return out
 
 
 class KernelPolicyViolation(ValueError):
@@ -85,8 +117,26 @@ class PolicyEngine:
         -------
         dict with keys: s_score, decision, rationale
         """
-        denominator = (p * v) + self.epsilon
-        s_score = k / denominator
+        missing = unmeasured_axes(p, v, k)
+        s_score = None
+        if not missing:
+            p, v, k = float(p), float(v), float(k)
+            denominator = (p * v) + self.epsilon
+            if denominator != 0.0:
+                s_score = k / denominator
+        if s_score is None or not math.isfinite(s_score):
+            # S cannot be computed. A veto that holds without S still applies:
+            # the most restrictive applicable disposition governs (RFC-0 §4),
+            # and an unmeasured axis contributes no favourable value
+            # (decisions 2 and 5 of 19 November 2026). Capacity 0 is such a
+            # veto: S cannot exceed 0 whatever P and V.
+            if "K" not in missing and float(k) == 0.0:
+                return self._capacity_veto(missing)
+            if missing:
+                return self._insufficient(missing, "not a finite number")
+            if s_score is None:
+                return self._insufficient([], "cannot be computed (P × V + ε = 0)")
+            return self._insufficient([], f"is not finite ({s_score})")
 
         if s_score < self.hard_veto_below:
             decision = "HARD_VETO"
@@ -113,6 +163,33 @@ class PolicyEngine:
             "s_score": round(s_score, 6),
             "decision": decision,
             "rationale": rationale,
+            "policy_version": self.version,
+            "institution": self.institution,
+        }
+
+    def _capacity_veto(self, axes) -> dict:
+        unmeasured = f" Unmeasured: {', '.join(axes)}." if axes else ""
+        return {
+            "s_score": None,
+            "decision": "HARD_VETO",
+            "unmeasured_axes": list(axes),
+            "rationale": (f"K = 0: S cannot exceed 0 whatever P and V, below the "
+                          f"hard-veto floor ({self.hard_veto_below}). Action is "
+                          f"inadmissible; an unmeasured axis does not soften a "
+                          f"conclusive veto.{unmeasured}"),
+            "policy_version": self.version,
+            "institution": self.institution,
+        }
+
+    def _insufficient(self, axes, why) -> dict:
+        return {
+            "s_score": None,
+            "decision": "HOLD",
+            "reason": "INSUFFICIENT_EVIDENCE",
+            "unmeasured_axes": list(axes),
+            "rationale": (f"Insufficient evidence: {', '.join(axes) or 'score'} {why}. "
+                          "A measure that is not finite never yields PASS; the action "
+                          "is held."),
             "policy_version": self.version,
             "institution": self.institution,
         }
