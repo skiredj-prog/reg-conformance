@@ -27,10 +27,11 @@ COMBINE = "combine"              # one attempt that meets several conditions at 
 CLOCK = "clock"                  # let a declared bound pass for the runtime
 DEGRADE = "degrade"              # submit the admissible attempt with one measurement degraded
 CONFIDENCE = "confidence"        # submit an attempt at several levels of confidence in its evidence
+APPROVE = "approve"              # give a suspended attempt the favourable answer it waits for
 
 ALL_CAPABILITIES = frozenset({
     EVALUATE, COMMIT, REVOKE, STATE_DRIFT, STALE_GRANT, NONCE,
-    RECEIPTS, MANIFEST, TENIR_SCORE, EFFECTS, COMBINE, CLOCK, DEGRADE, CONFIDENCE,
+    RECEIPTS, MANIFEST, TENIR_SCORE, EFFECTS, COMBINE, CLOCK, DEGRADE, CONFIDENCE, APPROVE,
 })
 
 # Intents the harness asks for. The port maps each one to its own inputs.
@@ -216,6 +217,13 @@ class RuntimePort:
         pass. The port knows its own clock: the harness supplies no margin.
         Letting time pass includes whatever the deployment runs on a schedule
         once it has passed, an expiry sweep for example."""
+        raise NotImplementedError
+
+    def approve(self, decision: Decision) -> Decision:
+        """Give a HOLD obtained for NEEDS_APPROVAL the favourable answer it
+        waits for, through the runtime's own path (a human approval, fresh
+        evidence, or both), every other input as for ADMISSIBLE. Return the
+        decision that results; raise Refused if the runtime refuses the answer."""
         raise NotImplementedError
 
     def commit(self, decision: Decision, *, action_type: Optional[str] = None) -> Committed:

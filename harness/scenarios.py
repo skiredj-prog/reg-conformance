@@ -159,7 +159,7 @@ def r4_004a(rt):
     return FAIL, "commit accepted under the expired authorization"
 
 
-def r4_004b(rt):
+def _unanswered(rt):
     """RFC-4 v0.3 revision §2.2: a held attempt past its declared bound gets the
     pre-declared disposition, refusal by default, terminal for that attempt
     identity. A suspension that merely goes on is not a terminal refusal."""
@@ -200,6 +200,93 @@ def r4_005(rt):
         return (INCONCLUSIVE, f"commit refused without establishing a terminal refusal or a "
                 f"suspension with a declared resumption condition: {e}", _admission(d))
     return FAIL, "state drift not detected", _admission(d)
+
+
+def r4_004b(rt):
+    """RFC-4 v0.3 revision §2.2. Two cases on the same bound: the held attempt
+    left unanswered, and, when the port declares APPROVE, the held attempt
+    answered favourably after its bound. PASS needs both; a FAIL in either
+    is the result."""
+    first = _unanswered(rt)
+    if first[0] == FAIL or P.APPROVE not in rt.capabilities or first[1].startswith("no bound"):
+        return first
+    rt.reset()
+    second = _late_answer(rt)
+    facts = second[2] if len(second) > 2 else None
+    if second[0] == FAIL:
+        return second
+    details = f"unanswered: {first[1]}; answered late: {second[1]}"
+    state = PASS if (first[0], second[0]) == (PASS, PASS) else INCONCLUSIVE
+    return (state, details, facts) if facts else (state, details)
+
+
+def _late_answer(rt):
+    """The late-answer case of CT-R4-004b, for a port that declares APPROVE.
+    Past tau_k, a favourable answer to the held attempt produces no effect and
+    the attempt is refused, terminal for its identity: a second answer admits
+    and commits nothing. The control comes first: inside the window the same
+    answer admits and the commit produces exactly one effect, so a runtime
+    that never lets a HOLD through does not pass."""
+    window = f"declared window {rt.bounds[P.B_TAU_K]:g} s"
+
+    d0 = rt.evaluate(P.NEEDS_APPROVAL, principal=_principal("held"), action_type="wire_transfer")
+    if d0.disposition != "HOLD":
+        return INCONCLUSIVE, f"no suspension to observe (disposition={d0.disposition})"
+    try:
+        a0 = rt.approve(d0)
+        if not _admitted(a0):
+            return INCONCLUSIVE, f"control: the answer inside the window gave {a0.disposition}"
+        rt.commit(a0)
+    except P.Refused as e:
+        return INCONCLUSIVE, f"control: the answer inside the window was refused ({e})"
+    if P.EFFECTS in rt.capabilities and _effects(rt, a0) != 1:
+        return INCONCLUSIVE, "control: the commit inside the window did not give exactly one effect"
+    facts = _admission(a0)
+    rt.reset()
+
+    d = rt.evaluate(P.NEEDS_APPROVAL, principal=_principal("held"), action_type="wire_transfer")
+    if d.disposition != "HOLD":
+        return INCONCLUSIVE, f"no suspension to observe (disposition={d.disposition})", facts
+    rt.elapse_past(P.B_TAU_K)
+    where, terminal, late = None, False, d
+    try:
+        late = rt.approve(d)
+    except P.Refused as e:
+        where, terminal = "the answer", e.disposition == "HARD_VETO"
+    try:
+        rt.commit(late)
+    except P.Refused as e:
+        if where is None:
+            where = "the commit"
+        terminal = terminal or e.disposition == "HARD_VETO"
+    else:
+        return FAIL, f"a favourable answer past the window was committed ({window})", facts
+    if P.EFFECTS in rt.capabilities:
+        n = _effects(rt, late)
+        if n:
+            return FAIL, f"a favourable answer past the window matched {n} effect(s) ({window})", facts
+    admitted_late = "" if late is d else f"; the late answer itself gave {late.disposition}"
+    # Terminal for this attempt identity: answering it again admits nothing
+    # and commits nothing. A later effect needs a new attempt.
+    try:
+        again = rt.approve(d)
+    except P.Refused:
+        again = None
+    if again is not None and _admitted(again):
+        try:
+            rt.commit(again)
+        except P.Refused:
+            pass
+        else:
+            return FAIL, f"the same attempt was committed on a second answer past the window ({window})", facts
+        terminal = False
+    if P.EFFECTS in rt.capabilities and _effects(rt, d):
+        return FAIL, f"the same attempt matched an effect after a second answer ({window})", facts
+    if terminal:
+        return (PASS, f"past the window, the favourable answer gave no effect and was refused with "
+                      f"HARD_VETO at {where} ({window}{admitted_late})", facts)
+    return (INCONCLUSIVE, f"past the window there was no effect, but no terminal refusal was "
+                          f"recorded at {where} ({window}{admitted_late})", facts)
 
 
 def r4_006(rt):
@@ -703,8 +790,9 @@ _A, _I, _N, _H, _D = (frozenset({x}) for x in (P.ADMISSIBLE, P.INADMISSIBLE, P.N
 _none = frozenset()
 
 
-def _vector(vector_id, requires, run, intents, at, *not_observed):
-    return Scenario(vector_id, frozenset(requires), run, intents, at=at, not_observed=not_observed)
+def _vector(vector_id, requires, run, intents, at, *not_observed, bounds=()):
+    return Scenario(vector_id, frozenset(requires), run, intents, at=at,
+                    not_observed=not_observed, bounds=frozenset(bounds))
 
 
 # Each entry ends with where the scenario observes and with what its result
@@ -734,7 +822,7 @@ SCENARIOS = {s.vector_id: s for s in [
             "the passage of time across the bound: the authorization is created already expired",
             "an effect under a fresh authorization and its four conditions (RFC-4 v0.3 revision §2.1)"),
     _vector("CT-R4-004b", {_E, _C, P.CLOCK}, r4_004b, _H, EXEC,
-            "a late approval, resolution or exit authorization: the port has no such primitive",
+            "a late approval, resolution or exit authorization, unless the port declares approve",
             "the recorded resulting state (CONFIRMED_NONEXECUTION or UNKNOWN with reconciliation)",
             "that the bound was derived from an organizational constraint"),
     _vector("CT-R4-005", {_E, _C, P.STATE_DRIFT}, r4_005, _A, EXEC,
