@@ -84,7 +84,7 @@ def yaml_vectors(include_candidates=False):
 
 def vectors_md_rows():
     """VECTORS.md -> {id: (family, rfc, property, status)}"""
-    rows = re.findall(r"^\|([A-Z][A-Z0-9\-]+)\|([^|]*)\|([^|]*)\|([^|]*)\|([A-Z]+)\|", read("VECTORS.md"), re.M)
+    rows = re.findall(r"^\|([A-Z][A-Z0-9\-]+[a-z]?)\|([^|]*)\|([^|]*)\|([^|]*)\|([A-Z]+)\|", read("VECTORS.md"), re.M)
     return {r[0]: r[1:] for r in rows}
 
 

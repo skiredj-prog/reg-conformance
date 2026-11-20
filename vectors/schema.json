@@ -46,7 +46,8 @@
           "status":    { "enum": ["implemented", "specified", "proposal", "lab_validated"] },
           "native":    { "enum": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_APPLICABLE", "ADAPTER_REQUIRED", "IMPLEMENTATION_GAP", null] },
           "observed":  { "type": "string" },
-          "reference": { "type": "string" }
+          "reference": { "type": "string" },
+          "superseded_by": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
         },
         "additionalProperties": false
       }

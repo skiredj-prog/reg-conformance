@@ -32,12 +32,12 @@ vectors:
     category: core
     property: Standing Continuity at Commit
     input: Standing revoked between verdict and commit
-    intended: HARD_VETO; commit blocked
-    expected: HARD_VETO
+    intended: No effect under the changed state; terminal refusal, or suspension with a declared resumption condition
+    expected: no effect; terminal refusal, or suspension with a declared resumption condition
     status: implemented
     native: PASS
     observed: "post-verdict revocation produced HARD_VETO; commit blocked (native): STANDING_REVOKED:HARD_VETO"
-    reference: RFC-3 §4.2; RFC-4 §2.2
+    reference: RFC-3 §4.2; RFC-4 §2.2; RN-001 §4
 
   - id: C4
     rfc: RFC-1

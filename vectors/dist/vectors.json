@@ -56,7 +56,37 @@
       "status": "implemented",
       "native": "PASS",
       "observed": "EVALUATION_EXPIRED (native)",
-      "reference": "RFC-4 §2"
+      "reference": "RFC-4 v0.2 §5.2 item 4; superseded per RFC-4 v0.3 revision (2026-11-19) §5, kept with its text and results",
+      "superseded_by": [
+        "CT-R4-004a",
+        "CT-R4-004b"
+      ]
+    },
+    {
+      "id": "CT-R4-004a",
+      "rfc": "RFC-4 v0.3 revision §2.1",
+      "category": "commit",
+      "property": "Authority Valid at the Time of the Effect",
+      "input": "Commit under an authorization whose declared bound has passed",
+      "intended": "No effect attributed to the expired authorization; any refusal mechanism satisfies the clause. A fresh authorization is a declared policy, attributed to the new authorization with its own identity and evidence.",
+      "expected": "no effect under the expired authorization",
+      "status": "implemented",
+      "native": "PASS",
+      "observed": "commit refused under the expired authorization (EVALUATION_EXPIRED) (native)",
+      "reference": "RFC-4 v0.3 revision (ratified 2026-11-19) §2.1, §5"
+    },
+    {
+      "id": "CT-R4-004b",
+      "rfc": "RFC-4 v0.3 revision §2.2, §2.3; RFC-0 §6; REG-STATE-024",
+      "category": "commit",
+      "property": "Held Attempt at Its Declared Bound",
+      "input": "Held attempt (HOLD, escalation) left past its declared bound, then an advance under the same attempt identity",
+      "intended": "Pre-declared disposition, refusal by default, terminal for that attempt identity; recorded with the bound, the disposition and the resulting state as the available evidence establishes it (CONFIRMED_NONEXECUTION if never dispatched, if a qualified rejection of the dispatch was observed, or if a qualified, verified non-execution attestation exists; otherwise UNKNOWN with reconciliation)",
+      "expected": "no effect under that attempt identity; terminal refusal recorded",
+      "status": "specified",
+      "native": "ADAPTER_REQUIRED",
+      "observed": "The bundled kernel declares no bound on a held attempt (its only HOLD is insufficient evidence).",
+      "reference": "RFC-4 v0.3 revision (ratified 2026-11-19) §2.2, §2.3, §5; RFC-5 §2"
     },
     {
       "id": "CT-R4-005",
@@ -64,12 +94,12 @@
       "category": "commit",
       "property": "Commit-State Binding / Race Detection",
       "input": "policy_epoch changed between verdict and commit",
-      "intended": "HARD_VETO / STATE_DRIFT; commit blocked",
-      "expected": "HARD_VETO",
+      "intended": "No effect under the changed state; terminal refusal, or suspension with a declared resumption condition",
+      "expected": "no effect; terminal refusal, or suspension with a declared resumption condition",
       "status": "implemented",
       "native": "PASS",
       "observed": "STATE_DRIFT produced HARD_VETO (epoch 0→1) (native)",
-      "reference": "RFC-4 §2.2"
+      "reference": "RFC-4 §2.2; RN-001 §4"
     },
     {
       "id": "CT-R4-006",
@@ -137,6 +167,54 @@
       "reference": "RFC-4 §1.1"
     },
     {
+      "id": "CT-R4-014",
+      "rfc": "RFC-4 §1.1, §5.2; RN-001 §3",
+      "category": "commit",
+      "property": "No Dispatch on a Stale Verdict",
+      "input": "Verdict older than the policy's freshness threshold reaches commit",
+      "intended": "No effect without a fresh adjudication that includes the verdict's age",
+      "expected": "no effect, or a fresh adjudication that includes the verdict's age",
+      "status": "specified",
+      "native": "IMPLEMENTATION_GAP",
+      "observed": "Not exercised yet. CT-R4-004 covers the refusal branch only.",
+      "reference": "withdrawn reading, RFC-4 v0.3 revision §4; was RN-001 §3.1",
+      "superseded_by": [
+        "CT-R4-004a"
+      ]
+    },
+    {
+      "id": "CT-R4-015",
+      "rfc": "RFC-2 §3.4; RN-001 §3",
+      "category": "commit",
+      "property": "Age Never Improves a Disposition",
+      "input": "Same inputs readjudicated with a greater verdict age",
+      "intended": "Disposition no less restrictive than at the lesser age",
+      "expected": "disposition at the greater age is equal or more restrictive",
+      "status": "specified",
+      "native": "IMPLEMENTATION_GAP",
+      "observed": "Not exercised yet; needs a readjudication entry point.",
+      "reference": "withdrawn reading, RFC-4 v0.3 revision §4; was RFC-2 §3.4 (one-way hardening) applied to verdict age; RN-001 §3.2",
+      "superseded_by": [
+        "CT-R4-004a"
+      ]
+    },
+    {
+      "id": "CT-R4-016",
+      "rfc": "RFC-5 §2; RFC-0 §6; RN-001 §2a, §3",
+      "category": "commit",
+      "property": "Fail-Safe Bound Refuses Alone",
+      "input": "A bound the policy declares fail-safe (e.g. τ_K on a HOLD) is exhausted, all other inputs favourable",
+      "intended": "Pre-declared exhaustion policy applied wherever the held operation could advance",
+      "expected": "no effect; exhaustion policy applied without a timer",
+      "status": "specified",
+      "native": "IMPLEMENTATION_GAP",
+      "observed": "Not exercised yet; needs a policy-declared fail-safe bound in the subject.",
+      "reference": "merged into CT-R4-004b, RFC-4 v0.3 revision §4; was RFC-5 §2 (pre-declared exhaustion policy); RN-001 §2a, §3.3",
+      "superseded_by": [
+        "CT-R4-004b"
+      ]
+    },
+    {
       "id": "C1",
       "rfc": "RFC-3",
       "category": "core",
@@ -168,12 +246,12 @@
       "category": "core",
       "property": "Standing Continuity at Commit",
       "input": "Standing revoked between verdict and commit",
-      "intended": "HARD_VETO; commit blocked",
-      "expected": "HARD_VETO",
+      "intended": "No effect under the changed state; terminal refusal, or suspension with a declared resumption condition",
+      "expected": "no effect; terminal refusal, or suspension with a declared resumption condition",
       "status": "implemented",
       "native": "PASS",
       "observed": "post-verdict revocation produced HARD_VETO; commit blocked (native): STANDING_REVOKED:HARD_VETO",
-      "reference": "RFC-3 §4.2; RFC-4 §2.2"
+      "reference": "RFC-3 §4.2; RFC-4 §2.2; RN-001 §4"
     },
     {
       "id": "C4",
