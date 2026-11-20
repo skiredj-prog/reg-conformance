@@ -47,6 +47,10 @@ données déclaratives (`catalog/`), outils (`tools/`), profils (`profiles/`), t
 
 Le standard est **implementation-neutral** : il définit les propriétés (safety, liveness, fault tolerance, BUD), pas le mécanisme. Tout backend qui implémente l'interface `ConsensusBackend` et satisfait les propriétés est conforme.
 
+## Modèle d’exécution client et séquencement
+
+Voir [le modèle d’exécution de la conformance client](docs/MODELE_EXECUTION_CONFORMANCE_CLIENT.md) : hypothèses explicites, gates proposées, scheduling parallèle/séquentiel par dépendances, crosswalk REG Core / REG+ / REG-ARCH, et limites de réutilisation du harness `tenir-conformance-s1-g1`. Cette proposition n’est pas une modification normative du standard.
+
 ## Structure
 
 ```
