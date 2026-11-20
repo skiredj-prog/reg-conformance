@@ -100,7 +100,11 @@ dispatched and either a qualified rejection of that dispatch was observed
 or a qualified, verified attestation establishes non-execution; `UNKNOWN`,
 with reconciliation required, when dispatch was possible, no qualified
 rejection was observed, and the attestation is absent, contradictory or not
-qualified. These are the three paths of the paper's `NEA` predicate (§4.3). Within the paper's own
+qualified. Each path of the paper's `NEA` predicate (§4.3) has a matching
+case here: an observed rejection, an accepted attestation, and a kernel veto
+before dispatch (one case of "never dispatched"). The REG case "never
+dispatched" is wider: it also covers, for example, a held attempt refused
+before any dispatch. The two lists are not equivalent. Within the paper's own
 argument (§4–§5), `FAILED` keeps the meaning the paper gives it, including the
 `NEA` condition.
 
