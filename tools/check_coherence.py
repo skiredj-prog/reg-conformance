@@ -50,6 +50,30 @@ def not_applicable(reason):
     return {"status": "NOT_APPLICABLE", "evidence": [reason]}
 
 
+def declared_optional_absence(cid, missing):
+    """Only a checked-in scope declaration can mark a missing legacy counterpart N/A."""
+    scope_file = ROOT / "coherence-applicability.json"
+    if not scope_file.is_file():
+        return cannot_evaluate("coherence-applicability.json absent: applicability is unknown")
+    try:
+        policy = json.loads(scope_file.read_text(encoding="utf-8"))
+        entry = policy["not_applicable"][cid]
+        expected = entry["expected_missing"]
+        required = entry["required_present"]
+        reason = entry["reason"]
+        if (sorted(missing) != sorted(expected)
+                or not all((ROOT / p).is_file() for p in required)):
+            return cannot_evaluate(
+                f"{cid}: actual missing inputs {sorted(missing)!r} differ from "
+                f"declared optional absence {sorted(expected)!r}, or a required source is missing"
+            )
+        return not_applicable(f"declared by coherence-applicability.json: {reason}")
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        return cannot_evaluate(
+            f"{cid}: applicability declaration cannot be validated: {type(exc).__name__}: {exc}"
+        )
+
+
 def check(cid, layer, title):
     def deco(fn):
         CHECKS.append((cid, layer, title, fn))
@@ -299,7 +323,7 @@ def p01():
     required = (ROOT / "validate_profiles.py", ROOT / "tools/validate_profiles.py")
     missing = [p.relative_to(ROOT).as_posix() for p in required if not p.is_file()]
     if missing:
-        return cannot_evaluate(*[f"required profile validator missing: {p}" for p in missing])
+        return declared_optional_absence("COH-P01", missing)
     names = [p.name for p in _profiles()]
     a_out = _run(["tools/validate_profiles.py"])
     b_out = _run(["validate_profiles.py"] + [f"profiles/{n}" for n in names])
@@ -315,9 +339,9 @@ def p01():
 def p02():
     files = [f for f in ("catalog/compatibility-rules-v1.yaml", "compatibility-rules-v2.yaml") if (ROOT / f).is_file()]
     if len(files) < 2:
-        return cannot_evaluate(
-            "expected compatibility rule sources are missing; cannot compare v1 and v2"
-        )
+        missing = [p for p in ("catalog/compatibility-rules-v1.yaml", "compatibility-rules-v2.yaml")
+                   if not (ROOT / p).is_file()]
+        return declared_optional_absence("COH-P02", missing)
     users = {f: [p.relative_to(ROOT).as_posix() for p in list((ROOT / "tools").glob("*.py")) + [ROOT / "validate_profiles.py"]
                  if p.is_file() and p.name != "check_coherence.py" and Path(f).name in p.read_text(encoding="utf-8")] for f in files}
     return [f"{f} is read by {users[f] or 'no tool'}" for f in files]
