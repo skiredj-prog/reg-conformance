@@ -526,7 +526,9 @@ def p09():
     releases = sorted((t for t in tags if re.fullmatch(r"v\d+\.\d+\.\d+", t)), key=lambda t: tuple(map(int, t[1:].split("."))))
     entries = set(re.findall(r"^## \[?(v\d+\.\d+\.\d+)", read("CHANGELOG.md"), re.M))
     if not releases or not entries:
-        return None
+        if os.environ.get("COHERENCE_FIXTURE_MODE") == "1" and not (ROOT / ".git").exists():
+            return not_applicable("test fixture deliberately omits git release metadata")
+        return cannot_evaluate("release tags or CHANGELOG entries unavailable for comparison")
     as_tuple = lambda t: tuple(map(int, t[1:].split(".")))
     first = min(entries, key=as_tuple)
     absent = [t for t in releases if t not in entries and as_tuple(t) >= as_tuple(first)]
