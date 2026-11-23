@@ -97,6 +97,18 @@ the disposition. They do not look at how the runtime reached it.
   conclude where the deployment pre-declares a resolution.
 - The two confidence checks pass when nothing widens. A disposition that does
   not change at all also passes, and the result says so.
+- `PX-REG-STATE-025` (row `REG-STATE-025`, RESERVED: a proposal of the draft
+  RFC-2 v0.2 of 23 November 2026, not ratified) reads a kernel against the
+  admissible domain it declares, nothing else. The standard prescribes no
+  domain: the port states, in `domains`, the `(low, high)` the kernel under
+  test declares for each measurement, under the runtime's own names, and
+  implements `evaluate_at_value`. The check submits one value just above and
+  one just below each declared domain: an explicit rejection before any
+  disposition passes, an admission fails, a `HOLD` or `HARD_VETO` does not
+  conclude (closed, but not rejected as out of domain), and an edge of the
+  domain rejected as out of it fails. A port that declares no domain gets
+  `ADAPTER_REQUIRED`. Whether a value such as K = 1.5 is admissible is not a
+  question this harness answers: it is whatever the kernel declares.
 
 Three rows of the index have no check of their own. `REG-STATE-003`: what a
 boundary can show of it is read by `PX-REG-STATE-001` and `-010`; the rest is

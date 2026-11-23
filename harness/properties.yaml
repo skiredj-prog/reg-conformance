@@ -136,6 +136,7 @@ checks:
   REG-STATE-022: EGP-11
   REG-STATE-023: EGP-09
   REG-STATE-024: EGP-12
+  REG-STATE-025: EGP-13
   # Effect probes (harness checks, not REG vectors)
   HX-EFFECT-001: EGP-06
   HX-EFFECT-002: EGP-12

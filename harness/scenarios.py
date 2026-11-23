@@ -26,6 +26,7 @@ class Scenario:
     exercises: str = ""         # property check only: the VECTORS.md row it exercises
     bounds: frozenset = frozenset()   # bounds the subject must declare for the scenario to run
     degradations: frozenset = frozenset()   # epistemic states the port must be able to produce
+    domains: frozenset = frozenset()  # {"measurements"} when the port must declare an admissible domain
     at: str = ""                # where it observes, in the terms of RFC-0 §5
     not_observed: tuple = ()    # what a result of this scenario does not establish
 
@@ -633,6 +634,56 @@ px_contradictory_evidence = _never_admitted(P.E_CONTRADICTORY, "contradictory", 
 px_missing_evidence = _never_admitted(P.E_MISSING, "missing")
 
 
+# REG-STATE-025 (RESERVED: draft RFC-2 v0.2 §1.4, a proposal the frozen RFCs do
+# not specify). The standard prescribes no domain for a measurement; it asks
+# that the kernel declare its admissible domain and reject explicitly any value
+# outside it (runtime author's decision of 23 November 2026, in place of a
+# question "is K = 1.5 a PASS or a FAIL?"). The check reads consistency with the
+# declared domain, nothing about the domain itself: one value just above and one
+# just below each declared domain must be rejected explicitly, before any
+# disposition; the two edges of the domain must not be rejected as out of it.
+def px_declared_domain_enforced(rt):
+    ok = _control(rt)
+    if not _admitted(ok):
+        return INCONCLUSIVE, f"the control request was not admitted (disposition={ok.disposition})"
+    facts = _admission(ok)
+    explicit, admitted, by_disposition, edges_refused = [], [], [], []
+    for measurement, (low, high) in sorted(rt.domains.items()):
+        step = max(1e-3, (high - low) / 2)
+        for value in (high + step, low - step):
+            rt.reset()
+            d, refusal = _attempt(rt.evaluate_at_value, measurement, value,
+                                  principal=_principal("v"), action_type="wire_transfer")
+            label = f"{measurement}={value:g}"
+            if refusal is not None:
+                explicit.append(f"{label} ({refusal.code})")
+            elif _admitted(d):
+                admitted.append(f"{label} ({d.disposition})")
+            else:
+                by_disposition.append(f"{label} ({d.disposition})")
+        for value in (low, high):
+            rt.reset()
+            _, refusal = _attempt(rt.evaluate_at_value, measurement, value,
+                                  principal=_principal("v"), action_type="wire_transfer")
+            if refusal is not None:
+                edges_refused.append(f"{measurement}={value:g} ({refusal.code})")
+    domains = ", ".join(f"{m} in [{lo:g}, {hi:g}]" for m, (lo, hi) in sorted(rt.domains.items()))
+    if admitted:
+        return (FAIL, f"admitted a value outside the declared domain ({domains}): "
+                      f"{', '.join(admitted)}", facts)
+    if edges_refused:
+        return (FAIL, f"an edge of the declared domain ({domains}) was rejected as out of it: "
+                      f"{', '.join(edges_refused)}", facts)
+    if by_disposition:
+        return (INCONCLUSIVE, f"no value outside the declared domain ({domains}) was admitted, "
+                              f"but some were closed by a disposition rather than rejected "
+                              f"explicitly: {', '.join(by_disposition)}"
+                              + (f"; rejected explicitly: {', '.join(explicit)}" if explicit else ""),
+                facts)
+    return (PASS, f"every value outside the declared domain ({domains}) was rejected explicitly: "
+                  f"{', '.join(explicit)}", facts)
+
+
 def _ladder(rt, intent):
     """Dispositions of one attempt from full confidence down, one clean run each."""
     out = []
@@ -786,10 +837,12 @@ _SIMULATED = "under a simulated clock, timers and background expiry in real time
 _LISTED = ("measurements other than those the port lists",)
 
 
-def _check(exercises, requires, run, intents, at, *not_observed, bounds=(), degradations=()):
+def _check(exercises, requires, run, intents, at, *not_observed, bounds=(), degradations=(),
+           domains=()):
     return Scenario(f"PX-{exercises}", frozenset(requires), run, intents, normative=False,
                     exercises=exercises, bounds=frozenset(bounds),
-                    degradations=frozenset(degradations), at=at, not_observed=not_observed)
+                    degradations=frozenset(degradations), domains=frozenset(domains), at=at,
+                    not_observed=not_observed)
 
 
 # In the order of VECTORS.md.
@@ -856,4 +909,11 @@ CHECKS = {s.vector_id: s for s in [
            "on a runtime with no separate commit, a rejection as opposed to a suspension "
            "that never ends",
            _SIMULATED, bounds={P.B_TAU_K}),
+    _check("REG-STATE-025", {_E}, px_declared_domain_enforced, _A, AUTH,
+           "the domain itself: the standard prescribes none, the port states the one the "
+           "kernel declares, and whether that declaration matches the kernel's documentation",
+           "values far outside the domain, and values that are not numbers (REG-STATE-001 "
+           "reads those as unknown evidence)",
+           "measurements for which the port declares no domain",
+           domains={"measurements"}),
 ]}

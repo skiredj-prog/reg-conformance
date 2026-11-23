@@ -394,6 +394,7 @@ class _Governed(P.RuntimePort):
                     P.E_MISSING: ("load", "limit"), P.E_CONTRADICTORY: ("load",)}
     degraded = {P.E_UNKNOWN: "HOLD", P.E_STALE: "HARD_VETO", P.E_MISSING: "HARD_VETO",
                 P.E_CONTRADICTORY: "HOLD"}
+    domains = {"load": (0.0, 1.0)}
     confidence_steps = 4
     intents = frozenset({P.ADMISSIBLE, P.NO_STANDING, P.NEEDS_APPROVAL, P.MALFORMED_CREDENTIAL,
                          P.OUT_OF_SCOPE, P.INVARIANT_VIOLATED, P.EXPIRING_CREDENTIAL,
@@ -460,6 +461,18 @@ class _Governed(P.RuntimePort):
         decision = P.Decision(uuid.uuid4().hex, verdict, action_type, principal, {})
         self.made[decision.decision_id] = (verdict, self.now)
         return decision
+
+    def evaluate_at_value(self, measurement, value, *, principal, action_type):
+        low, high = self.domains[measurement]
+        if not low <= value <= high:
+            if self.fault == "admits_out_of_domain":
+                return P.Decision(uuid.uuid4().hex, "PASS", action_type, principal, {})
+            if self.fault == "holds_out_of_domain":
+                return P.Decision(uuid.uuid4().hex, "HOLD", action_type, principal, {})
+            raise P.Refused("OUT_OF_DOMAIN", None, f"{measurement}={value} outside [{low}, {high}]")
+        if self.fault == "refuses_the_edge" and value in (low, high):
+            raise P.Refused("OUT_OF_DOMAIN", None, "edge rejected")
+        return P.Decision(uuid.uuid4().hex, "PASS", action_type, principal, {})
 
     def evaluate_degraded(self, state, measurement, *, principal, action_type):
         verdict = self.degraded[state]
@@ -532,6 +545,8 @@ def test_property_checks_pass_on_a_correct_runtime():
     ("defaults_a_missing_limit", "PX-REG-STATE-010"),
     ("confidence_widens", "PX-REG-STATE-013"),
     ("low_confidence_rescues", "PX-REG-STATE-015"),
+    ("admits_out_of_domain", "PX-REG-STATE-025"),
+    ("refuses_the_edge", "PX-REG-STATE-025"),            # the declared domain is not the one enforced
 ])
 def test_each_property_check_detects_its_fault_and_only_that_one(fault, check):
     got = _checks(fault)
@@ -544,9 +559,34 @@ def test_each_property_check_detects_its_fault_and_only_that_one(fault, check):
     ("revocation_inert", "PX-CT-R3-003"),                # nothing to isolate
     ("hold_never_ends", "PX-REG-STATE-024"),             # not executable is not rejected
     ("vetoes_contradiction", "PX-REG-STATE-004"),        # RFC-2 §2.5 names HOLD, not a veto
+    ("holds_out_of_domain", "PX-REG-STATE-025"),         # closed, but not rejected explicitly
 ])
 def test_a_property_check_does_not_conclude_on_a_half_observation(fault, check):
     assert _checks(fault)[check] == "INCONCLUSIVE"
+
+
+def test_the_domain_check_needs_a_declared_domain_and_reads_only_consistency():
+    """REG-STATE-025 prescribes no domain. A port that declares none gets
+    ADAPTER_REQUIRED; a port that declares another domain is read against that one."""
+    class NoDomain(_Governed):
+        domains = {}
+    got = {r.vector_id: r for r in PortAdapter(NoDomain()).run_checks()}["PX-REG-STATE-025"]
+    assert got.status.value == "ADAPTER_REQUIRED" and "no admissible domain" in got.gap_note
+
+    class Wider(_Governed):
+        domains = {"load": (-1.0, 2.0)}
+    got = {r.vector_id: r for r in PortAdapter(Wider()).run_checks()}["PX-REG-STATE-025"]
+    assert got.status.value == "PASS" and "load in [-1, 2]" in got.details
+    assert "load=3.5" in got.details and "load=-2.5" in got.details
+
+
+@pytest.mark.parametrize("domains", [{"": (0, 1)}, {"load": (0, 1, 2)}, {"load": (1.0, 0.0)},
+                                     {"load": (0.0, float("inf"))}, {"load": (False, 1)}])
+def test_a_port_declares_its_domains_well_formed(domains):
+    class Bad(_Governed): pass
+    Bad.domains = domains
+    with pytest.raises(ValueError):
+        PortAdapter(Bad())
 
 
 # -- degraded evidence: read the disposition, not how it was reached -----------
@@ -774,8 +814,9 @@ def test_each_property_check_names_a_row_and_says_whether_the_rfcs_specify_it():
     status = {s.exercises: rows[s.exercises]["status"] for s in CHECKS.values()}
     # None of the six rows has a behavioural test in the runner.
     assert "IMPLEMENTED" not in status.values()
-    # CT-R3-003 is a proposal: the frozen RFCs do not state it.
-    assert [r for r, state in status.items() if state == "RESERVED"] == ["CT-R3-003"]
+    # Two proposals the frozen RFCs do not state: CT-R3-003, and REG-STATE-025
+    # (declared admissible domain, draft RFC-2 v0.2 §1.4 of 2026-11-23, not ratified).
+    assert sorted(r for r, state in status.items() if state == "RESERVED") == ["CT-R3-003", "REG-STATE-025"]
 
 
 def test_a_port_cannot_declare_a_combination_it_cannot_produce():

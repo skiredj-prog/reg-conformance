@@ -92,7 +92,14 @@ def test_576_port_on_vectors_probes_and_checks():
     assert set(probes.values()) == {"PASS"}
     results = {r.vector_id: r for r in adapter.run_checks()}
     checks = {k: r.status.value for k, r in results.items()}
-    assert "INCONCLUSIVE" not in checks.values()
+    # Declared domain [0, 1] on every measure (REG-STATE-025, RESERVED): a value
+    # outside it is held as an invalid measure, never admitted, but not rejected
+    # explicitly before a disposition. The check does not conclude on that; the
+    # question (HOLD as unknown, or explicit error) is the runtime author's.
+    assert checks["PX-REG-STATE-025"] == "INCONCLUSIVE"
+    assert "closed by a disposition" in results["PX-REG-STATE-025"].details
+    assert "capacity=1.5 (HOLD)" in results["PX-REG-STATE-025"].details
+    assert {k for k, v in checks.items() if v == "INCONCLUSIVE"} == {"PX-REG-STATE-025"}
     # Missing evidence: 5.7.6 holds seven missing measurements and admits on the
     # eighth, `irreversibility_materiality`, which it defaults to 0.0. The port
     # declares that measurement since the runtime author's decision C of 23

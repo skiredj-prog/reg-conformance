@@ -181,6 +181,14 @@ class RuntimePort:
     # "fail-closed", "fail-degraded", or None when it declares nothing, in
     # which case the default of RFC-5 §2.1 applies: fail-closed.
     exhaustion_policy: Optional[str] = None
+    # measurement -> (low, high): the admissible domain the kernel under test
+    # declares for a value of that measurement, under the runtime's own names.
+    # The standard prescribes no domain (runtime author's decision of 23
+    # November 2026, draft RFC-2 v0.2 §1.4, not ratified): it asks that the
+    # kernel declare one and reject explicitly any value outside it. The port
+    # states what the kernel declares; it does not invent a domain. Empty when
+    # the kernel declares none: the check is then not run (ADAPTER_REQUIRED).
+    domains: dict = {}
 
     def reset(self) -> None:
         """Return the runtime to a clean state. Called before every scenario,
@@ -208,6 +216,14 @@ class RuntimePort:
     def evaluate_at_confidence(self, intent: str, step: int, *, principal: str,
                                action_type: str) -> Decision:
         """Submit the attempt for `intent` at confidence level `step`."""
+        raise NotImplementedError
+
+    def evaluate_at_value(self, measurement: str, value: float, *, principal: str,
+                          action_type: str) -> Decision:
+        """Submit the admissible attempt with one measurement set to `value`,
+        a finite number that may lie outside the declared domain. Everything
+        else is as for ADMISSIBLE. Raise `Refused` when the runtime rejects the
+        value explicitly, before any disposition."""
         raise NotImplementedError
 
     def elapse_past(self, bound: str) -> float:

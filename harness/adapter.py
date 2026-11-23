@@ -2,6 +2,8 @@
 produces the runner's existing result and report types."""
 from __future__ import annotations
 
+import math
+
 import importlib
 
 import runner as R
@@ -48,6 +50,16 @@ class PortAdapter(R.BaseAdapter):
                 raise ValueError(f"{state}: name at least one measurement the port can degrade")
         if CONFIDENCE in port.capabilities and port.confidence_steps < 2:
             raise ValueError("a port that declares confidence submits at two levels or more")
+        for name, domain in dict(port.domains).items():
+            if not isinstance(name, str) or not name:
+                raise ValueError("a declared domain names its measurement")
+            try:
+                low, high = domain
+            except (TypeError, ValueError):
+                raise ValueError(f"{name}: a domain is a (low, high) pair of finite numbers") from None
+            if any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v)
+                   for v in (low, high)) or not low < high:
+                raise ValueError(f"{name}: a domain is a (low, high) pair of finite numbers, low < high")
         self.port = port
         self.interface_mode = port.interface_mode
         # A port is a translation layer: it can never report native conformance.
@@ -66,7 +78,10 @@ class PortAdapter(R.BaseAdapter):
             ("port does not declare: ", scenario.requires, self.port.capabilities),
             ("port cannot produce intent: ", scenario.intents, self.port.intents),
             ("no bound declared for: ", scenario.bounds, self.port.bounds),
-            ("port cannot make evidence: ", scenario.degradations, self.port.degradations))]
+            ("port cannot make evidence: ", scenario.degradations, self.port.degradations),
+            # A check on declared domains runs only when the port declares one.
+            ("port declares no admissible domain for its ", scenario.domains,
+             {"measurements"} if self.port.domains else set()))]
         lacking = [label + ", ".join(names) for label, names in lacking if names]
         if lacking:
             return self._ar(vid, "; ".join(lacking))

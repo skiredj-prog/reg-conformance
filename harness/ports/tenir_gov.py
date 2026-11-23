@@ -134,6 +134,12 @@ class TenirGovPort(P.RuntimePort):
                               P.TENIR_SCORE, P.EFFECTS, P.COMBINE, P.DEGRADE, P.CONFIDENCE})
     intents = frozenset(_INPUTS)
     degradations = {P.E_MISSING: tuple(_BEST), P.E_UNKNOWN: tuple(_BEST)}
+    # The runtime's declared domain for every measure it scores: a value is
+    # valid when finite and in [0, 1] (`ScoringKernelAdapter.adjudicate`, its
+    # `_finite` test, 5.7.6 and the 5.7.7 candidate alike). Outside it the
+    # runtime treats the value as an invalid measure: HOLD for insufficient
+    # evidence, not an API-level rejection. The check reads what it does.
+    domains = {name: (0.0, 1.0) for name in _BEST}
     confidence_steps = len(_QUALITY)
     combinations = frozenset({frozenset({P.NO_STANDING, P.NEEDS_APPROVAL}),
                               frozenset({P.INADMISSIBLE, P.NEEDS_APPROVAL})})
@@ -191,6 +197,10 @@ class TenirGovPort(P.RuntimePort):
         overrides, amount = _INPUTS[intent]
         measured = {**_BEST, **overrides, "evidence_quality": _QUALITY[step]}
         return self._adjudicate(measured, amount, principal=principal, action_type=action_type)
+
+    def evaluate_at_value(self, measurement, value, *, principal, action_type):
+        measured = {**_BEST, measurement: float(value)}
+        return self._adjudicate(measured, None, principal=principal, action_type=action_type)
 
     def _adjudicate(self, measured, amount, *, principal, action_type, nonce=None):
         from tenir_governance.objects import Passage
