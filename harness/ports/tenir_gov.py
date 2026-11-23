@@ -18,12 +18,30 @@ Native verdicts are already the four REG dispositions (PASS, FLAG, HOLD,
 HARD_VETO). The port passes them through unchanged. It does not turn a native
 FLAG into a PASS.
 
-Intent mapping (PROVISIONAL, written by the harness author from the runtime's
-own behaviour; to be confirmed or corrected by the runtime's author):
+Intent mapping, clause by clause (P4, option B of the runtime author's
+decision of 23 November 2026, 07:02 UTC; the clause-by-clause table lives in
+the review dossier, `p4-correspondances/`; semantic review by the external
+reviewer still pending):
     ADMISSIBLE      best-case measured inputs, no resource in scope
     INADMISSIBLE    structure outside bounds (S below the tau floor)
-    NO_STANDING     authority measured at 0.0
-    DENIED          amount above the registered budget (membrane invariant I8)
+    NO_STANDING     authority measured at 0.0. DECLARED PARTIAL GAP against
+                    RFC-3 §1 ("Standing: the active, unrevoked, and
+                    contextually valid state of possessing a given Authority
+                    Scope at time t") and RFC-0 §3 (identity, delegation,
+                    revocation closure): this runtime's default path reads
+                    standing as an authority score asserted by the caller, so
+                    the correspondence covers "standing measured at zero" and
+                    nothing else (runtime author's decision P4 = A, 23 Nov
+                    2026, 10:18 UTC). The credential-side vectors of RFC-3
+                    stay ADAPTER_REQUIRED.
+    DENIED          amount above the registered budget (membrane invariant I8).
+                    DECLARED RUNTIME LIMIT: DENIED and INVARIANT_VIOLATED have
+                    the same inputs and the same mechanism, because I8 is the
+                    only refusal-by-policy this runtime's default path has;
+                    the two intents are not distinguishable on it. Declared,
+                    not corrected in code (runtime author's decision P4 = A,
+                    23 Nov 2026, 10:18 UTC). Justified by RFC-2 §3.3 and
+                    RFC-0 §4, the same clauses as INVARIANT_VIOLATED.
     NEEDS_APPROVAL  best-case inputs, amount at 90 % of the budget: the
                     composition policy escalates this to HOLD
     INVARIANT_VIOLATED  best-case inputs, amount above the registered budget
@@ -51,6 +69,14 @@ provisional declarations: 0.1 for an attempt with no irreversible pathway, 0.6
 for the attempt that needs approval (90 % of the budget), 0.8 for the attempts
 that exceed the budget. None of them crosses the reference geometry's
 irreversibility-authority boundary (materiality - authority <= 0.25) on its own.
+
+Declared domain (`domains`): [0, 1] for each of the eight measurements, the
+domain the runtime's own `ScoringKernelAdapter` declares. `evaluate_at_value`
+sends one measurement at a given value with the seven others at `_BEST`. On
+5.7.0 and 5.7.6 a finite value outside the domain is held (HOLD, invalid
+measure): PX-REG-STATE-025 reads INCONCLUSIVE. Since the 5.7.7 candidate (P8,
+option A, 23 Nov 2026) it is refused at the API boundary as INVALID_ARGUMENT,
+which `_adjudicate` maps to `Refused("NATIVE:invalid_argument")`: explicit.
 
 Confidence (CONFIDENCE): `evidence_quality` at 1.0, 0.75, 0.5, 0.25, 0.0, the
 other inputs unchanged. `adjudicate` takes one value per measurement, with no
