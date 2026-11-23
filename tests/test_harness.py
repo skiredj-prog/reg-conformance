@@ -1028,7 +1028,7 @@ def test_a_port_may_declare_a_registered_row_outside_its_perimeter():
     with pytest.raises(ValueError, match="not_in_perimeter"):
         PortAdapter(Unsigned()).run_all()
 
-    # Owner's review of 23 November 2026: only the rows the standard allows. A
+    # Internal review of 23 November 2026: only the rows the standard allows. A
     # declaration on CT-R0-005 (a specified row with a property check) is refused,
     # on the vector and on the check alike, so the check still runs.
     class Overreach(TemplatePort):

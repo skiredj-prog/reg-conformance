@@ -113,7 +113,7 @@ def test_576_port_on_vectors_probes_and_checks():
     assert {vectors[v] for v in ("CT-R3-001", "CT-R3-006", "CT-R3-007", "CT-R3-008")} == {"NOT_IN_PERIMETER"}
     assert vectors["CT-R3-002"] == "IMPLEMENTATION_GAP"
     # CT-R4-004 is superseded by 004a/004b: its declared gap is no longer counted
-    # twice with 004a (owner's review of 23 November 2026); three gaps counted.
+    # twice with 004a (internal review of 23 November 2026); three gaps counted.
     assert vectors["CT-R4-004"] == "NOT_SPECIFIED" and vectors["CT-R4-004a"] == "IMPLEMENTATION_GAP"
     assert tally["IMPLEMENTATION_GAP"] == 3 and tally["PASS"] == 21 and tally["NOT_APPLICABLE"] == 3
     probes = {r.vector_id: r.status.value for r in adapter.run_probes()}

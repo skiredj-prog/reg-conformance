@@ -17,8 +17,8 @@ FLAG_RESERVE = ("obtained under a declared mapping interpretation, pending ratif
 HARNESS_GAP = ("HARNESS_GAP: no runtime-neutral scenario exists for this vector yet; "
                "the subject was not evaluated.")
 
-# Rule of 23 November 2026 (standard author's decision, 15:07 UTC, option A,
-# amended on the owner's review of 17:37 UTC), for the registered rows no port
+# Rule of 23 November 2026 (decision of 15:07 UTC, option A, amended on the
+# internal review of 17:37 UTC), for the registered rows no port
 # can adapt. The rule itself lives in runner.py (shared by every adapter and
 # every report): a row the frozen RFCs do not specify (RESERVED in VECTORS.md)
 # or superseded by a ratified revision (`superseded_by` in vectors/*.yaml) has
@@ -30,7 +30,7 @@ HARNESS_GAP = ("HARNESS_GAP: no runtime-neutral scenario exists for this vector 
 EXIT_CODE_RULE_DATE = R.EXIT_CODE_RULE_DATE
 OUT_OF_EXIT_CODE = R.OUT_OF_EXIT_CODE
 # The rows the standard lets an implementer declare outside a runtime's
-# perimeter (owner's review of 2026-11-23, 17:37 UTC: a declaration is two
+# perimeter (internal review of 2026-11-23, 17:37 UTC: a declaration is two
 # plain strings, so without this list any row could leave the exit code; the
 # probe took CT-R0-005 out and its check did not run). Today: the credential
 # layer of RFC-3 (malformed, latency window, expiry, scope, rotation), which

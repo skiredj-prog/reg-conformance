@@ -26,8 +26,8 @@ is a REG vector, and neither changes the vector summary.
 
 ## Rows no port can adapt (rule of 23 November 2026)
 
-Standard author's decision of 23 November 2026, 15:07 UTC (option A), amended
-on the owner's review of 17:37 UTC. The rule lives in `runner.py` and applies
+Decision of 23 November 2026, 15:07 UTC (option A), amended on the internal
+review of 17:37 UTC. The rule lives in `runner.py` and applies
 to every adapter and every report this repository produces (`python -m
 harness`, `runner.py --mode http|native`). It is dated; it reinterprets no
 report produced before it. Every report lists what the rule took out of the

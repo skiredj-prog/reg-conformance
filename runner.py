@@ -1153,8 +1153,7 @@ def build_evidence_binding(adapter, args):
 
 
 # ── Rule of 23 November 2026: rows no port can adapt ─────────────────────────
-# Standard author's decision (15:07 UTC, option A), amended on the owner's review
-# of 17:37 UTC. Shared by every adapter and every report this runner produces.
+# Decision of 15:07 UTC (option A), amended on the internal review of 17:37 UTC. Shared by every adapter and every report this runner produces.
 EXIT_CODE_RULE_DATE = "2026-11-23"
 OUT_OF_EXIT_CODE = ("NOT_SPECIFIED", "EXERCISED_BY_CHECK", "NOT_IN_PERIMETER", "NOT_APPLICABLE")
 COUNTED_IN_EXIT_CODE = ("FAIL", "INCONCLUSIVE", "IMPLEMENTATION_GAP", "ADAPTER_REQUIRED")
@@ -1236,8 +1235,8 @@ def exit_code_rule_block(results, counts):
     return {
         "date": EXIT_CODE_RULE_DATE,
         "rule": ("FAIL -> 1; else INCONCLUSIVE -> 3; else IMPLEMENTATION_GAP or ADAPTER_REQUIRED -> 2; "
-                 "else 0. Since 2026-11-23 (standard author's decision, 15:07 UTC, amended on the "
-                 "owner's review of 17:37 UTC): a registered row no ratified text specifies (RESERVED "
+                 "else 0. Since 2026-11-23 (decision of 15:07 UTC, amended on the internal review "
+                 "of 17:37 UTC): a registered row no ratified text specifies (RESERVED "
                  "in VECTORS.md, or superseded_by in vectors/*.yaml) is NOT_SPECIFIED unless it was "
                  "observed (PASS, FAIL, INCONCLUSIVE); a row the implementer declares outside the "
                  "runtime's perimeter, from the list the standard allows, is NOT_IN_PERIMETER; a row "
@@ -1294,7 +1293,7 @@ def generate_report(adapter, results, endpoint="", evidence_binding=None):
             "conformance_status": ("FAILED" if counts["FAIL"] else
                                    "INCONCLUSIVE" if counts["INCONCLUSIVE"] else
                                    "INCOMPLETE" if counts["IMPLEMENTATION_GAP"] or counts["ADAPTER_REQUIRED"] else
-                                   # Owner's decision on L4-6 (2026-11-23): never a bare
+                                   # Decision of 2026-11-23 on L4-6: never a bare
                                    # CONFORMANT while rows are out of the count.
                                    "CONFORMANT_ON_SPECIFIED_ROWS" if any(
                                        counts[k] for k in ("NOT_SPECIFIED", "NOT_IN_PERIMETER", "EXERCISED_BY_CHECK"))
