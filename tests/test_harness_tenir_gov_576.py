@@ -90,10 +90,18 @@ def test_576_port_on_vectors_probes_and_checks():
     assert {vectors[v] for v in ("C3", "CT-R4-004", "CT-R4-005", "CT-R4-007")} == {"ADAPTER_REQUIRED"}
     probes = {r.vector_id: r.status.value for r in adapter.run_probes()}
     assert set(probes.values()) == {"PASS"}
-    checks = {r.vector_id: r.status.value for r in adapter.run_checks()}
-    assert "FAIL" not in checks.values() and "INCONCLUSIVE" not in checks.values()
-    # Missing evidence is never admitted on 5.7.6 (it was on 5.7.0).
-    assert checks["PX-REG-STATE-010"] == "PASS"
+    results = {r.vector_id: r for r in adapter.run_checks()}
+    checks = {k: r.status.value for k, r in results.items()}
+    assert "INCONCLUSIVE" not in checks.values()
+    # Missing evidence: 5.7.6 holds seven missing measurements and admits on the
+    # eighth, `irreversibility_materiality`, which it defaults to 0.0. The port
+    # declares that measurement since the runtime author's decision C of 23
+    # November 2026, so the check reads it: FAIL on 5.7.6, on that one input. It
+    # read PASS on the seven while the port left the eighth to the default.
+    assert checks["PX-REG-STATE-010"] == "FAIL"
+    assert "irreversibility_materiality (FLAG)" in results["PX-REG-STATE-010"].details
+    assert "pressure" not in results["PX-REG-STATE-010"].details.split("; not admitted on:")[0]
+    assert {k for k, v in checks.items() if v == "FAIL"} == {"PX-REG-STATE-010"}
     assert checks["PX-CT-R3-007"] == "NOT_IN_PERIMETER"
     # Every admission on a FLAG carries the declared condition (RFC-0 §4).
     on_flag = {c: f for c, f in adapter.facts.items() if f.get("admitted_on") == "FLAG"}
@@ -177,3 +185,26 @@ def test_port_lets_other_value_errors_through():
     port._gov = _Gov()
     with pytest.raises(ValueError, match="something else"):
         port._adjudicate({"pressure": 0.2}, 10.0, principal="a", action_type="wire_transfer")
+
+
+def test_port_declares_irreversibility_materiality_per_intent():
+    """Decision C (23 November 2026): the port measures `irreversibility_materiality`
+    per intent as its eighth declared measurement, degraded like the seven others,
+    instead of leaving it to the governor's default (0.0 on 5.7.0 and 5.7.6, UNKNOWN
+    on the 5.7.7 candidate). The declared values stay inside the reference
+    geometry's irreversibility-authority boundary (materiality - authority <= 0.25)
+    for the authority they are declared with, so none of them vetoes on its own."""
+    from harness.ports.tenir_gov import _BEST, _INPUTS, TenirGovPort
+
+    assert _BEST["irreversibility_materiality"] == 0.1
+    for state in (P.E_MISSING, P.E_UNKNOWN):
+        assert "irreversibility_materiality" in TenirGovPort.degradations[state]
+        assert len(TenirGovPort.degradations[state]) == 8
+    declared = {intent: {**_BEST, **overrides}["irreversibility_materiality"]
+                for intent, (overrides, _) in _INPUTS.items()}
+    assert declared[P.NEEDS_APPROVAL] == 0.6
+    assert declared[P.DENIED] == declared[P.INVARIANT_VIOLATED] == 0.8
+    assert declared[P.ADMISSIBLE] == declared[P.INADMISSIBLE] == declared[P.NO_STANDING] == 0.1
+    for intent, (overrides, _) in _INPUTS.items():
+        measured = {**_BEST, **overrides}
+        assert measured["irreversibility_materiality"] - measured["authority"] <= 0.25, intent

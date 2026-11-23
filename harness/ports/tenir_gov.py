@@ -33,14 +33,24 @@ own behaviour; to be confirmed or corrected by the runtime's author):
                     of coverage (author's decision 1, 19 November 2026). CT-R3-007
                     is declared outside the perimeter instead (`not_in_perimeter`).
 
-Degraded evidence (DEGRADE), on each of the seven measurements this port
+Degraded evidence (DEGRADE), on each of the eight measurements this port
 supplies to `adjudicate` (pressure, velocity, capacity, option_space,
-authority, context_fit, evidence_quality), same PROVISIONAL caveat:
+authority, context_fit, evidence_quality, irreversibility_materiality), same
+PROVISIONAL caveat:
     MISSING         the measurement is not supplied
     UNKNOWN         the measurement is supplied as a value that is not a
                     number (NaN): it arrives and says nothing of the state
-`irreversibility_materiality` is never supplied by this port: the governor
-takes its own default for it.
+`irreversibility_materiality` is the eighth measurement since the 5.7.7
+candidate work (runtime author's decision C, 23 November 2026): the port
+declares it per intent, like the seven others, instead of leaving it to the
+governor's default. 5.7.0 and 5.7.6 default an omitted axis to 0.0 and admit on
+it, so on those runtimes REG-STATE-010 now reads FAIL on this measurement: a
+declared change of a recorded result, not a reinterpretation of it. The 5.7.7
+candidate treats the omitted axis as UNKNOWN (HOLD). The values are the port's
+provisional declarations: 0.1 for an attempt with no irreversible pathway, 0.6
+for the attempt that needs approval (90 % of the budget), 0.8 for the attempts
+that exceed the budget. None of them crosses the reference geometry's
+irreversibility-authority boundary (materiality - authority <= 0.25) on its own.
 
 Confidence (CONFIDENCE): `evidence_quality` at 1.0, 0.75, 0.5, 0.25, 0.0, the
 other inputs unchanged. `adjudicate` takes one value per measurement, with no
@@ -81,7 +91,8 @@ import uuid
 from .. import port as P
 
 _BEST = dict(pressure=0.2, velocity=0.2, capacity=0.9, authority=0.9,
-             context_fit=1.0, evidence_quality=1.0, option_space=0.9)
+             context_fit=1.0, evidence_quality=1.0, option_space=0.9,
+             irreversibility_materiality=0.1)
 _BUDGET = "reg-harness-budget"
 _CAPACITY = 100.0
 # intent -> (overrides of _BEST, amount charged to the budget or None)
@@ -89,9 +100,9 @@ _INPUTS = {
     P.ADMISSIBLE:     ({}, None),
     P.INADMISSIBLE:   (dict(pressure=0.95, velocity=0.90, capacity=0.10), None),
     P.NO_STANDING:    (dict(authority=0.0), None),
-    P.DENIED:         ({}, _CAPACITY * 5),
-    P.NEEDS_APPROVAL: ({}, _CAPACITY * 0.9),
-    P.INVARIANT_VIOLATED: ({}, _CAPACITY * 5),
+    P.DENIED:         (dict(irreversibility_materiality=0.8), _CAPACITY * 5),
+    P.NEEDS_APPROVAL: (dict(irreversibility_materiality=0.6), _CAPACITY * 0.9),
+    P.INVARIANT_VIOLATED: (dict(irreversibility_materiality=0.8), _CAPACITY * 5),
 }
 # Levels of confidence in the evidence, from full down.
 _QUALITY = (1.0, 0.75, 0.5, 0.25, 0.0)
