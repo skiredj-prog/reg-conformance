@@ -1127,6 +1127,36 @@ def test_harness_ct_r4_004a_an_effect_behind_a_refusal_is_a_fail():
     assert r.status == R.ReportingState.FAIL and "1 effect(s) observed" in r.details
 
 
+def test_harness_ct_r4_004a_an_accepted_expired_commit_fails_even_with_no_count():
+    class AcceptsAndCannotCount(_Observed):
+        def commit(self, decision, *, action_type=None):
+            if decision.raw.get("valid_until", 1e18) < time.time():
+                return P.Committed(decision.decision_id, {})       # accepted, no refusal
+            return super().commit(decision, action_type=action_type)
+        def observed_effects(self, decision):
+            if decision.raw.get("valid_until", 1e18) < time.time():
+                return None                                         # observer gives no count
+            return super().observed_effects(decision)
+    r = _r4_004a(AcceptsAndCannotCount())
+    assert r.status == R.ReportingState.FAIL and "commit accepted" in r.details
+
+
+def test_http_ct_r4_004a_an_accepted_expired_commit_fails_even_with_no_record():
+    class AcceptsThenNoManifest(_Shim):
+        expired_code = 200
+        def _get(self, path):
+            if getattr(self, "expired", None) and self.recorded and self._after:
+                return 404, {}
+            return super()._get(path)
+        def _post(self, path, body):
+            out = super()._post(path, body)
+            self._after = path.startswith(f"/evaluations/{getattr(self, 'expired', '?')}/")
+            return out
+    s = AcceptsThenNoManifest(); s._after = False
+    r = s.run_vector("CT-R4-004a")
+    assert r.status == R.ReportingState.FAIL and "accepted" in r.details
+
+
 def test_harness_ct_r4_004a_an_observer_that_crashes_is_a_harness_error():
     class Crashes(_Observed):
         def observed_effects(self, decision):

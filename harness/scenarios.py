@@ -172,13 +172,15 @@ def r4_004a(rt):
     except P.Refused as e:
         refused = e
     seen = _effect_count(rt, d)
+    if refused is None:
+        # Acceptance already fails the oracle, whatever the observer can count.
+        count = "no count" if seen is None else f"{seen} effect(s) observed"
+        return FAIL, f"commit accepted under the expired authorization ({count})"
     if seen is None:
         return INCONCLUSIVE, "the effect observer gave no count for the expired authorization"
     if seen:
-        how = f"commit refused ({refused.code})" if refused else "commit accepted"
-        return FAIL, f"{how} and {seen} effect(s) observed under the expired authorization"
-    if refused is None:
-        return FAIL, "commit accepted under the expired authorization (no effect observed yet)"
+        return FAIL, (f"commit refused ({refused.code}) and {seen} effect(s) observed "
+                      "under the expired authorization")
     return PASS, (f"commit refused under the expired authorization ({refused.code}); no effect "
                   "observed, against a valid authorization whose effect was observed")
 

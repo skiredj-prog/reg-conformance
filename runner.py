@@ -563,13 +563,15 @@ class HTTPAdapter(BaseAdapter):
                 "a valid authorization was accepted and no commit was recorded: the record cannot show an effect")
         cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
         recorded = self._commits_recorded(eid)
+        if cc in (200, 201):
+            # Acceptance already fails the oracle, whatever the record shows.
+            return self._fail("CT-R4-004a", f"commit accepted under the expired authorization {eid} "
+                              f"(commits recorded: {'unreadable' if recorded is None else recorded})")
         if recorded is None:
             return self._inconclusive("CT-R4-004a", "commit record unreadable after the expired attempt")
         if recorded:
             return self._fail("CT-R4-004a",
                 f"a commit is recorded under the expired authorization {eid} (HTTP {cc})")
-        if cc in (200, 201):
-            return self._fail("CT-R4-004a", f"commit accepted under the expired authorization {eid}")
         if cc == 409:
             return self._pass("CT-R4-004a",
                 f"commit refused under the expired authorization (HTTP {cc}: {cr}); no commit recorded for it, "
