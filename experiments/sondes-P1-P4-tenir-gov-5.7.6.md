@@ -1,6 +1,6 @@
 # Sondes P1–P5 sur TENIR-Gov 5.7.6, avec 5.7.0 en contrôle
 
-**Statut : preuve expérimentale historique.** Ce n'est pas un passage du harnais REG, ni une qualification, ni une conformité. Fournisseur simulé, un seul processus, aucun effet externe indépendant vérifié.
+**Statut : preuve expérimentale historique, produite et lue par la même session ; pas un rejeu indépendant.** Ce n'est pas un passage du harnais REG, ni une qualification, ni une conformité. Fournisseur simulé, un seul processus, aucun effet externe indépendant vérifié.
 
 | Élément | Valeur |
 | --- | --- |
@@ -9,9 +9,35 @@
 | Python | 3.13.18, pip 26.2.2, un environnement virtuel isolé par version |
 | Sujet | `skiredj-prog/tenir_governance`, tag `v5.7.6` (`1881c90bb33a0cf1218df5381698c4e3c8dd4df2`) |
 | Contrôle | même dépôt, tag `v5.7.0` (`47ef67e3efc5f3008896a7d88bebf929fa0a98f0`) |
-| Installation | `pip install <checkout du tag>` (non éditable), import vérifié depuis un dossier neutre avec `python -I`. Les paquets publiés sur PyPI n'ont pas été utilisés |
+| Installation | Depuis le checkout de chaque tag, non éditable ; séquence exacte dans « Rejeu ». Les paquets publiés sur PyPI n'ont pas été utilisés |
 | Effets | `MockProvider` : un appel compté = un effet |
 | Registre | en mémoire, un processus |
+
+## Rejeu
+
+Séquence de rejeu, chemins relatifs à un dossier de travail vide. Elle reprend les étapes exécutées ; seuls les chemins diffèrent de ceux de l'exécution d'origine :
+
+```
+git clone https://github.com/skiredj-prog/tenir_governance.git tg
+git -C tg worktree add --detach ../tg-576 v5.7.6
+git -C tg worktree add --detach ../tg-570 v5.7.0
+python3 -m venv venv_576 && venv_576/bin/pip install ./tg-576
+python3 -m venv venv_570 && venv_570/bin/pip install ./tg-570
+mkdir probes && cd probes        # dossier neutre, hors des checkouts ; y copier les trois scripts ci-dessous
+../venv_576/bin/python -I probe_p1_p4_v1_invalide.py
+../venv_570/bin/python -I probe_p1_p4_v1_invalide.py
+../venv_576/bin/python -I probe_p1_p4_v2.py
+../venv_570/bin/python -I probe_p1_p4_v2.py
+../venv_576/bin/python -I probe_p5_materialite.py
+../venv_570/bin/python -I probe_p5_materialite.py
+```
+
+Les scripts sont reproduits plus bas. La docstring de `probe_p1_p4_v2.py` indique encore `python -I probe_p1_p4.py`, son nom au moment de l'exécution : elle est laissée telle quelle pour que l'empreinte publiée reste celle du fichier exécuté.
+
+## Limites du format
+
+- Les blocs de sortie ci-dessous sont la sortie standard des scripts, recopiée sans retouche. Ce ne sont pas les réponses complètes du runtime : `short()` n'en garde que quatre champs et coupe la justification à 110 caractères ; `dispatch()` garde trois champs et coupe le motif de refus à 90 caractères. Ce sont des extraits des réponses observées, pas des journaux complets.
+- P3 : le `Passage` et la charge utile ne décrivent pas la même action (délégation d'un côté, paiement de l'autre). La même fixture est utilisée sur les deux versions, la comparaison 5.7.0 / 5.7.6 reste donc informative. Une sonde corrigée serait une nouvelle sonde, avec ses propres traces.
 
 ## Ce que chaque sonde demande
 
@@ -20,13 +46,13 @@
 | P1a | Avec des entrées idéales et la politique par défaut, un PASS émerge-t-il ? Un FLAG est-il admis ? | pression et vélocité 0, les cinq autres axes à 1 |
 | P1b | Avec des conditions de FLAG déclarées, la répartition exige-t-elle leur acquittement exact ? | idem, `flag_conditions=("ops supervision",)` |
 | P2 | `option_space` absent : admission ou HOLD ? | entrées favorables, `option_space=None` |
-| P3 | Délégation retirée entre l'admission et la répartition : refus ? | délégation alice → bob admise, puis alice ré-enregistrée sans délégué |
+| P3 | Délégation retirée entre l'admission et la répartition : refus ? | délégation alice → bob admise, puis alice ré-enregistrée sans délégué. Le `Passage` porte `action_type="delegation"`, alors que la charge utile passée à l'admission et à la répartition est `{"action_type": "payment"}` (voir « Limites du format ») |
 | P4 | HOLD borné par τ_K = 60 s, résolution 120 s plus tard : refus ? | HOLD obtenu par `option_space=None`, horloge du gouverneur avancée par remplacement de `_utc_now_epoch` |
 | P5 | `irreversibility_materiality` absente : traitée comment, et déclarée non mesurée ? | entrées favorables ; absente, puis 0.0, 0.6 et 1.0 |
 
 ## Premier essai, invalide
 
-La première version du script ne passait pas à la répartition la charge utile autorisée à l'admission. Les répartitions qui auraient dû réussir étaient donc refusées, sur les deux versions ; le motif, vérifié sur P1b avec l'acquittement exact, était « Dispatch payload does not match the payload authorized at adjudication ». Sans aucune répartition réussie, l'essai n'avait pas de témoin positif : il ne distinguait pas un refus du runtime d'un refus causé par le script. Ce script n'affichait pas les motifs. Il a été rejoué à l'identique le jour du dépôt ; sorties :
+La première version du script ne passait pas à la répartition la charge utile autorisée à l'admission. Les répartitions qui auraient dû réussir étaient donc refusées, sur les deux versions ; le motif, vérifié sur P1b avec l'acquittement exact, était « Dispatch payload does not match the payload authorized at adjudication ». Sans aucune répartition réussie, l'essai n'avait pas de témoin positif : il ne distinguait pas un refus du runtime d'un refus causé par le script. Ce script n'affichait pas les motifs. Il a été rejoué à l'identique le jour du dépôt ; extraits de sortie :
 
 ```
 == TENIR-Gov 5.7.6 ==
@@ -67,7 +93,7 @@ P4   HOLD borné par τ_K = 60 s, résolution 120 s plus tard
 
 Correction : `dispatch_and_execute(key, "b", 10.0, metadata=PAYLOAD, ...)`, et affichage du motif de refus. Le témoin positif de P1b (une répartition réussie avec l'acquittement exact) montre que l'essai corrigé distingue un refus d'un succès.
 
-## Essai corrigé, P1 à P4
+## Essai corrigé, P1 à P4 (extraits de sortie)
 
 ```
 == TENIR-Gov 5.7.6 ==
@@ -106,7 +132,7 @@ P4   HOLD borné par τ_K = 60 s, résolution 120 s plus tard
       n/a sur 5.7.0 (CompositionPolicy.__init__() got an unexpected keyword argument 'flag_conditions')
 ```
 
-## P5, matérialité d'irréversibilité
+## P5, matérialité d'irréversibilité (extraits de sortie)
 
 ```
 5.7.6
