@@ -1,0 +1,9 @@
+# tenir-governance 5.7.6 as distributed on PyPI, pinned by archive hash.
+# Source: tag v5.7.6 = commit 1881c90bb33a0cf1218df5381698c4e3c8dd4df2 (skiredj-prog/tenir_governance),
+# published 2026-11-20 22:41 UTC by Trusted Publishing (release.yml, run 44830243402).
+# Hashes from the PyPI JSON API; both archives carry PEP 740 attestations bound to that
+# commit and workflow (verified offline on 2026-11-22; the CI job verifies them online).
+# Install with: pip install --require-hashes --no-deps --only-binary=:all: -r pins/tenir-governance-5.7.6.txt
+tenir-governance==5.7.6 \
+    --hash=sha256:dd1fe76b0d725484bc67a280204cad337dc4997e0e59fc2423a4615ca4d87791 \
+    --hash=sha256:5bddd63cded2cd2e7f4b71399083086a5cc92622d85d4db81a427ea1b4c67a71

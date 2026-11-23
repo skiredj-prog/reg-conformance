@@ -185,6 +185,7 @@ written in the port by whoever can answer for them.
 |---|---|---|
 | `ports/reference.py` | bundled reference kernel, not the TENIR-Gov runtime | 1 |
 | `ports/tenir_gov.py` | installed `tenir-governance`, default governor path, in process | 2 |
+| `ports/tenir_gov_576.py` | installed `tenir-governance` 5.7.6, default governor path, one FLAG condition declared and acknowledged at dispatch (candidate: mapping provisional, pending independent review) | 2 |
 
 `tests/test_harness.py` checks the instrument itself: each effect probe and
 each property check is run against a deliberately faulty test double and must

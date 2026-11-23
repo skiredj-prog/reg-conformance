@@ -1,5 +1,23 @@
 # Changelog
 
+## Non publié — candidat préparé le 23 novembre 2026
+
+Candidat hors de toute révision publiée : rien n'est poussé, fusionné ni étiqueté. Il prépare la condition 1 de levée du HOLD sur la qualification REG de TENIR-Gov 5.7.6 (décision de l'auteur du 22 novembre 2026 : PASS provenance, HOLD REG, sur le commit `1881c90` seulement). La correspondance du port 5.7.6 est provisoire et attend une revue indépendante. Aucun résultat publié ne change. `conformance-target.json` épingle toujours TENIR-Gov 5.7.0 (`47ef67e`), et le tag `v0.7.0` n'est pas touché.
+
+### Added
+
+- `harness/ports/tenir_gov_576.py` : port `TenirGov576Port` sur `tenir-governance` 5.7.6 tel que distribué sur PyPI. C'est le port v0.7.0 (`TenirGovPort`, inchangé, qui reste celui de 5.7.0), plus ce qu'exige le contrat d'appel de 5.7.6 avant qu'un FLAG admette quoi que ce soit. La politique de composition du déploiement sous test déclare une condition de FLAG (`CompositionPolicy.flag_conditions`). Le port rapporte comme `Decision.conditions` les conditions que le runtime recopie sur le résultat : il les lit, il ne les invente pas. Il les acquitte au dispatch (`flag_conditions_met`). La condition est satisfaite par construction dans le harness, car l'exécuteur journal est le seul fournisseur et enregistre chaque appel : c'est une propriété du harness, pas une observation d'un déploiement. Aucune autre fonction de 5.7.6 n'est déclarée (ni τ_K, ni vérificateur d'attestation, ni dérive d'état).
+- `pins/tenir-governance-5.7.6.txt` : la roue et l'archive source de 5.7.6 épinglées par empreinte sha256.
+- `tools/fetch_pypi_distribution.py` : télécharge les archives d'une version épinglée et leur provenance PEP 740 (API d'intégrité de PyPI), refuse toute archive publiée non épinglée et toute empreinte épinglée sans archive. Il ne vérifie rien cryptographiquement ; la vérification est faite ensuite par `pypi-attestations`.
+- `tools/verify_installed_distribution.py` : compare chaque fichier installé (RECORD) au blob du commit nommé ; code de sortie 0 seulement si tous sont identiques.
+- Workflow `TENIR-Gov 5.7.6 conformance run (candidate)` (`tenir-gov-576-conformance.yml`) : installe 5.7.6 depuis PyPI par empreinte (`--require-hashes --no-deps --only-binary=:all:`), vérifie en ligne la provenance PEP 740 des deux archives contre `skiredj-prog/tenir_governance`, vérifie que le tag `v5.7.6` nomme `1881c90` et que les fichiers installés sont ceux de ce commit, puis lance le harness avec `--probes --checks`. Le paquet de preuve et les contrôles du sujet sont publiés en artefacts. Le job échoue sur FAIL (code 1) ou INCONCLUSIVE (code 3) seulement. Un job vert avec le code 2 (INCOMPLETE : lacunes ou ADAPTER_REQUIRED) n'est pas un PASS, et le résumé du job le dit. Aucune exécution CI de ce workflow n'a encore eu lieu.
+- `tests/test_harness_tenir_gov_576.py` : ce que le port 5.7.6 ajoute au port v0.7.0, et ce qu'il donne sur 5.7.6. Les attentes sont celles observées sur la distribution lors de la qualification du 22 novembre 2026 ; elles décrivent ce sujet et ne sont pas une revendication de conformité. Le fichier est ignoré si 5.7.6 n'est pas installé.
+
+### Changed
+
+- `tests/test_harness.py` : `test_tenir_gov_port_on_the_property_checks` ne tourne que si `tenir-governance` 5.7.0 est installé. Ses attentes sont celles de 5.7.0 épinglé ; 5.7.6 a les siennes. Rien ne change pour les jobs qui installent 5.7.0.
+- `harness/README.md` : le port 5.7.6 figure dans la table des ports, comme candidat.
+
 ## v0.7.0 — 2026-11-20
 
 Cohérence REG / REG+ / suite, RN-001 inscrit dans le registre des vecteurs, harness neutre et `CLAIMS.md` en vigueur. Une seule version de chaque chose. Détail et état : `python tools/check_coherence.py`.

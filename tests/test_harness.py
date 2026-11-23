@@ -139,6 +139,14 @@ def _tenir_gov_installed():
         return False
 
 
+def _tenir_gov_version():
+    try:
+        import tenir_governance
+    except ImportError:
+        return None
+    return tenir_governance.__version__
+
+
 @pytest.mark.skipif(not _tenir_gov_installed(), reason="needs a pinned tenir-governance install")
 def test_tenir_gov_port_reports_native_dispositions_unchanged():
     from harness.ports.tenir_gov import TenirGovPort
@@ -157,7 +165,8 @@ def test_tenir_gov_port_reports_native_dispositions_unchanged():
     assert probes["HX-EFFECT-001"] == "PASS" and probes["HX-EFFECT-003"] == "PASS"
 
 
-@pytest.mark.skipif(not _tenir_gov_installed(), reason="needs a pinned tenir-governance install")
+@pytest.mark.skipif(_tenir_gov_version() != "5.7.0",
+                    reason="expectations of the pinned 5.7.0; 5.7.6 has its own (test_harness_tenir_gov_576.py)")
 def test_tenir_gov_port_on_the_property_checks():
     from harness.ports.tenir_gov import TenirGovPort
     got = {r.vector_id: r.status.value for r in PortAdapter(TenirGovPort()).run_checks()}

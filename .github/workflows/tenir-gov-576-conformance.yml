@@ -1,0 +1,154 @@
+name: TENIR-Gov 5.7.6 conformance run (candidate)
+
+# One run = TENIR-Gov 5.7.6 as distributed on PyPI, pinned by archive hash,
+# against this revision of the harness, with the 5.7.6 port (FLAG condition
+# declared). CANDIDATE: the port's mapping is provisional and awaits an
+# independent review (author's decision of 22 November 2026, condition 1 of the
+# HOLD on the REG qualification of 5.7.6).
+#
+# A green run is not a certification and not a PASS. The harness exit code is
+# read on the 61 vectors only: 0 no FAIL, no INCONCLUSIVE, no gap and no
+# ADAPTER_REQUIRED; 2 INCOMPLETE (gaps or ADAPTER_REQUIRED), which is NOT a
+# PASS; 3 INCONCLUSIVE; 1 FAIL. FAIL and INCONCLUSIVE make the job fail.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "harness/**"
+      - "runner.py"
+      - "pins/tenir-governance-5.7.6.txt"
+      - "tests/test_harness.py"
+      - "tests/test_harness_tenir_gov_576.py"
+      - "tools/fetch_pypi_distribution.py"
+      - "tools/verify_installed_distribution.py"
+      - "tools/make_evidence_bundle.py"
+      - ".github/workflows/tenir-gov-576-conformance.yml"
+
+permissions:
+  contents: read
+
+env:
+  SUBJECT_REPOSITORY: https://github.com/skiredj-prog/tenir_governance
+  SUBJECT_TAG: v5.7.6
+  SUBJECT_COMMIT: 1881c90bb33a0cf1218df5381698c4e3c8dd4df2
+  SUBJECT_VERSION: "5.7.6"
+  PINS: pins/tenir-governance-5.7.6.txt
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install harness dependencies
+        run: python -m pip install -r requirements.txt pytest
+
+      - name: Install the subject from PyPI, wheel pinned by hash
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/subject-checks"
+          python -m pip install --require-hashes --no-deps --only-binary=:all: \
+            --report "$RUNNER_TEMP/subject-checks/pip-install-report.json" -r "$PINS"
+          # The subject's only runtime dependency, not part of the subject.
+          python -m pip install "jsonschema>=4.22,<5"
+          python -m pip freeze > "$RUNNER_TEMP/subject-checks/pip-freeze.txt"
+          python -c 'import tenir_governance as t, os; assert t.__version__ == os.environ["SUBJECT_VERSION"], t.__version__'
+
+      - name: Verify PEP 740 provenance of both archives (online)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv "$RUNNER_TEMP/attest"
+          "$RUNNER_TEMP/attest/bin/pip" install -q "pypi-attestations==0.0.31"
+          python -I tools/fetch_pypi_distribution.py "$PINS" "$RUNNER_TEMP/pypi"
+          for f in "$RUNNER_TEMP"/pypi/*.whl "$RUNNER_TEMP"/pypi/*.tar.gz; do
+            "$RUNNER_TEMP/attest/bin/python" -m pypi_attestations verify pypi \
+              --repository "$SUBJECT_REPOSITORY" --provenance-file "$f.provenance.json" "$f"
+          done 2>&1 | tee "$RUNNER_TEMP/subject-checks/pypi-attestations-verify.log"
+          cp "$RUNNER_TEMP/pypi/pypi-files.json" "$RUNNER_TEMP"/pypi/*.provenance.json "$RUNNER_TEMP/subject-checks/"
+
+      - name: Installed files are the commit's, and the tag names that commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q --filter=blob:none --no-checkout "$SUBJECT_REPOSITORY" "$RUNNER_TEMP/subject-src"
+          tagged=$(git -C "$RUNNER_TEMP/subject-src" rev-parse "$SUBJECT_TAG^{commit}")
+          test "$tagged" = "$SUBJECT_COMMIT" || { echo "tag $SUBJECT_TAG is $tagged, not $SUBJECT_COMMIT"; exit 1; }
+          python -I tools/verify_installed_distribution.py tenir-governance "$RUNNER_TEMP/subject-src" \
+            "$SUBJECT_COMMIT" --out "$RUNNER_TEMP/subject-checks/installed-vs-git.json"
+
+      - name: Check the instrument
+        run: python -m pytest -q tests/test_harness.py tests/test_harness_tenir_gov_576.py
+
+      - name: Run
+        id: run
+        shell: bash
+        run: |
+          # The harness exits 2 on gaps and 1 on FAIL: capture the code, decide later.
+          set +e
+          set -uo pipefail
+          out="$RUNNER_TEMP/run"; mkdir -p "$out"
+          args=(--port harness.ports.tenir_gov_576:TenirGov576Port --probes --checks
+                --subject-repository "$SUBJECT_REPOSITORY" --subject-revision "$SUBJECT_COMMIT"
+                --subject-version "$SUBJECT_VERSION" --subject-worktree-state clean)
+          python -m harness "${args[@]}" --output "$out/report.json" 2>&1 | tee "$out/run.log"
+          code=${PIPESTATUS[0]}
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Build the evidence bundle
+        shell: bash
+        run: |
+          python tools/make_evidence_bundle.py --report "$RUNNER_TEMP/run/report.json" \
+            --log "$RUNNER_TEMP/run/run.log" --out "$RUNNER_TEMP/evidence" \
+            --zip "$RUNNER_TEMP/reg-evidence-tenir-gov-5.7.6.zip" | tee "$RUNNER_TEMP/bundle.txt"
+          (cd "$RUNNER_TEMP/subject-checks" && sha256sum * > SHA256SUMS)
+          case "${{ steps.run.outputs.code }}" in
+            0) reading="0: no FAIL, no INCONCLUSIVE, no gap, no ADAPTER_REQUIRED on the vectors (still not a certification)";;
+            2) reading="2: INCOMPLETE (gaps or ADAPTER_REQUIRED). This is NOT a PASS.";;
+            3) reading="3: INCONCLUSIVE results present";;
+            *) reading="${{ steps.run.outputs.code }}: FAIL results present";;
+          esac
+          {
+            echo "### TENIR-Gov 5.7.6 (PyPI, pinned by hash), candidate 5.7.6 port"
+            echo
+            echo "Not a certification. Harness exit code $reading"
+            echo
+            echo "Subject: $SUBJECT_REPOSITORY @ $SUBJECT_COMMIT ($SUBJECT_TAG), installed from PyPI."
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/bundle.txt"
+            echo
+            cat "$RUNNER_TEMP/evidence/SHA256SUMS"
+            echo
+            cat "$RUNNER_TEMP/subject-checks/SHA256SUMS"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reg-evidence-tenir-gov-5.7.6
+          path: ${{ runner.temp }}/evidence/
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: subject-checks-tenir-gov-5.7.6
+          path: ${{ runner.temp }}/subject-checks/
+          if-no-files-found: error
+
+      - name: Fail on FAIL or INCONCLUSIVE only
+        shell: bash
+        run: |
+          case "${{ steps.run.outputs.code }}" in
+            0) echo "code 0: no FAIL, no INCONCLUSIVE, no gap on the vectors";;
+            2) echo "code 2: INCOMPLETE (gaps or ADAPTER_REQUIRED). Green job, NOT a PASS.";;
+            3) echo "INCONCLUSIVE results present"; exit 1;;
+            *) echo "FAIL results present"; exit 1;;
+          esac
