@@ -121,7 +121,15 @@ class PortAdapter(R.BaseAdapter):
                 raise ValueError(f"{vid}: a port may not override a neutral scenario")
             return custom
         if vid in SCENARIOS:
-            return self._run_scenario(vid, SCENARIOS[vid])
+            result = self._run_scenario(vid, SCENARIOS[vid])
+            if (result.status == R.ReportingState.ADAPTER_REQUIRED
+                    and vid in self.port.declared_gaps
+                    and str(result.gap_note or result.details or "").startswith("port does not declare: ")):
+                # The scenario cannot run for want of a capability and the port
+                # declares the gap on that row: the declaration is the more
+                # precise record. Same exit code; the note travels.
+                return self._gap(vid, self.port.declared_gaps[vid])
+            return result
         if vid in self.port.declared_gaps:
             return self._gap(vid, self.port.declared_gaps[vid])
         return self._ar(vid, HARNESS_GAP)

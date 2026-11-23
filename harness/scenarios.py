@@ -748,6 +748,153 @@ def px_confidence_never_upgrades(rt):
     return PASS, "lower confidence never upgraded a restricted attempt: " + "; ".join(seen)
 
 
+# -- vectors without a neutral scenario until 23 November 2026 ---------------
+# Runtime author's decision of 2026-11-23 11:22 UTC (option B): the normative
+# rows of VECTORS.md (DECLARED) that an in-process port can exercise. Each one
+# reads what the port declares or what the runtime records; none tests a
+# proposal the standard does not state.
+
+_CAPABILITY_METHODS = {
+    P.EVALUATE: ("evaluate",), P.COMMIT: ("commit",), P.REVOKE: ("revoke",),
+    P.STATE_DRIFT: ("drift_state",), P.STALE_GRANT: ("stale_grant",),
+    P.RECEIPTS: ("receipt_verifies", "tampered_receipt_verifies"),
+    P.MANIFEST: ("manifest_intact", "tampered_manifest_intact"),
+    P.TENIR_SCORE: ("tenir_score",), P.EFFECTS: ("observed_effects",),
+    P.COMBINE: ("evaluate_combined",), P.CLOCK: ("elapse_past",),
+    P.DEGRADE: ("evaluate_degraded",), P.CONFIDENCE: ("evaluate_at_confidence",),
+    P.THRESHOLDS: ("declared_thresholds",), P.RECORDED_VERIFICATION: ("verify_recorded",),
+    P.UNKNOWN_OUTCOME: ("commit_ambiguous", "reconcile", "state_of"),
+}
+
+
+def r0_003(rt):
+    """CT-R0-003. RFC-0: the declared scope matches the tested behaviour. Read
+    on the port's own declarations: every declared intent gives a disposition
+    (or a refusal the port names), every declared capability is implemented."""
+    unimplemented = [m for cap in sorted(rt.capabilities) for m in _CAPABILITY_METHODS.get(cap, ())
+                     if getattr(type(rt), m, None) is getattr(P.RuntimePort, m, None)]
+    if unimplemented:
+        return FAIL, "declared capabilities without an implementation: " + ", ".join(unimplemented)
+    seen = []
+    for intent in sorted(rt.intents):
+        rt.reset()
+        try:
+            d = rt.evaluate(intent, principal=_principal("scope"), action_type="wire_transfer")
+        except P.Refused as e:
+            seen.append(f"{intent}: refused {e.code}")
+            continue
+        if d.disposition not in P.RESTRICTIVENESS:
+            return FAIL, f"{intent} gave a disposition outside REG's four: {d.disposition}"
+        seen.append(f"{intent}: {d.disposition}")
+    return PASS, (f"{len(rt.capabilities)} declared capabilities implemented; "
+                  f"{len(rt.intents)} declared intents exercised: " + ", ".join(seen))
+
+
+def r2_001(rt):
+    """CT-R2-001. RFC-2: the thresholds are declared and pinned in the policy.
+    The port states what the deployment's policy declares; the check reads that
+    each threshold is a finite number pinned to a named, versioned policy."""
+    thresholds = rt.declared_thresholds()
+    if not thresholds:
+        return INCONCLUSIVE, "the port states no threshold"
+    for name, t in thresholds.items():
+        value, pinned = t.get("value"), t.get("pinned_in")
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value != value \
+                or value in (float("inf"), float("-inf")):
+            return FAIL, f"{name}: not a finite number ({value!r})"
+        if not isinstance(pinned, str) or not pinned.strip():
+            return FAIL, f"{name}: declared but pinned to no policy"
+    return PASS, "declared and pinned: " + ", ".join(
+        f"{n}={t['value']:g} ({t['pinned_in']})" for n, t in sorted(thresholds.items()))
+
+
+def _verification(rt):
+    """CT-R4-009 and CT-R5-002, RFC-4 §4.3 and §5.1: an independent verifier
+    reproduces or verifies the decision from what was recorded. Read on a
+    refusal and on an admission, from the runtime's records only."""
+    notes = []
+    for intent in (P.NO_STANDING, P.ADMISSIBLE):
+        if intent not in rt.intents:
+            continue
+        rt.reset()
+        d = rt.evaluate(intent, principal=_principal("v"), action_type="wire_transfer")
+        v = rt.verify_recorded(d)
+        got = v.get("verified_disposition")
+        if got is None:
+            return FAIL, f"{intent}: the recorded evidence does not let the disposition be verified ({v.get('note')})"
+        if got != d.disposition:
+            return FAIL, f"{intent}: recorded evidence verifies {got}, the runtime answered {d.disposition}"
+        notes.append(f"{intent}: {d.disposition} verified from {v.get('from')}"
+                     + ("" if v.get("reproduced_score") else f"; {v.get('note')}"))
+    if not notes:
+        return INCONCLUSIVE, "no intent to verify"
+    return PASS, "; ".join(notes)
+
+
+r4_009 = _verification
+r5_002 = _verification
+
+
+def r4_010(rt):
+    """CT-R4-010. RFC-4 §1.1, §4.1: a non-atomic external effect needs
+    post-commit evidence; the runtime may not settle the outcome on its own.
+    The executor times out, then has no evidence at reconciliation: the state
+    must stay unresolved, neither confirmed nor failed."""
+    d = rt.evaluate(P.ADMISSIBLE, principal=_principal("na"), action_type="wire_transfer")
+    if not _admitted(d):
+        return INCONCLUSIVE, f"no admission to cross with (disposition={d.disposition})", _admission(d)
+    settled = ("confirmed", "executed", "failed", "succeeded")
+    after = str(rt.commit_ambiguous(d, action_type="wire_transfer")).lower()
+    if any(w in after for w in settled):
+        return FAIL, f"an ambiguous outcome was settled as '{after}' without evidence" + _via(d), _admission(d)
+    later = str(rt.reconcile(d)).lower()
+    if any(w in later for w in settled):
+        return FAIL, f"reconciliation without evidence settled the outcome as '{later}'" + _via(d), _admission(d)
+    return PASS, (f"ambiguous outcome recorded as '{after}', still '{later}' after a reconciliation "
+                  f"that brought no evidence" + _via(d)), _admission(d)
+
+
+def r5_001(rt):
+    """CT-R5-001. RFC-1 §2, RFC-4 §4.1: the evidence manifest of a closed
+    attempt is retrievable."""
+    d = rt.evaluate(P.ADMISSIBLE, principal=_principal("m"), action_type="wire_transfer")
+    if not _admitted(d):
+        return INCONCLUSIVE, f"no admission to close (disposition={d.disposition})", _admission(d)
+    try:
+        rt.commit(d, action_type="wire_transfer")
+    except P.Refused as e:
+        return INCONCLUSIVE, f"the attempt could not be closed ({e.code})", _admission(d)
+    entries = rt.manifest_entries(d)
+    if not entries:
+        return FAIL, "no manifest entry retrievable for the closed attempt", _admission(d)
+    if not all(isinstance(e, dict) and e for e in entries):
+        return FAIL, "manifest entries are not retrievable as records", _admission(d)
+    return PASS, f"{len(entries)} manifest entries retrievable for the closed attempt" + _via(d), _admission(d)
+
+
+def r5_004(rt):
+    """CT-R5-004. RFC-4 §4.2: tamper-evident and append-only; a closed entry
+    is not silently removed. Alteration (CT-R4-008) and deletion, each in a copy."""
+    d = rt.evaluate(P.ADMISSIBLE, principal=_principal("m"), action_type="wire_transfer")
+    rt.evaluate(P.NO_STANDING, principal=_principal("m"), action_type="wire_transfer")
+    if not rt.manifest_intact():
+        return FAIL, "the original manifest does not verify"
+    if rt.tampered_manifest_intact():
+        return FAIL, "an altered entry in a copy was not detected"
+    if rt.deleted_manifest_intact():
+        return FAIL, "a closed entry removed from a copy was not detected: the deletion is silent"
+    return PASS, "alteration and deletion of a closed entry are both detected; the original verifies"
+
+
+def r7_002(rt):
+    """CT-R7-002. RFC-7 §8.2: adapter evidence is not promoted to native
+    conformance evidence. A port is an adapter: its evidence level is capped."""
+    level = int(getattr(rt, "evidence_level", 2))
+    if level >= 3:
+        return FAIL, f"a port claims evidence level {level} (native conformance)"
+    return PASS, f"adapter evidence stays at level {level}; the report says 'port', not native"
+
+
 _E, _C = P.EVALUATE, P.COMMIT
 _A, _I, _N, _H, _D = (frozenset({x}) for x in (P.ADMISSIBLE, P.INADMISSIBLE, P.NO_STANDING,
                                                P.NEEDS_APPROVAL, P.DENIED))
@@ -805,6 +952,31 @@ SCENARIOS = {s.vector_id: s for s in [
             "determinism across processes or versions"),
     _vector("CT-R2-003", {P.TENIR_SCORE}, r2_003, _none, MODEL,
             "denominators near zero other than exactly zero"),
+    # Added 2026-11-23 (runtime author's decision, option B). The property each
+    # one reads is the row's DECLARED text; a PASS is a PASS on what the port
+    # declares and the runtime records, no further.
+    _vector("CT-R0-003", {_E}, r0_003, _none, PRE,
+            "behaviour outside the declared intents and capabilities",
+            "that the declarations match the runtime's documentation: the port states them"),
+    _vector("CT-R2-001", {P.THRESHOLDS}, r2_001, _none, MODEL,
+            "that the thresholds are the ones the decision reads: the port states them",
+            "a signature or hash on the policy file (CT-R0-001, RESERVED)"),
+    _vector("CT-R4-009", {_E, P.RECORDED_VERIFICATION}, r4_009, _N | _A, PROOF,
+            "reproduction of the score from its inputs when the runtime records the score only",
+            "verification by a party outside this process"),
+    _vector("CT-R4-010", {_E, P.UNKNOWN_OUTCOME}, r4_010, _A, EXEC,
+            "what qualified evidence later resolves the outcome to (CT-R4-011/012, RESERVED)",
+            "an executor that answers after the window"),
+    _vector("CT-R5-001", {_E, _C, P.MANIFEST}, r5_001, _A, PROOF,
+            "retrieval by a party outside this process", "the retention period (CT-R5-003, RESERVED)"),
+    _vector("CT-R5-002", {_E, P.RECORDED_VERIFICATION}, r5_002, _N | _A, PROOF,
+            "reproduction of the score from its inputs when the runtime records the score only",
+            "verification by a party outside this process"),
+    _vector("CT-R5-004", {_E, P.MANIFEST}, r5_004, _A | _N, PROOF,
+            "deletion of the last entry (truncation) when the port removes a middle one",
+            "anchoring outside the runtime", "continuity across policy epochs (CT-R5-005, RESERVED)"),
+    _vector("CT-R7-002", {_E}, r7_002, _none, PROOF,
+            "claims made outside this report"),
 ]}
 
 _EF = frozenset({_E, P.EFFECTS})

@@ -61,7 +61,15 @@ class ReferencePort(P.RuntimePort):
     intents = frozenset({P.ADMISSIBLE, P.INADMISSIBLE, P.NO_STANDING, P.DENIED,
                          P.MALFORMED_CREDENTIAL})
     not_applicable = {"C4": "No transport layer in in-process kernel."}
-    declared_gaps = dict(R.EXTENDED_GAP_NOTES)
+    declared_gaps = {
+        **R.EXTENDED_GAP_NOTES,
+        # The legacy adapter's own notes on the two RFC-4 rows that now have a
+        # neutral scenario; the kernel declares neither capability.
+        "CT-R4-009": "The manifest lacks the complete evaluation inputs and policy snapshot "
+                     "needed to reproduce the decision independently.",
+        "CT-R4-010": "The adapter reports the post-commit evidence requirement but does not "
+                     "provide evidence of an external effect.",
+    }
 
     def __init__(self, policy_file=None):
         self._policy = str(policy_file or _ROOT / "kernel" / "tenir_policies.yaml")
@@ -141,6 +149,18 @@ class ReferencePort(P.RuntimePort):
         probe.entries[0]["entry"]["final_disposition"] = "TAMPERED"
         return bool(probe.verify()["integrity_ok"])
 
+    def deleted_manifest_intact(self):
+        probe = copy.deepcopy(self._k._manifest)
+        if len(probe.entries) < 2:
+            return False
+        del probe.entries[len(probe.entries) // 2]
+        return bool(probe.verify()["integrity_ok"])
+
+    def manifest_entries(self, decision):
+        return [dict(item) for item in self._k._manifest.entries
+                if isinstance(item.get("entry"), dict)
+                and item["entry"].get("evaluation_id") == decision.decision_id]
+
     def tenir_score(self, Pv, V, K):
         return self._k._engine.evaluate(Pv, V, K)
 
@@ -149,7 +169,10 @@ class ReferencePort(P.RuntimePort):
         # have no neutral scenario: decision reproduction, external-effect
         # evidence, the T6-T8 laboratory probes, and the RN-001 §3 vectors
         # (CT-R4-014 to CT-R4-016), registered with no probe yet.
-        if vector_id in ("CT-R4-009", "CT-R4-010", "CT-R4-011", "CT-R4-012", "CT-R4-013",
+        # CT-R4-009 and CT-R4-010 have a neutral scenario since the 0.7.1
+        # candidate: the kernel declares the same gaps the legacy adapter
+        # reported, in declared_gaps, and overrides nothing.
+        if vector_id in ("CT-R4-011", "CT-R4-012", "CT-R4-013",
                          "CT-R4-014", "CT-R4-015", "CT-R4-016"):
             result = self._k.run_vector(vector_id)
             result.interface_mode = self.interface_mode

@@ -89,9 +89,16 @@ def test_576_port_on_vectors_probes_and_checks():
     # Three adapters since the runtime author's decision of 23 November 2026 (11:22):
     # revocation at dispatch, state drift at dispatch, tau_k on a held attempt.
     assert {vectors[v] for v in ("C3", "CT-R4-004b", "CT-R4-005")} == {"PASS"}
-    # Primitives the default path does not have stay ADAPTER_REQUIRED (declared gaps,
-    # see the port's docstring): exit code 2, not a PASS.
-    assert {vectors[v] for v in ("CT-R4-004", "CT-R4-004a", "CT-R4-007")} == {"ADAPTER_REQUIRED"}
+    # Primitives the default path does not have: the port declares the gap and the
+    # scenario cannot run, so the declaration is what the report carries
+    # (IMPLEMENTATION_GAP with the port's note): exit code 2, not a PASS.
+    assert {vectors[v] for v in ("CT-R4-004", "CT-R4-004a", "CT-R4-007")} == {"IMPLEMENTATION_GAP"}
+    # Eight neutral scenarios of 23 November 2026 on primitives the runtime has:
+    # declared scope, pinned thresholds, verification from the ledger (hard facet
+    # or S under the thresholds, FLAG-condition rule), UNKNOWN outcome kept open,
+    # manifest retrievable and deletion detected, adapter evidence level.
+    assert {vectors[v] for v in ("CT-R0-003", "CT-R2-001", "CT-R4-009", "CT-R4-010",
+                                 "CT-R5-001", "CT-R5-002", "CT-R5-004", "CT-R7-002")} == {"PASS"}
     assert {vectors[v] for v in ("C4", "CT-R1-003", "CT-R1-005")} == {"NOT_APPLICABLE"}
     probes = {r.vector_id: r.status.value for r in adapter.run_probes()}
     assert set(probes.values()) == {"PASS"}

@@ -136,13 +136,20 @@ _NOT_ADMITTED = ("failed", "hold", "escalated", "created")
 
 
 class _JournalProvider:
-    """The only executor. One journal line per call the runtime makes."""
+    """The only executor. One journal line per call the runtime makes. A key in
+    `ambiguous` times out instead: no journal line (the harness knows no effect
+    happened; the runtime does not), outcome UNKNOWN, and reconciliation has
+    no evidence to give (CT-R4-010)."""
 
     def __init__(self):
         self.journal = []
+        self.ambiguous = set()
 
     def execute(self, idempotency_key, action_type, amount, agent_id, metadata=None):
         from tenir_governance.operations.provider import DispatchResult, ProviderOutcome
+        if idempotency_key in self.ambiguous:
+            return DispatchResult(outcome=ProviderOutcome.UNKNOWN,
+                                  error="simulated timeout: the executor did not answer")
         self.journal.append(idempotency_key)
         return DispatchResult(outcome=ProviderOutcome.CONFIRMED,
                               provider_reference=f"journal-{len(self.journal)}")
@@ -157,7 +164,8 @@ class TenirGovPort(P.RuntimePort):
     interface_mode = "port:tenir-governance"
     evidence_level = 2
     capabilities = frozenset({P.EVALUATE, P.COMMIT, P.NONCE, P.MANIFEST,
-                              P.TENIR_SCORE, P.EFFECTS, P.COMBINE, P.DEGRADE, P.CONFIDENCE})
+                              P.TENIR_SCORE, P.EFFECTS, P.COMBINE, P.DEGRADE, P.CONFIDENCE,
+                              P.THRESHOLDS, P.RECORDED_VERIFICATION, P.UNKNOWN_OUTCOME})
     intents = frozenset(_INPUTS)
     degradations = {P.E_MISSING: tuple(_BEST), P.E_UNKNOWN: tuple(_BEST)}
     # The runtime's declared domain for every measure it scores: a value is
@@ -276,6 +284,118 @@ class TenirGovPort(P.RuntimePort):
         probe = copy.deepcopy(self._gov.ledger)
         probe.entries[0].decision = "TAMPERED"
         return bool(probe.verify_chain())
+
+    def deleted_manifest_intact(self):
+        probe = copy.deepcopy(self._gov.ledger)
+        if len(probe.entries) < 2:
+            return False
+        del probe.entries[len(probe.entries) // 2]
+        return bool(probe.verify_chain())
+
+    def manifest_entries(self, decision):
+        return [{"kernel": e.kernel, "decision": e.decision, "rationale": e.rationale,
+                 "composed_decision": e.composed_decision, "timestamp": e.timestamp,
+                 "chain_hash": e.chain_hash, "previous_hash": e.previous_hash}
+                for e in self._gov.ledger.find_by_idempotency_key(decision.decision_id)]
+
+    def declared_thresholds(self):
+        """The thresholds the deployment under test declares, read from its two
+        policies: the kernel policy (S thresholds) and the composition policy
+        (budget escalation). Stated, not invented."""
+        kp = self._scoring._kernel.policy
+        cp = self._gov.policy
+        kernel = f"tenir_kernel KernelPolicy {kp.version}"
+        composition = f"tenir_governance CompositionPolicy {cp.version}"
+        return {
+            "S_hard_veto_below": {"value": float(kp.hard_veto_below), "pinned_in": kernel},
+            "S_flag_below": {"value": float(kp.flag_below), "pinned_in": kernel},
+            "epsilon": {"value": float(kp.epsilon), "pinned_in": kernel},
+            "budget_escalation_threshold": {"value": float(cp.budget_escalation_threshold),
+                                            "pinned_in": composition},
+        }
+
+    def verify_recorded(self, decision):
+        """From the runtime's ledger only: the composed entry of the decision
+        records the scoring kernel's decision and the membrane kernel's
+        decision; the runtime's own `compose` recomputes the composed
+        disposition from them (no budget in scope for the intents verified).
+        The score S is recorded, its inputs P, V, K are not. A veto recorded
+        with a violated hard facet of the constraint geometry is verified from
+        that facet's recorded margin; otherwise S is checked against the
+        pinned thresholds. S is not reproduced from inputs."""
+        from tenir_governance.composition.lattice import compose
+        entries = [e for e in self._gov.ledger.find_by_idempotency_key(decision.decision_id)
+                   if e.kernel == "composed" and e.composed_decision]
+        if not entries:
+            return {"verified_disposition": None, "reproduced_score": False, "from": "ledger",
+                    "note": "no composed entry recorded for this decision"}
+        e = entries[-1]
+        sr, mr = e.scoring_result or {}, e.membrane_result or {}
+        if not sr.get("decision") or not mr.get("decision"):
+            return {"verified_disposition": None, "reproduced_score": False, "from": "ledger",
+                    "note": "the composed entry records no kernel decisions"}
+        recomposed = compose(sr["decision"], mr["decision"], policy=self._gov.policy)[0]
+        what = "the recorded kernel decisions recomposed by the runtime's compose()"
+        rule = getattr(self._gov, "_apply_flag_condition_rule", None)
+        if rule is not None:  # 5.7.6+: a FLAG without a declared condition is held
+            recomposed = rule(recomposed, "")[0]
+            what += " and its FLAG-condition rule"
+        note = "S is recorded, not its inputs P, V, K: the score is not reproduced"
+        s_score = sr.get("s_score")
+        kp = self._scoring._kernel.policy
+        geometry = sr.get("constraint_geometry") or {}
+        hard = [f for f in geometry.get("hard_violations") or []
+                if isinstance(f.get("signed_margin"), (int, float)) and f["signed_margin"] < 0]
+        soft = [f for f in geometry.get("soft_violations") or []
+                if isinstance(f.get("signed_margin"), (int, float)) and f["signed_margin"] < 0]
+        if hard:
+            # The recorded geometry explains the veto on its own: a hard facet
+            # with a negative recorded margin. S does not decide here.
+            if sr["decision"] != "HARD_VETO":
+                return {"verified_disposition": None, "reproduced_score": False, "from": what,
+                        "note": f"a hard facet is recorded violated ({hard[0].get('facet_id')}), "
+                                f"the recorded scoring decision is {sr['decision']}"}
+            what += f"; recorded hard facet {hard[0].get('facet_id')} (margin {hard[0]['signed_margin']:g})"
+        elif isinstance(s_score, (int, float)) and not sr.get("insufficient_evidence"):
+            from_s = "HARD_VETO" if s_score < kp.hard_veto_below else \
+                "FLAG" if s_score < kp.flag_below else "PASS"
+            unmeasured = list(sr.get("declared_unmeasured") or []) + list(sr.get("unmeasured_axes") or [])
+            if not unmeasured:  # 5.7.0 records the unmeasured axes in the rationale only
+                import re
+                unmeasured = re.findall(r"unmeasured axis: (\w+)", str(sr.get("rationale", "")))
+            if (soft or unmeasured) and from_s == "PASS":
+                # No favorable default for an unmeasured axis, and a violated
+                # soft facet flags: both are recorded with the entry.
+                from_s = "FLAG"
+            if from_s != sr["decision"]:
+                return {"verified_disposition": None, "reproduced_score": False, "from": what,
+                        "note": f"recorded S={s_score:g} gives {from_s} under the pinned thresholds"
+                                + (f" with a recorded soft facet {soft[0].get('facet_id')}" if soft else "")
+                                + (f" with recorded unmeasured axes {unmeasured}" if unmeasured else "")
+                                + f", the recorded scoring decision is {sr['decision']}"}
+            what += f"; recorded S={s_score:g} checked against the pinned thresholds" \
+                + (f" with {len(unmeasured)} recorded unmeasured axes" if unmeasured else "")
+        return {"verified_disposition": recomposed if recomposed == e.composed_decision else None,
+                "reproduced_score": False, "from": what,
+                "note": note if recomposed == e.composed_decision else
+                f"recomposition gives {recomposed}, the entry records {e.composed_decision}"}
+
+    def commit_ambiguous(self, decision, *, action_type=None):
+        self._provider.ambiguous.add(decision.decision_id)
+        amount = decision.raw.get("amount")
+        args = (_BUDGET, amount) if amount else ()
+        result = self._gov.dispatch_and_execute(
+            decision.decision_id, *args,
+            payload={"action_type": action_type or decision.action_type})
+        return str(result.get("operation_state") or "")
+
+    def reconcile(self, decision):
+        self._gov.reconcile_unknown(decision.decision_id)
+        return self.state_of(decision)
+
+    def state_of(self, decision):
+        record = self._gov.registry.get(decision.decision_id)
+        return record.state.value if record is not None else "unknown-to-registry"
 
     def tenir_score(self, Pv, V, K):
         best = {k: v for k, v in _BEST.items() if k not in ("pressure", "velocity", "capacity")}

@@ -28,7 +28,16 @@ def test_reference_port_matches_legacy_native_mode_on_every_vector():
     legacy = {r.vector_id: r.status for r in R.NativeKernelAdapter(KERNEL).run_all()}
     ported = {r.vector_id: r.status for r in PortAdapter(ReferencePort()).run_all()}
     assert len(legacy) == 61
-    assert ported == legacy
+    # The legacy native mode never ran the rows that got a neutral scenario on
+    # 23 November 2026 (CT-R0-003, CT-R5-001, CT-R5-004, CT-R7-002): it declared
+    # them gaps. The port runs them; everywhere else the two agree.
+    executed_now = {v for v, s in legacy.items()
+                    if v in SCENARIOS and s == R.ReportingState.IMPLEMENTATION_GAP
+                    and ported[v] != R.ReportingState.IMPLEMENTATION_GAP}
+    assert executed_now == {"CT-R0-003", "CT-R5-001", "CT-R5-004", "CT-R7-002"}
+    assert all(ported[v] == R.ReportingState.PASS for v in executed_now)
+    assert {v: s for v, s in ported.items() if v not in executed_now} == \
+        {v: s for v, s in legacy.items() if v not in executed_now}
 
 
 def test_empty_port_passes_nothing():
@@ -334,7 +343,10 @@ def test_every_indexed_check_and_every_probe_has_exactly_one_family():
 def test_property_view_counts_probes_and_leaves_the_vector_tally_alone():
     adapter, results, _, view = _view(_Fixture())
     summary = R.generate_report(adapter, results)["summary"]
-    assert summary["PASS"] == 0 and summary["ADAPTER_REQUIRED"] == 61
+    # The fixture declares a scope that matches what it does (CT-R0-003) and
+    # claims no native evidence level (CT-R7-002): two passes, nothing else.
+    assert {r.vector_id for r in results if r.status == R.ReportingState.PASS} == {"CT-R0-003", "CT-R7-002"}
+    assert summary["PASS"] == 2 and summary["ADAPTER_REQUIRED"] == 59
     assert view["families"]["EGP-06"]["PASS"] == 2 and view["families"]["EGP-12"]["PASS"] == 2
     assert view["summary"] == {"families": 14, "has_pass": 2, "has_fail": 0,
                                "inconclusive": 0, "not_exercised": 12}
@@ -364,7 +376,7 @@ def test_bundle_verdict_carries_the_property_summary_and_never_certifies():
     report["property_view"] = view
     verdict = B.build_verdict(json.loads(json.dumps(report, default=str)))
     assert verdict["certifying"] is False
-    assert verdict["reg_vectors"]["summary"]["PASS"] == 0
+    assert verdict["reg_vectors"]["summary"]["PASS"] == 2        # CT-R0-003, CT-R7-002
     assert verdict["property_view"]["summary"]["has_pass"] == 2
     assert verdict["property_view"]["status"] == "candidate"
 
@@ -877,7 +889,9 @@ def test_reference_kernel_on_the_property_checks():
     # A failing check marks the family, whatever else passes in it.
     assert view["families"]["EGP-01"]["PASS"] == 1
     assert view["families"]["EGP-01"]["state"] == "has_fail"
-    assert (view["index"]["PASS"], view["index"]["FAIL"]) == (19, 1)
+    # 19 before 23 November 2026; CT-R0-003, CT-R5-001, CT-R5-004 and CT-R7-002
+    # got a neutral scenario the reference kernel passes.
+    assert (view["index"]["PASS"], view["index"]["FAIL"]) == (23, 1)
 
 
 def test_bundle_verdict_lists_property_checks_apart_from_the_vectors():

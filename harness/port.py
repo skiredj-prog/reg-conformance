@@ -27,11 +27,14 @@ COMBINE = "combine"              # one attempt that meets several conditions at 
 CLOCK = "clock"                  # let a declared bound pass for the runtime
 DEGRADE = "degrade"              # submit the admissible attempt with one measurement degraded
 CONFIDENCE = "confidence"        # submit an attempt at several levels of confidence in its evidence
+THRESHOLDS = "thresholds"        # the deployment's decision thresholds, declared and pinned
+RECORDED_VERIFICATION = "recorded_verification"  # verify a disposition from what the runtime recorded
+UNKNOWN_OUTCOME = "unknown_outcome"  # a crossing whose external outcome is ambiguous (timeout)
 
 ALL_CAPABILITIES = frozenset({
     EVALUATE, COMMIT, REVOKE, STATE_DRIFT, STALE_GRANT, NONCE,
     RECEIPTS, MANIFEST, TENIR_SCORE, EFFECTS, COMBINE, CLOCK, DEGRADE, CONFIDENCE,
-})
+    THRESHOLDS, RECORDED_VERIFICATION, UNKNOWN_OUTCOME})
 
 # Intents the harness asks for. The port maps each one to its own inputs.
 ADMISSIBLE = "admissible"            # standing valid, structure comfortably inside bounds
@@ -254,6 +257,43 @@ class RuntimePort:
         raise NotImplementedError
 
     def manifest_intact(self) -> bool:
+        raise NotImplementedError
+
+    def deleted_manifest_intact(self) -> bool:
+        """In a copy of the manifest, one closed entry is removed: True when the
+        copy still verifies (a silent deletion), False when it is detected."""
+        raise NotImplementedError
+
+    def manifest_entries(self, decision: Decision) -> list:
+        """The manifest entries that record this decision, as the runtime keeps
+        them, each one a dict. Empty when nothing was recorded."""
+        raise NotImplementedError
+
+    def declared_thresholds(self) -> dict:
+        """threshold name -> {"value": number, "pinned_in": "<policy, version>"}:
+        the decision thresholds the deployment under test declares, read from its
+        policy, never invented."""
+        raise NotImplementedError
+
+    def verify_recorded(self, decision: Decision) -> dict:
+        """Verify the decision from what the runtime recorded, with the
+        runtime's own transformations and nothing the port remembers:
+        {"verified_disposition": str | None, "reproduced_score": bool,
+         "from": "<what was read>", "note": "<what could not be done>"}."""
+        raise NotImplementedError
+
+    def commit_ambiguous(self, decision: Decision, *, action_type: Optional[str] = None) -> str:
+        """Cross the boundary while the external outcome stays ambiguous (the
+        executor times out). Returns the state the runtime records."""
+        raise NotImplementedError
+
+    def reconcile(self, decision: Decision) -> str:
+        """Ask the runtime to reconcile the decision's outcome with the
+        executor, which has no evidence to give. Returns the state after."""
+        raise NotImplementedError
+
+    def state_of(self, decision: Decision) -> str:
+        """The runtime's current state for the decision, in its own words."""
         raise NotImplementedError
 
     def tampered_manifest_intact(self) -> bool:
