@@ -99,3 +99,42 @@ def test_576_port_on_vectors_probes_and_checks():
     on_flag = {c: f for c, f in adapter.facts.items() if f.get("admitted_on") == "FLAG"}
     assert on_flag and all(f.get("flag_conditions") for f in on_flag.values())
     assert not any(f.get("implementation_gap") for f in adapter.facts.values())
+
+
+@needs_576
+def test_576_flag_without_acknowledgement_is_not_dispatched():
+    """The acknowledgement is what lets a FLAG through on 5.7.6. Without it the
+    shipped governor refuses the dispatch, the refusal falls outside the v0.7.0
+    mapping (`NATIVE:`, no neutral vector satisfied) and nothing is executed; the
+    operation stays reserved and dispatches once acknowledged."""
+    from harness.ports.tenir_gov_576 import TenirGov576Port
+    port = TenirGov576Port()
+    d = port.evaluate(P.ADMISSIBLE, principal="a", action_type="wire_transfer")
+    wrapper, port._gov = port._gov, port._gov._governor
+    with pytest.raises(P.Refused) as e:
+        port.commit(d, action_type="wire_transfer")
+    assert e.value.code == "NATIVE:reserved"
+    assert port.observed_effects(d) == 0
+    port._gov = wrapper
+    assert port.commit(d, action_type="wire_transfer").raw.get("dispatched") is True
+    assert port.observed_effects(d) == 1
+
+
+@needs_576
+def test_576_acknowledgement_is_recorded_even_when_the_dispatch_is_refused():
+    """Observed on 5.7.6, for the review of the mapping: the port acknowledges on
+    every commit, and the runtime persists and ledgers the acknowledgement before
+    the payload binding check. An acknowledgement in the ledger therefore does not
+    mean a dispatch. This describes the subject; it is not a defect claim."""
+    from harness.ports.tenir_gov_576 import TenirGov576Port
+    port = TenirGov576Port()
+    d = port.evaluate(P.ADMISSIBLE, principal="a", action_type="wire_transfer")
+    with pytest.raises(P.Refused) as e:
+        port.commit(d, action_type="other_action")
+    assert e.value.code == P.R_BINDING
+    record = port._gov.registry.get(d.decision_id)
+    assert record.state.value == "reserved" and record.flag_conditions_met
+    acknowledged = [x for x in port._gov.ledger.entries if x.idempotency_key == d.decision_id
+                    and "acknowledged at dispatch" in (x.rationale or "")]
+    assert len(acknowledged) == 1
+    assert port.observed_effects(d) == 0
