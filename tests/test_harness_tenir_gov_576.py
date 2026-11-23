@@ -86,8 +86,13 @@ def test_576_port_on_vectors_probes_and_checks():
     assert len(vectors) == 61
     assert "FAIL" not in vectors.values() and "INCONCLUSIVE" not in vectors.values()
     assert vectors["CT-R4-001"] == vectors["CT-R4-002"] == "PASS"
-    # Capabilities the port does not declare stay ADAPTER_REQUIRED: exit code 2, not a PASS.
-    assert {vectors[v] for v in ("C3", "CT-R4-004", "CT-R4-005", "CT-R4-007")} == {"ADAPTER_REQUIRED"}
+    # Three adapters since the runtime author's decision of 23 November 2026 (11:22):
+    # revocation at dispatch, state drift at dispatch, tau_k on a held attempt.
+    assert {vectors[v] for v in ("C3", "CT-R4-004b", "CT-R4-005")} == {"PASS"}
+    # Primitives the default path does not have stay ADAPTER_REQUIRED (declared gaps,
+    # see the port's docstring): exit code 2, not a PASS.
+    assert {vectors[v] for v in ("CT-R4-004", "CT-R4-004a", "CT-R4-007")} == {"ADAPTER_REQUIRED"}
+    assert {vectors[v] for v in ("C4", "CT-R1-003", "CT-R1-005")} == {"NOT_APPLICABLE"}
     probes = {r.vector_id: r.status.value for r in adapter.run_probes()}
     assert set(probes.values()) == {"PASS"}
     results = {r.vector_id: r for r in adapter.run_checks()}
@@ -99,7 +104,13 @@ def test_576_port_on_vectors_probes_and_checks():
     assert checks["PX-REG-STATE-025"] == "INCONCLUSIVE"
     assert "closed by a disposition" in results["PX-REG-STATE-025"].details
     assert "capacity=1.5 (HOLD)" in results["PX-REG-STATE-025"].details
-    assert {k for k, v in checks.items() if v == "INCONCLUSIVE"} == {"PX-REG-STATE-025"}
+    # Revocation on this runtime acts at dispatch only (mandate re-validation); a new
+    # request from the revoked principal is still adjudicated on its measured
+    # authority, so the isolation check (RESERVED row) has nothing to isolate.
+    assert checks["PX-CT-R3-003"] == "INCONCLUSIVE"
+    assert {k for k, v in checks.items() if v == "INCONCLUSIVE"} == {"PX-REG-STATE-025", "PX-CT-R3-003"}
+    assert checks["PX-REG-STATE-024"] == "PASS"
+    assert checks["PX-CT-R3-002"] == "ADAPTER_REQUIRED"   # no revocation bound declared
     # Missing evidence: 5.7.6 holds seven missing measurements and admits on the
     # eighth, `irreversibility_materiality`, which it defaults to 0.0. The port
     # declares that measurement since the runtime author's decision C of 23
@@ -215,3 +226,56 @@ def test_port_declares_irreversibility_materiality_per_intent():
     for intent, (overrides, _) in _INPUTS.items():
         measured = {**_BEST, **overrides}
         assert measured["irreversibility_materiality"] - measured["authority"] <= 0.25, intent
+
+
+@needs_576
+def test_576_port_revocation_after_verdict_is_refused_at_commit():
+    from harness.ports.tenir_gov_576 import TenirGov576Port
+    port = TenirGov576Port()
+    d = port.evaluate(P.ADMISSIBLE, principal="r", action_type="wire_transfer")
+    assert d.disposition == "FLAG"
+    port.revoke("r")
+    with pytest.raises(P.Refused) as e:
+        port.commit(d, action_type="wire_transfer")
+    assert e.value.code == P.R_STANDING_REVOKED and e.value.disposition == "HARD_VETO"
+    assert port.observed_effects(d) == 0
+    assert port._inner.registry.get(d.decision_id).state.value == "failed"
+    # Standing is a measured score on this runtime: a new request from the revoked
+    # principal is adjudicated on its measured authority (declared partial gap).
+    again = port.evaluate(P.ADMISSIBLE, principal="r", action_type="wire_transfer")
+    assert again.disposition == "FLAG"
+
+
+@needs_576
+def test_576_port_state_drift_is_refused_at_commit():
+    from harness.ports.tenir_gov_576 import TenirGov576Port
+    port = TenirGov576Port()
+    d = port.evaluate(P.ADMISSIBLE, principal="a", action_type="wire_transfer")
+    change = port.drift_state()
+    assert "composition policy version" in change
+    with pytest.raises(P.Refused) as e:
+        port.commit(d, action_type="wire_transfer")
+    assert e.value.code == P.R_STATE_DRIFT and e.value.disposition == "HARD_VETO"
+    assert port.observed_effects(d) == 0
+
+
+@needs_576
+def test_576_port_tau_k_is_a_declared_fixture_and_expiry_is_terminal():
+    from harness.ports.tenir_gov_576 import TAU_K, TAU_K_SOURCE, TenirGov576Port
+    assert "fixture" in TAU_K_SOURCE and "not derived from an SLA" in TAU_K_SOURCE
+    port = TenirGov576Port()
+    assert port.bounds == {P.B_TAU_K: TAU_K} and port.clock_mode == "simulated"
+    assert port.exhaustion_policy == "fail-closed"
+    held = port.evaluate(P.NEEDS_APPROVAL, principal="h", action_type="wire_transfer")
+    assert held.disposition == "HOLD"
+    # Before the bound: the hold is open and cannot be committed, not terminal.
+    with pytest.raises(P.Refused) as e:
+        port.commit(held, action_type="wire_transfer")
+    assert e.value.code == P.R_INVALID_DISPOSITION
+    assert port.elapse_past(P.B_TAU_K) > TAU_K
+    record = port._inner.registry.get(held.decision_id)
+    assert record.state.value == "failed" and record.hold_record.exit_reason == "expired"
+    with pytest.raises(P.Refused) as e:
+        port.commit(held, action_type="wire_transfer")
+    assert e.value.code == P.R_EXPIRED and e.value.disposition == "HARD_VETO"
+    assert port.observed_effects(held) == 0
