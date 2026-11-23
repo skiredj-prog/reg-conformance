@@ -43,7 +43,11 @@ def test_reference_port_matches_legacy_native_mode_on_every_vector():
 def test_empty_port_passes_nothing():
     adapter = PortAdapter(TemplatePort())
     results = adapter.run_all() + adapter.run_probes() + adapter.run_checks()
-    assert {r.status for r in results} == {R.ReportingState.ADAPTER_REQUIRED}
+    # Nothing passes. The rows no ratified text specifies are NOT_SPECIFIED on
+    # every subject (rule of 23 November 2026); everything else needs the port.
+    assert {r.status for r in results} == {R.ReportingState.ADAPTER_REQUIRED,
+                                           R.ReportingState.NOT_SPECIFIED}
+    assert not any(r.status == R.ReportingState.NOT_SPECIFIED for r in adapter.run_probes() + adapter.run_checks())
 
 
 def test_port_cannot_claim_native_conformance():
@@ -181,12 +185,15 @@ def test_tenir_gov_port_on_the_property_checks():
     got = {r.vector_id: r.status.value for r in PortAdapter(TenirGovPort()).run_checks()}
     # On 5.7.0 these go forward on a FLAG with no condition: PASS with the reserve.
     assert got["PX-CT-R0-005"] == got["PX-REG-STATE-014"] == got["PX-VEC-6-02"] == "PASS"
-    # The default path has no credential to malform and no revocation primitive.
-    assert got["PX-CT-R3-001"] == got["PX-CT-R3-003"] == "ADAPTER_REQUIRED"
+    # The default path has no credential to malform: declared outside the perimeter
+    # since 23 November 2026 (option A); and no revocation primitive.
+    assert got["PX-CT-R3-001"] == "NOT_IN_PERIMETER" and got["PX-CT-R3-003"] == "ADAPTER_REQUIRED"
     # Decision 1: scope is declared outside the runtime's perimeter, neither PASS nor FAIL.
     assert got["PX-CT-R3-007"] == "NOT_IN_PERIMETER"
-    # The default path declares no bound: a HOLD it enters carries no tau_k.
-    assert {got[c] for c in _AT_A_BOUND} == {"ADAPTER_REQUIRED"}
+    # The default path declares no bound: a HOLD it enters carries no tau_k. The
+    # credential-expiry check follows its row outside the perimeter (option A).
+    assert {got[c] for c in _AT_A_BOUND if c != "PX-CT-R3-006"} == {"ADAPTER_REQUIRED"}
+    assert got["PX-CT-R3-006"] == "NOT_IN_PERIMETER"
     # Unreadable evidence is held, and lower confidence widens nothing.
     assert got["PX-REG-STATE-001"] == got["PX-REG-STATE-013"] == got["PX-REG-STATE-015"] == "PASS"
     # Missing evidence: the check runs on every input; its outcome belongs to the version.
@@ -346,7 +353,8 @@ def test_property_view_counts_probes_and_leaves_the_vector_tally_alone():
     # The fixture declares a scope that matches what it does (CT-R0-003) and
     # claims no native evidence level (CT-R7-002): two passes, nothing else.
     assert {r.vector_id for r in results if r.status == R.ReportingState.PASS} == {"CT-R0-003", "CT-R7-002"}
-    assert summary["PASS"] == 2 and summary["ADAPTER_REQUIRED"] == 59
+    # 61 rows: 2 PASS, 28 NOT_SPECIFIED (25 RESERVED, 3 superseded), 31 ADAPTER_REQUIRED.
+    assert summary["PASS"] == 2 and summary["ADAPTER_REQUIRED"] == 31 and summary["NOT_SPECIFIED"] == 28
     assert view["families"]["EGP-06"]["PASS"] == 2 and view["families"]["EGP-12"]["PASS"] == 2
     assert view["summary"] == {"families": 14, "has_pass": 2, "has_fail": 0,
                                "inconclusive": 0, "not_exercised": 12}
@@ -952,3 +960,131 @@ def test_report_states_flag_conditions_are_port_declared_and_what_an_ack_proves(
     assert verdict["admission"]["flag_conditions_provenance"] == adm["flag_conditions_provenance"]
     assert verdict["admission"]["what_an_acknowledgement_establishes"] == ack
     assert code in (0, 2, 3)
+
+
+# -- rule of 23 November 2026: rows no port can adapt -------------------------
+# Standard author's decision (15:07 UTC, option A): a row no ratified text
+# specifies, a row the implementer declares outside the perimeter with a signed
+# reason, and a row a passing property check exercised are listed, with their
+# reason, and stay out of the exit code. The rule is dated; it reinterprets no
+# earlier report. The two missing primitives stay IMPLEMENTATION_GAP until 5.8.0.
+
+from harness.adapter import HARNESS_GAP, OUT_OF_EXIT_CODE, SUPERSEDED, reserved_rows
+
+
+def test_reserved_and_superseded_rows_are_not_specified_on_every_subject():
+    got = {r.vector_id: r for r in PortAdapter(TemplatePort()).run_all()}
+    reserved = set(reserved_rows()) & set(R.VECTORS)
+    assert len(reserved) == 25 and len(SUPERSEDED) == 3 and not reserved & set(SUPERSEDED)
+    assert {got[v].status.value for v in reserved | set(SUPERSEDED)} == {"NOT_SPECIFIED"}
+    assert all("RESERVED in VECTORS.md" in got[v].gap_note and "nothing to test" in got[v].gap_note
+               for v in reserved)
+    for v, successor in SUPERSEDED.items():
+        assert f"superseded by {successor}" in got[v].gap_note and "RFC-4 v0.3" in got[v].gap_note
+    # A row the RFCs specify and no scenario covers keeps the harness gap, counted.
+    assert got["CT-R3-001"].status.value == "ADAPTER_REQUIRED" and got["CT-R3-001"].gap_note == HARNESS_GAP
+    # A reserved row with a neutral scenario is run, not set aside (none today).
+    assert not (reserved | set(SUPERSEDED)) & set(SCENARIOS)
+
+
+def test_a_port_may_declare_a_registered_row_outside_its_perimeter():
+    decl = {"declared_by": "the author of the runtime (test fixture)", "reason": "no credential object"}
+
+    class F(TemplatePort):
+        not_in_perimeter = {"CT-R3-001": decl}
+    adapter = PortAdapter(F())
+    got = {r.vector_id: r for r in adapter.run_all()}
+    assert got["CT-R3-001"].status.value == "NOT_IN_PERIMETER"
+    assert got["CT-R3-001"].gap_note.startswith("not_in_perimeter on CT-R3-001, declared by the author")
+    # The check that exercises the same row carries the same declaration.
+    checks = {r.vector_id: r.status.value for r in adapter.run_checks()}
+    assert checks["PX-CT-R3-001"] == "NOT_IN_PERIMETER"
+
+    class Neutral(TemplatePort):
+        not_in_perimeter = {"CT-R0-003": decl}
+    with pytest.raises(ValueError, match="neutral scenario"):
+        PortAdapter(Neutral()).run_all()
+
+    class Unsigned(TemplatePort):
+        not_in_perimeter = {"CT-R3-001": {"declared_by": "x", "reason": " "}}
+    with pytest.raises(ValueError, match="not_in_perimeter"):
+        PortAdapter(Unsigned()).run_all()
+
+
+def _folded(status, details="d"):
+    port = TemplatePort()
+    adapter = PortAdapter(port)
+    results = adapter.run_all()
+    check = R.ConformanceResult("PX-CT-R0-005", R.ReportingState(status), port.interface_mode, 2, details=details)
+    return {r.vector_id: r for r in PortAdapter.fold_checks(results, [check])}, {r.vector_id: r for r in results}
+
+
+def test_a_row_exercised_by_a_passing_check_is_reported_by_it():
+    folded, before = _folded("PASS", "the more restrictive disposition governed")
+    assert before["CT-R0-005"].status.value == "ADAPTER_REQUIRED"
+    r = folded["CT-R0-005"]
+    assert r.status.value == "EXERCISED_BY_CHECK"
+    assert r.details.startswith("exercised by PX-CT-R0-005 PASS: the more restrictive")
+    # Every other row is the same object, untouched.
+    assert all(folded[v] is before[v] for v in before if v != "CT-R0-005")
+
+
+def test_a_row_whose_check_fails_fails_and_an_unrun_check_leaves_the_gap():
+    folded, _ = _folded("FAIL", "a weaker disposition governed")
+    assert folded["CT-R0-005"].status.value == "FAIL"
+    assert "PX-CT-R0-005 FAIL" in folded["CT-R0-005"].details
+    folded, _ = _folded("ADAPTER_REQUIRED")
+    r = folded["CT-R0-005"]
+    assert r.status.value == "ADAPTER_REQUIRED" and r.gap_note.startswith(HARNESS_GAP)
+    assert "PX-CT-R0-005 ADAPTER_REQUIRED" in r.gap_note
+
+
+def test_fold_touches_only_a_harness_gap():
+    # A declared gap, a pass, a not-applicable row: the check does not replace them.
+    port = ReferencePort()
+    adapter = PortAdapter(port)
+    results = adapter.run_all()
+    check = R.ConformanceResult("PX-CT-R0-005", R.ReportingState.PASS, port.interface_mode, 2, details="x")
+    folded = {r.vector_id: r for r in PortAdapter.fold_checks(results, [check])}
+    before = {r.vector_id: r for r in results}
+    assert before["CT-R0-005"].status.value == "IMPLEMENTATION_GAP"     # the reference kernel declares it
+    assert all(folded[v] is before[v] for v in before)
+
+
+def test_the_exit_code_counts_only_what_can_be_tested(tmp_path):
+    """The rows out of the exit code are listed in the report, each with its
+    reason; the code and conformance_status count FAIL, INCONCLUSIVE,
+    IMPLEMENTATION_GAP and ADAPTER_REQUIRED, as before."""
+    from harness.__main__ import main
+    out = tmp_path / "report.json"
+    code = main(["--port", "harness.ports.template:TemplatePort", "--checks", "--output", str(out)])
+    report = json.loads(out.read_text())
+    rule = report["exit_code_rule"]
+    assert rule["date"] == "2026-11-23" and rule["statuses_out_of_exit_code"] == list(OUT_OF_EXIT_CODE)
+    rows = rule["rows_out_of_exit_code"]
+    assert len(rows) == 28 and {v["status"] for v in rows.values()} == {"NOT_SPECIFIED"}
+    assert all(v["reason"] for v in rows.values())
+    # An empty port still has 33 rows it cannot run: code 2, INCOMPLETE, nothing hidden.
+    assert code == 2 and report["conformance_status"] == "INCOMPLETE"
+    assert report["summary"]["ADAPTER_REQUIRED"] == 33 and rule["counted_in_exit_code"]["ADAPTER_REQUIRED"] == 33
+    # The row set is whole: every registered vector is in the results.
+    assert {r["vector_id"] for r in report["results"]} == set(R.VECTORS)
+
+
+def test_exit_code_zero_needs_every_counted_row_passed():
+    """Fixture, not a runtime: a port whose every counted row passes. The rule
+    gives 0 only then; a single gap on a specified row gives 2."""
+    from harness.__main__ import main
+    results_all = {r.vector_id: r for r in PortAdapter(TemplatePort()).run_all()}
+    counted = [v for v, r in results_all.items() if r.status.value in ("ADAPTER_REQUIRED", "IMPLEMENTATION_GAP")]
+    assert len(counted) == 33 and len(results_all) == 61
+    summary = {s.value: 0 for s in R.ReportingState}
+    for v, r in results_all.items():
+        summary[r.status.value] += 1
+    def code(s):
+        return 1 if s["FAIL"] else 3 if s["INCONCLUSIVE"] else 2 if s["IMPLEMENTATION_GAP"] or s["ADAPTER_REQUIRED"] else 0
+    assert code(summary) == 2
+    summary["ADAPTER_REQUIRED"] = 0
+    assert code(summary) == 0                 # NOT_SPECIFIED rows alone do not hold the code at 2
+    summary["IMPLEMENTATION_GAP"] = 1
+    assert code(summary) == 2                 # one declared gap on a specified row does

@@ -9,12 +9,41 @@ import importlib
 import runner as R
 from .port import (ALL_BOUNDS, ALL_CAPABILITIES, ALL_EPISTEMIC, ALL_INTENTS, CLOCK,
                    CONFIDENCE, RuntimePort)
+from . import properties
 from .scenarios import CHECKS, PROBES, SCENARIOS
 
 FLAG_RESERVE = ("obtained under a declared mapping interpretation, pending ratification; "
                 "the FLAG on this path states no condition.")
 HARNESS_GAP = ("HARNESS_GAP: no runtime-neutral scenario exists for this vector yet; "
                "the subject was not evaluated.")
+
+# Rule of 23 November 2026 (standard author's decision, 15:07 UTC, option A),
+# for the registered rows no port can adapt. A row the frozen RFCs do not
+# specify (RESERVED in VECTORS.md) and a row superseded by a ratified revision
+# have no normative property to test on any subject: they are reported
+# NOT_SPECIFIED, listed with their reason, and stay out of conformance_status
+# and of the exit code. A row whose property a harness check exercises is
+# reported by that check (EXERCISED_BY_CHECK) when the check ran and passed.
+# A row the implementer declares outside the runtime's perimeter, with a signed
+# reason, is NOT_IN_PERIMETER, as a property check already could be. The rule
+# is dated: it reinterprets no report produced before it. What it removes from
+# the exit code is listed in every report, under `exit_code_rule`.
+EXIT_CODE_RULE_DATE = "2026-11-23"
+OUT_OF_EXIT_CODE = ("NOT_SPECIFIED", "EXERCISED_BY_CHECK", "NOT_IN_PERIMETER", "NOT_APPLICABLE")
+# Registered under RN-001 §3, withdrawn readings: superseded by the RFC-4 v0.3
+# revision of 19 November 2026 (§4), ratified and kept outside the frozen
+# baseline. Kept with their text and ids; nothing left to test on them.
+SUPERSEDED = {"CT-R4-014": "CT-R4-004a", "CT-R4-015": "CT-R4-004a", "CT-R4-016": "CT-R4-004b"}
+_RESERVED_ROWS = None
+
+
+def reserved_rows() -> dict:
+    """id -> VECTORS.md row, for every row whose status is RESERVED."""
+    global _RESERVED_ROWS
+    if _RESERVED_ROWS is None:
+        _RESERVED_ROWS = {vid: row for vid, row in properties.index_rows().items()
+                          if row.get("status") == "RESERVED"}
+    return _RESERVED_ROWS
 
 
 class PortAdapter(R.BaseAdapter):
@@ -108,6 +137,14 @@ class PortAdapter(R.BaseAdapter):
                 return self._r(vid, R.ReportingState.PASS, details, gap_note=FLAG_RESERVE)
         return self._r(vid, R.ReportingState(state), details)
 
+    @staticmethod
+    def _perimeter_declaration(row, decl):
+        if not (isinstance(decl, dict) and all(
+                isinstance(decl.get(f), str) and decl[f].strip() for f in ("declared_by", "reason"))):
+            raise ValueError(f"{row}: a not_in_perimeter declaration needs a "
+                             "non-empty 'declared_by' and 'reason'")
+        return f"not_in_perimeter on {row}, declared by {decl['declared_by']}: {decl['reason']}"
+
     def run_vector(self, vid):
         if vid in self.port.not_applicable:
             if vid in SCENARIOS:
@@ -115,6 +152,13 @@ class PortAdapter(R.BaseAdapter):
                 # A scenario that cannot run says so itself (ADAPTER_REQUIRED, INCONCLUSIVE).
                 raise ValueError(f"{vid}: a port may not declare a neutral scenario not applicable")
             return self._na(vid, self.port.not_applicable[vid])
+        if vid in self.port.not_in_perimeter:
+            if vid in SCENARIOS:
+                raise ValueError(f"{vid}: a port may not declare a neutral scenario outside the perimeter")
+            # Rule of 23 November 2026: the implementer's signed declaration on a
+            # registered row, as on a property check. Neither PASS nor FAIL.
+            return self._r(vid, R.ReportingState.NOT_IN_PERIMETER,
+                           gap_note=self._perimeter_declaration(vid, self.port.not_in_perimeter[vid]))
         custom = self.port.run_custom(vid)
         if custom is not None:
             if vid in SCENARIOS:
@@ -132,7 +176,55 @@ class PortAdapter(R.BaseAdapter):
             return result
         if vid in self.port.declared_gaps:
             return self._gap(vid, self.port.declared_gaps[vid])
+        if vid in SUPERSEDED:
+            return self._r(vid, R.ReportingState.NOT_SPECIFIED, gap_note=(
+                f"superseded by {SUPERSEDED[vid]} (RFC-4 v0.3 revision of 19 November 2026, §4); "
+                f"withdrawn reading, kept with its id and text; nothing to test "
+                f"(rule of {EXIT_CODE_RULE_DATE})"))
+        row = reserved_rows().get(vid)
+        if row is not None:
+            return self._r(vid, R.ReportingState.NOT_SPECIFIED, gap_note=(
+                f"RESERVED in VECTORS.md ({row.get('rfc', '?')}): the frozen RFCs do not specify "
+                f"this row; a proposal, nothing to test (rule of {EXIT_CODE_RULE_DATE})"))
         return self._ar(vid, HARNESS_GAP)
+
+    @staticmethod
+    def fold_checks(results, checks):
+        """Rule of 23 November 2026: a registered row with no neutral scenario
+        (HARNESS_GAP) whose property a check exercised in this run is reported
+        by that check. The check passed: the row says so and points to it,
+        out of the exit code. The check failed: the row fails, the property is
+        one the RFC states. Anything else: the row keeps its gap, with the
+        check's status noted. Returns a new list; the check results are untouched."""
+        by_row = {}
+        for c in checks:
+            row = CHECKS[c.vector_id].exercises
+            by_row.setdefault(row, []).append(c)
+        out = []
+        for r in results:
+            folded = by_row.get(r.vector_id)
+            if not folded or r.status != R.ReportingState.ADAPTER_REQUIRED or r.gap_note != HARNESS_GAP:
+                out.append(r)
+                continue
+            names = ", ".join(f"{c.vector_id} {c.status.value}" for c in folded)
+            statuses = {c.status for c in folded}
+            if statuses == {R.ReportingState.PASS}:
+                r = R.ConformanceResult(r.vector_id, R.ReportingState.EXERCISED_BY_CHECK,
+                                        r.interface_mode, r.evidence_level,
+                                        details=f"exercised by {names}: "
+                                                + "; ".join(c.details for c in folded),
+                                        gap_note=f"reported by its property check (rule of {EXIT_CODE_RULE_DATE})")
+            elif R.ReportingState.FAIL in statuses:
+                r = R.ConformanceResult(r.vector_id, R.ReportingState.FAIL, r.interface_mode,
+                                        r.evidence_level,
+                                        details=f"its property check failed: {names}: "
+                                                + "; ".join(c.details for c in folded
+                                                            if c.status == R.ReportingState.FAIL))
+            else:
+                r = R.ConformanceResult(r.vector_id, r.status, r.interface_mode, r.evidence_level,
+                                        r.details, gap_note=f"{r.gap_note} Its property check: {names}.")
+            out.append(r)
+        return out
 
     def run_probes(self):
         """Harness probes, reported apart from the REG vector set."""
@@ -146,13 +238,8 @@ class PortAdapter(R.BaseAdapter):
         for vid, s in CHECKS.items():
             decl = self.port.not_in_perimeter.get(s.exercises)
             if decl is not None:
-                if not (isinstance(decl, dict) and all(
-                        isinstance(decl.get(f), str) and decl[f].strip() for f in ("declared_by", "reason"))):
-                    raise ValueError(f"{s.exercises}: a not_in_perimeter declaration needs a "
-                                     "non-empty 'declared_by' and 'reason'")
-                out.append(self._r(vid, R.ReportingState.NOT_IN_PERIMETER, gap_note=(
-                    f"not_in_perimeter on {s.exercises}, declared by {decl['declared_by']}: "
-                    f"{decl['reason']}")))
+                out.append(self._r(vid, R.ReportingState.NOT_IN_PERIMETER,
+                                   gap_note=self._perimeter_declaration(s.exercises, decl)))
                 continue
             r = self._run_scenario(vid, s)
             gap = self.port.declared_gaps.get(s.exercises)

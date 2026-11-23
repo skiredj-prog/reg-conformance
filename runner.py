@@ -48,8 +48,18 @@ class ReportingState(str, Enum):
     ADAPTER_REQUIRED   = "ADAPTER_REQUIRED"
     IMPLEMENTATION_GAP = "IMPLEMENTATION_GAP"
     # Neither PASS nor FAIL: the implementer declares the property outside the
-    # runtime's perimeter (harness property checks only; never a vector result).
+    # runtime's perimeter, with a signed reason (harness property checks, and
+    # since 23 November 2026 the registered rows a port declares the same way).
     NOT_IN_PERIMETER   = "NOT_IN_PERIMETER"
+    # Rule of 23 November 2026 (standard author's decision, 15:07 UTC): a
+    # registered row that no ratified text specifies (RESERVED in VECTORS.md,
+    # or superseded by a ratified revision) has nothing to test. It is listed
+    # with this status and stays out of conformance_status and the exit code.
+    NOT_SPECIFIED      = "NOT_SPECIFIED"
+    # Same rule: a registered row with no neutral scenario whose property a
+    # harness property check exercised and passed in the same run; the check
+    # carries the observation, the row points to it.
+    EXERCISED_BY_CHECK = "EXERCISED_BY_CHECK"
 
 class EvidenceLevel(int, Enum):
     SEMANTIC_MAPPING  = 1
@@ -1049,7 +1059,8 @@ class NativeKernelAdapter(BaseAdapter):
 
 
 MARKS = {"PASS":"✓","FAIL":"✗","INCONCLUSIVE":"?","NOT_APPLICABLE":"○",
-         "ADAPTER_REQUIRED":"~","IMPLEMENTATION_GAP":"△"}
+         "ADAPTER_REQUIRED":"~","IMPLEMENTATION_GAP":"△","NOT_IN_PERIMETER":"◇",
+         "NOT_SPECIFIED":"·","EXERCISED_BY_CHECK":"→"}
 
 
 def build_evidence_binding(adapter, args):

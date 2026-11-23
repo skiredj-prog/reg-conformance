@@ -33,7 +33,14 @@ reviewer still pending):
                     the correspondence covers "standing measured at zero" and
                     nothing else (runtime author's decision P4 = A, 23 Nov
                     2026, 10:18 UTC). The credential-side vectors of RFC-3
-                    stay ADAPTER_REQUIRED.
+                    (CT-R3-001, -006, -008) are declared outside the perimeter
+                    (`not_in_perimeter`, decision of 23 November 2026, 15:07
+                    UTC); they were ADAPTER_REQUIRED before. CT-R3-002
+                    (revocation within a declared latency window) is not a
+                    credential row on this runtime: standing is revoked at
+                    dispatch (C3, where the port declares REVOKE), but no
+                    latency window is declared; the 5.7.6 port declares that
+                    gap (`declared_gaps`).
     DENIED          amount above the registered budget (membrane invariant I8).
                     DECLARED RUNTIME LIMIT: DENIED and INVARIANT_VIOLATED have
                     the same inputs and the same mechanism, because I8 is the
@@ -178,9 +185,29 @@ class TenirGovPort(P.RuntimePort):
     combinations = frozenset({frozenset({P.NO_STANDING, P.NEEDS_APPROVAL}),
                               frozenset({P.INADMISSIBLE, P.NEEDS_APPROVAL})})
     not_applicable = {"C4": "No transport layer: the runtime is driven in process."}
-    not_in_perimeter = {"CT-R3-007": {
-        "declared_by": "the author of tenir_governance (decision 1, 19 November 2026)",
-        "reason": ("scope is an L1 concern; TENIR-Gov does not read Agent.capabilities")}}
+    # The credential-side rows of RFC-3 (option A of the standard author's
+    # decision of 23 November 2026, 15:07 UTC): the governor takes no
+    # credential object; standing arrives as a measured authority score and an
+    # agent identifier asserted by the caller. There is nothing to malform,
+    # expire, rotate or revoke at this layer: the properties hold or fail in
+    # the caller's credential layer (L1), outside this runtime's perimeter.
+    # Declared, neither PASS nor FAIL, out of the exit code, listed.
+    _CREDENTIAL_LAYER = ("the credential layer is the caller's (L1): the governor takes no "
+                         "credential, standing arrives as a measured authority score and an "
+                         "agent identifier asserted by the caller; nothing at this layer to ")
+    not_in_perimeter = {
+        "CT-R3-007": {
+            "declared_by": "the author of tenir_governance (decision 1, 19 November 2026)",
+            "reason": ("scope is an L1 concern; TENIR-Gov does not read Agent.capabilities")},
+        "CT-R3-001": {
+            "declared_by": "the author of tenir_governance (decision of 23 November 2026, 15:07 UTC, option A)",
+            "reason": _CREDENTIAL_LAYER + "malform or reject before evaluation"},
+        "CT-R3-006": {
+            "declared_by": "the author of tenir_governance (decision of 23 November 2026, 15:07 UTC, option A)",
+            "reason": _CREDENTIAL_LAYER + "expire; the default path has no credential lifetime"},
+        "CT-R3-008": {
+            "declared_by": "the author of tenir_governance (decision of 23 November 2026, 15:07 UTC, option A)",
+            "reason": _CREDENTIAL_LAYER + "rotate"}}
 
     def __init__(self):
         import tenir_governance

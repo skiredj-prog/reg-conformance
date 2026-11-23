@@ -8,7 +8,7 @@ import sys
 
 import runner as R
 from . import properties
-from .adapter import PortAdapter, load_port
+from .adapter import EXIT_CODE_RULE_DATE, OUT_OF_EXIT_CODE, PortAdapter, load_port
 from .scenarios import CHECKS, PHASES, PROBES, SCENARIOS
 
 
@@ -35,10 +35,8 @@ def main(argv=None):
         print(f"  {R.MARKS.get(r.status.value, '?')}  {r.vector_id:<16}  {r.status.value:<22}  {r.details}")
         if r.gap_note and r.status.value not in ("PASS", "FAIL"):
             print(f"     ↳ {r.gap_note[:120]}")
-    report = R.generate_report(adapter, results, "", R.build_evidence_binding(adapter, args))
-    report["port"] = {"spec": args.port, "name": adapter.port.name,
-                      "capabilities": sorted(adapter.port.capabilities)}
     every = {**SCENARIOS, **PROBES, **CHECKS}
+    report = None   # built once the checks, which may report a row, have run
 
     def residue(r):
         """One console line: what an observed result does not establish."""
@@ -46,13 +44,14 @@ def main(argv=None):
             print("     ↳ not observed: " + "; ".join(every[r.vector_id].not_observed))
 
     probes = []
+    probes_block = None
     if args.probes:
         probes = adapter.run_probes()
         print("\n  Harness probes (not REG vectors)")
         for r in probes:
             print(f"  {R.MARKS.get(r.status.value, '?')}  {r.vector_id:<16}  {r.status.value:<22}  {r.details or r.gap_note}")
             residue(r)
-        report["harness_probes"] = {
+        probes_block = {
             "note": ("Not REG vectors. Excluded from every vector summary and from "
                      "conformance_status. The property view counts them, as probes."),
             "results": [R.asdict(r) for r in probes]}
@@ -60,6 +59,20 @@ def main(argv=None):
     checks = []
     if args.checks:
         checks = adapter.run_checks()
+        # Rule of 23 November 2026: a row with no scenario that a check
+        # exercised is reported by the check. The check results stay as run.
+        folded = PortAdapter.fold_checks(results, checks)
+        for before, after in zip(results, folded):
+            if after.status != before.status:
+                print(f"  {R.MARKS.get(after.status.value, '?')}  {after.vector_id:<16}  "
+                      f"{after.status.value:<22}  {after.details[:110]}")
+        results = folded
+    report = R.generate_report(adapter, results, "", R.build_evidence_binding(adapter, args))
+    report["port"] = {"spec": args.port, "name": adapter.port.name,
+                      "capabilities": sorted(adapter.port.capabilities)}
+    if probes_block is not None:
+        report["harness_probes"] = probes_block
+    if args.checks:
         index = properties.index_rows()
         rows = {vid: {"row": row, **index.get(row, {})} for vid, row in exercises.items()}
         print("\n  Property checks (not REG vectors)")
@@ -151,6 +164,30 @@ def main(argv=None):
     code = 1 if s["FAIL"] else 3 if s["INCONCLUSIVE"] else \
         2 if s["IMPLEMENTATION_GAP"] or s["ADAPTER_REQUIRED"] else 0
     report["exit_code"] = code
+    # What this run's exit code and conformance_status do not count, row by
+    # row, with the reason each row carries. A reader of the report sees the
+    # whole registered set; the code counts what can be tested on a subject.
+    out_of_code = {r.vector_id: {"status": r.status.value, "reason": r.gap_note or r.details}
+                   for r in results if r.status.value in OUT_OF_EXIT_CODE}
+    report["exit_code_rule"] = {
+        "date": EXIT_CODE_RULE_DATE,
+        "rule": ("FAIL -> 1; else INCONCLUSIVE -> 3; else IMPLEMENTATION_GAP or ADAPTER_REQUIRED "
+                 "-> 2; else 0. Since 2026-11-23 (standard author's decision, 15:07 UTC): a "
+                 "registered row no ratified text specifies (RESERVED, or superseded by the "
+                 "RFC-4 v0.3 revision) is NOT_SPECIFIED; a row the implementer declares outside "
+                 "the runtime's perimeter, with a signed reason, is NOT_IN_PERIMETER; a row with "
+                 "no neutral scenario whose property check passed in this run is "
+                 "EXERCISED_BY_CHECK. These are listed below and do not enter the exit code or "
+                 "conformance_status. Reports produced before that date are not reinterpreted."),
+        "statuses_out_of_exit_code": list(OUT_OF_EXIT_CODE),
+        "counted_in_exit_code": {k: s[k] for k in ("FAIL", "INCONCLUSIVE", "IMPLEMENTATION_GAP", "ADAPTER_REQUIRED")},
+        "rows_out_of_exit_code": out_of_code}
+    if out_of_code:
+        tally = {}
+        for v in out_of_code.values():
+            tally[v["status"]] = tally.get(v["status"], 0) + 1
+        print("  Out of the exit code (rule of " + EXIT_CODE_RULE_DATE + "): "
+              + ", ".join(f"{k} {n}" for k, n in sorted(tally.items())))
     os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
     with open(args.output, "w") as f:
         json.dump(report, f, indent=2, default=str)

@@ -124,6 +124,16 @@ class TenirGov576Port(TenirGovPort):
         "CT-R1-003": "No transport layer: the runtime is driven in process (HTTP status semantics).",
         "CT-R1-005": "No transport layer: the runtime is driven in process (TLS)."})
     declared_gaps = {
+        # Not a credential row on this runtime (standard author's option A of
+        # 23 November 2026 named five credential rows; this one, measured, is
+        # about a revocation latency window): revocation of a principal's
+        # standing exists and acts at dispatch (C3, REVOKE declared), but the
+        # runtime declares no revocation latency bound, so the window the row
+        # asks for cannot be read. Declared as a gap, counted in the exit code,
+        # not set outside the perimeter.
+        "CT-R3-002": ("revocation acts at dispatch (mandate re-validation, C3) but the runtime "
+                      "declares no revocation latency bound; the declared window the row asks "
+                      "for does not exist on the default path"),
         "CT-R4-004": ("the default path binds no validity window to an admission; only a held "
                       "attempt is bounded (tau_k). An authorization bound is a 5.8.0 candidate "
                       "feature, runtime author's decision pending"),

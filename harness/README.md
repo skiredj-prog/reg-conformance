@@ -24,6 +24,33 @@ is a REG vector, and neither changes the vector summary.
   vectors. They are reported apart and never enter a vector summary or
   `conformance_status`.
 
+## Rows no port can adapt (rule of 23 November 2026)
+
+Standard author's decision of 23 November 2026, 15:07 UTC (option A). The
+rule is dated; it reinterprets no report produced before it. Every report
+lists what the rule took out of the exit code, row by row with its reason,
+under `exit_code_rule`.
+
+- A registered row no ratified text specifies, `RESERVED` in `VECTORS.md` or
+  superseded by the RFC-4 v0.3 revision (`CT-R4-014` to `CT-R4-016`), is
+  reported `NOT_SPECIFIED`: a proposal, nothing to test on any subject.
+- A registered row the implementer declares outside the runtime's perimeter,
+  in the port's `not_in_perimeter` with a non-empty `declared_by` and
+  `reason`, is reported `NOT_IN_PERIMETER`, as a property check already could
+  be. A neutral scenario cannot be declared away.
+- A row with no neutral scenario whose property check ran and passed in the
+  same run is reported `EXERCISED_BY_CHECK`; the check carries the
+  observation. A failing check fails the row; any other check status leaves
+  the row `ADAPTER_REQUIRED` with the check's status noted. Without
+  `--checks` nothing changes.
+
+These statuses enter neither `conformance_status` nor the exit code, whose
+formula is unchanged: `FAIL` → 1; else `INCONCLUSIVE` → 3; else
+`IMPLEMENTATION_GAP` or `ADAPTER_REQUIRED` → 2; else 0. A declared gap on a
+specified row stays `IMPLEMENTATION_GAP` and counts: on TENIR-Gov 5.7.6 and
+the 5.7.7 candidate, the authorization bound and the signed receipts hold the
+code at 2 until 5.8.0. Exit code 0 is not obtained by recounting.
+
 ## What counts as an admission
 
 RFC-0 §4 gives each disposition an execution instruction: `PASS` is ALLOW and

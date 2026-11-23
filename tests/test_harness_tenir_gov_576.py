@@ -100,6 +100,19 @@ def test_576_port_on_vectors_probes_and_checks():
     assert {vectors[v] for v in ("CT-R0-003", "CT-R2-001", "CT-R4-009", "CT-R4-010",
                                  "CT-R5-001", "CT-R5-002", "CT-R5-004", "CT-R7-002")} == {"PASS"}
     assert {vectors[v] for v in ("C4", "CT-R1-003", "CT-R1-005")} == {"NOT_APPLICABLE"}
+    # Rule of 23 November 2026 (standard author's option A, 15:07 UTC): the rows no
+    # ratified text specifies are listed NOT_SPECIFIED; three credential rows are
+    # declared outside the perimeter with CT-R3-007; CT-R3-002 (revocation latency
+    # window) is a declared gap, counted; no row is left ADAPTER_REQUIRED.
+    from collections import Counter
+    tally = Counter(vectors.values())
+    assert tally["NOT_SPECIFIED"] == 28
+    # Before the checks run, CT-R0-005 (no scenario, exercised by PX-CT-R0-005) is the
+    # one row left ADAPTER_REQUIRED; `fold_checks` reports it by its check.
+    assert tally["ADAPTER_REQUIRED"] == 1 and vectors["CT-R0-005"] == "ADAPTER_REQUIRED"
+    assert {vectors[v] for v in ("CT-R3-001", "CT-R3-006", "CT-R3-007", "CT-R3-008")} == {"NOT_IN_PERIMETER"}
+    assert vectors["CT-R3-002"] == "IMPLEMENTATION_GAP"
+    assert tally["IMPLEMENTATION_GAP"] == 4 and tally["PASS"] == 21 and tally["NOT_APPLICABLE"] == 3
     probes = {r.vector_id: r.status.value for r in adapter.run_probes()}
     assert set(probes.values()) == {"PASS"}
     results = {r.vector_id: r for r in adapter.run_checks()}
@@ -118,6 +131,12 @@ def test_576_port_on_vectors_probes_and_checks():
     assert {k for k, v in checks.items() if v == "INCONCLUSIVE"} == {"PX-REG-STATE-025", "PX-CT-R3-003"}
     assert checks["PX-REG-STATE-024"] == "PASS"
     assert checks["PX-CT-R3-002"] == "ADAPTER_REQUIRED"   # no revocation bound declared
+    assert "gap declared by the implementer on CT-R3-002" in results["PX-CT-R3-002"].gap_note
+    # The credential rows declared outside the perimeter carry their checks with them.
+    assert {checks[c] for c in ("PX-CT-R3-001", "PX-CT-R3-006", "PX-CT-R3-007")} == {"NOT_IN_PERIMETER"}
+    # Folded: CT-R0-005 is reported by its passing check; nothing stays ADAPTER_REQUIRED.
+    folded = {r.vector_id: r.status.value for r in PortAdapter.fold_checks(adapter.run_all(), list(results.values()))}
+    assert folded["CT-R0-005"] == "EXERCISED_BY_CHECK" and "ADAPTER_REQUIRED" not in folded.values()
     # Missing evidence: 5.7.6 holds seven missing measurements and admits on the
     # eighth, `irreversibility_materiality`, which it defaults to 0.0. The port
     # declares that measurement since the runtime author's decision C of 23
