@@ -1,0 +1,115 @@
+schema: reg-arch-audit-scenario-v2
+source_basis:
+  normative_candidate: REG-ARCH v0.4.1 candidate
+  base_audited_pdf: REG-ARCH_v0_4 (1).pdf
+  base_pdf_sha256: 4BE9D68CA8DCE3557655905467C0975758E82AB2888F974B0B9439D59620B939
+  reproducible_source_copies: [source/REG-ARCH_v0_4.pdf, source/REG-ARCH_v0_4.docx]
+  candidate_status: non-ratified
+  note: These fixtures test the stated contract model; they are not evidence of implementation conformity.
+scenarios:
+  - id: A-11
+    name: structural-refusal-creates-distinct-gap
+    setup: {target: T1, target_revision: 4, refusal_event: R1, refusal_kind: missing_authority, active_norm_version: 0.4.1, actor: system_gate}
+    mutation: invoke_G_Ecart_with_deterministic_key_and_causation_R1
+    expected:
+      target_revision: 4
+      gap_count_delta: 1
+      gap_target: distinct_from_T1
+      causation: R1
+      required_trace_schema: trace-schema.json
+      required_trace_fields: [event_id, event_type, schema_version, request_id, source_refusal_event_id, causation_event_ids, source_object_id, source_object_version, target_object_id, target_object_version, refusal_category, reason_code, gate_id, gate_version, reg_arch_version, active_manifest_id, active_manifest_version, active_manifest_digest, requester_ref, controller_principal_ref, capability_assertion_ref, trust_binding_ref, capability_scope_version, logical_order, idempotency_key, outcome, gap_object_id, conflicting_prior_event_id, request_fingerprint, requested_reason]
+    rejection_cases: [ordinary_operational_refusal, missing_causation, missing_active_norm_version, divergent_key_collision]
+    collision_oracle: {outcome: REFUSED, reason_code: IDEMPOTENCY_KEY_CONFLICT, conflicting_prior_event_id: original_attempt.event_id, request_fingerprint: SHA256_JCS_of_exact_REG_ARCH_025_payload, requested_reason: rejected_request.reason, trace_context: rejected_request_values, copied_original_context: false}
+    clauses: [REG-ARCH-010bis, REG-ARCH-025]
+  - id: A-12
+    name: crash-during-gap-create
+    setup: {target: T1, target_revision: 4, refusal_event: R1}
+    mutation: [crash_before_atomic_commit, crash_after_atomic_commit_before_ack_then_retry_same_key]
+    expected: {target_revision: 4, before_commit_partial_state: false, after_commit_retry_returns_same_gap_id: true, duplicate_gap: false, duplicate_create_event: false}
+    clauses: [REG-ARCH-010bis, REG-ARCH-025]
+  - id: A-13
+    name: prepare-prevent-transitive-config-change
+    setup:
+      graph: [config:C1, hypothesis:H1, guarantee:G1, evidence:E1, verdict:V1]
+      evidence_status: CURRENT
+    mutation: {node: config:C1, new_version: C2, semantic_change: true}
+    expected: {stale: [E1, V1], affected_guarantees: [G1], prepare_accepts_old_evidence: false}
+    clauses: [REG-ARCH-027]
+  - id: A-14
+    name: stable-display-id-content-drift
+    setup: {config_id: C1, digest: d1, evidence: E1}
+    mutation: {config_id: C1, digest: d2}
+    expected: {same_node_identity: true, new_immutable_version: true, E1: STALE, prepare_accepts_E1: false}
+    clauses: [REG-ARCH-026, REG-ARCH-027]
+  - id: A-15
+    name: missing-dependency-or-incomplete-impact
+    setup: {guarantee: G1, dependency_graph: incomplete, prior_evidence: E1}
+    mutation: evaluate_PREPARE_and_PREVENT
+    expected: {positive_verdict: false, affected_scope_fail_closed: true, impact_incomplete_reported: true}
+    clauses: [REG-ARCH-026, REG-ARCH-027]
+  - id: A-16
+    name: refinement-is-guarantee-scoped
+    setup: {claim: [G1], component_versions: {REG: r2, profile: p3}, evidence: e9}
+    mutation: claim_global_equivalence_without_mapping
+    expected: {claim_accepted: false, verdict: UNVERIFIABLE}
+    clauses: [REG-ARCH-026]
+  - id: A-17
+    name: refinement-preserves-claimed-property
+    setup: {guarantee: G1, abstract_allowed_traces: [[REQUESTED, REFUSED], [REQUESTED, ACCEPTED, APPLIED]], concrete_trace_abstraction: [REQUESTED, REFUSED]}
+    mutation: replace_concrete_trace_abstraction: [REQUESTED, APPLIED]
+    expected: {valid_trace: true, forbidden_transition_detected: true, verdict_on_mutated_trace: CONTRADICTED}
+    clauses: [REG-ARCH-026]
+  - id: A-18
+    name: undeclared-effective-input-breaks-closed-manifest
+    setup: {declared_dependencies: [R1, P1, C1], observed_inputs: [R1, P1, C1]}
+    mutation: append_observed_input: ENV2
+    expected: {manifest_complete: false, verdict: UNVERIFIABLE, positive_prepare: false}
+    clauses: [REG-ARCH-027]
+  - id: A-19
+    name: prepare-races-with-configuration-change
+    setup: {graph_epoch: 8, evidence_epoch: 8, evidence_status: CURRENT}
+    mutation: {during_prepare: increment_graph_epoch, new_epoch: 9}
+    expected: {publish_old_verdict: false, consume_old_evidence: false, action: abort_and_retry_or_fail_closed}
+    clauses: [REG-ARCH-027]
+  - id: A-20
+    name: requalification-does-not-revive-old-proof
+    setup: {old_evidence: E1, old_status: STALE, current_epoch: 9, current_manifest_digest: m9}
+    mutation: qualify_new_evidence: E2
+    expected: {E1: STALE, E2: CURRENT, E2_bound_to_current_versions: true, E2_manifest_digest: m9}
+    clauses: [REG-ARCH-027]
+  - id: A-21
+    name: consume-proof-after-concurrent-config-change
+    setup: {proof_epoch: 8, proof_manifest_digest: m8, current_epoch: 8, current_manifest_digest: m8, status: CURRENT}
+    mutation: {change_epoch_before_consume_linearization: 9, new_manifest_digest: m9}
+    expected: {consume_old_proof: false, result: REFUSED_STALE, reason: [epoch_mismatch, manifest_digest_mismatch]}
+    clauses: [REG-ARCH-027]
+  - id: A-22
+    name: prevent-resume-after-epoch-commit-before-ack
+    setup: {change_key: K1, graph_epoch: 8, evidence_status: CURRENT}
+    mutation: crash_after_epoch_commit_before_impact_ack_then_retry_same_key
+    expected: {epoch_increment_once: true, stale_after_retry: true, old_proof_consumable_during_gap: false, duplicate_change: false}
+    clauses: [REG-ARCH-027]
+  - id: A-23
+    name: consume-proof-with-wrong-manifest-digest-at-same-epoch
+    setup: {proof_epoch: 8, current_epoch: 8, proof_manifest_digest: d1, current_manifest_digest: d1, status: CURRENT}
+    mutation: consume_with_token_manifest_digest: d2
+    expected: {consume_old_proof: false, result: REFUSED_STALE, epoch_equal: true}
+    clauses: [REG-ARCH-027]
+  - id: A-24
+    name: unresolved-active-manifest-refusal-is-durably-traced
+    setup: {structural_refusal_event: R1, active_manifest: unresolved, target: T1, target_revision: 4}
+    mutation: invoke_G_Ecart_without_resolvable_active_manifest
+    expected: {outcome: REFUSED, trace: schema_valid, reason_code: ACTIVE_MANIFEST_UNRESOLVED, unknown_context_fields: null, gap_count_delta: 0, target_revision: 4}
+    clauses: [REG-ARCH-010bis, REG-ARCH-025]
+  - id: A-25
+    name: durable-recorder-unavailable-fails-closed
+    setup: {structural_refusal_event: R1, durable_recorder: unavailable, target: T1, target_revision: 4}
+    mutation: invoke_G_Ecart
+    expected: {gate_execution: false, result_is_treated: false, gap_count_delta: 0, target_revision: 4}
+    clauses: [REG-ARCH-010bis, REG-ARCH-025]
+  - id: A-26
+    name: idempotency-collision-after-manifest-and-standard-version-drift
+    setup: {original_key: K1, original_reg_arch_version: 0.4.1, original_manifest: {id: M1, version: M-v1, digest: dM1}, target: T1}
+    mutation: retry_same_key_with: {reg_arch_version: 0.5, manifest: {id: M2, version: M-v2, digest: dM2}, requested_reason: changed}
+    expected: {outcome: REFUSED, reason_code: IDEMPOTENCY_KEY_CONFLICT, trace_reg_arch_version: 0.5, trace_manifest_id: M2, trace_manifest_version: M-v2, trace_manifest_digest: dM2, requested_reason: changed, conflicting_prior_event_id: original_attempt.event_id, request_fingerprint: SHA256_JCS_exact_17_property_payload, copied_original_context: false}
+    clauses: [REG-ARCH-025]

@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "scope": "REG coherence checks; declared optional comparisons for retired source variants",
+  "not_applicable": {
+    "COH-P01": {
+      "reason": "The legacy root validate_profiles.py entrypoint is not shipped; only tools/validate_profiles.py is in scope. Comparison of two validators is explicitly inapplicable.",
+      "expected_missing": [
+        "validate_profiles.py"
+      ],
+      "required_present": [
+        "tools/validate_profiles.py"
+      ]
+    },
+    "COH-P02": {
+      "reason": "The compatibility-rules-v2.yaml root variant is absent from this repository snapshot; catalog/compatibility-rules-v1.yaml is the only declared source. Comparing v1 with a second variant is explicitly inapplicable.",
+      "expected_missing": [
+        "compatibility-rules-v2.yaml"
+      ],
+      "required_present": [
+        "catalog/compatibility-rules-v1.yaml"
+      ]
+    }
+  }
+}
