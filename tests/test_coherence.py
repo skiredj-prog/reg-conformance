@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TRACKED = ["tools", "vectors", "catalog", "crosswalk", "capabilities", "profiles", "specs", "manuscript", "registry",
            "reg-standards-baseline", "kernel", "lifecycle", "runner.py", "reg_common.py", "shim.py", "spec.md",
            "VECTORS.md", "README.md", "CHANGELOG.md", "validate_profiles.py", "compatibility-rules-v2.yaml",
-           "coherence-baseline.json", "policy.json", "requirements.txt", "conformance-target.json",
+           "coherence-baseline.json", "coherence-applicability.json", "policy.json", "requirements.txt", "conformance-target.json",
            "capability-evidence-contract-v1.json", "evidence", "audits"]
 
 
@@ -256,3 +256,26 @@ def test_coh_x06_old_fail_open_mutant_is_killed(copy):
         output.write_text(mutation_log, encoding="utf-8")
     assert p.returncode == 1, mutation_log
     assert "3 failed" in p.stdout, mutation_log
+
+
+def test_declared_legacy_source_absence_is_explicit_not_applicable(copy):
+    p01, p02 = check_result(copy, "COH-P01"), check_result(copy, "COH-P02")
+    assert p01["status"] == "NOT_APPLICABLE"
+    assert p02["status"] == "NOT_APPLICABLE"
+    assert all("coherence-applicability.json" in x for x in p01["evidence"] + p02["evidence"])
+    assert run(copy)[0] == 0
+
+
+def test_undeclared_missing_source_is_cannot_evaluate(copy):
+    # The manifest declares only the absence of the *retired* root validator.
+    (copy / "tools" / "validate_profiles.py").unlink()
+    p01 = check_result(copy, "COH-P01")
+    assert p01["status"] == "CANNOT_EVALUATE"
+    assert run(copy)[0] != 0
+
+
+def test_missing_applicability_manifest_is_not_inferred_as_pass(copy):
+    (copy / "coherence-applicability.json").unlink()
+    assert check_result(copy, "COH-P01")["status"] == "CANNOT_EVALUATE"
+    assert check_result(copy, "COH-P02")["status"] == "CANNOT_EVALUATE"
+    assert run(copy)[0] != 0
