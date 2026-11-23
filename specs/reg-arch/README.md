@@ -21,6 +21,31 @@ Ce répertoire est la source de REG-ARCH, la spécification d'architecture de RE
 
 Aucune de ces versions ne peut être citée comme norme en vigueur.
 
+## Préséance des sources et conservation de la lignée
+
+1. **Registre canonique :** ce fichier, sur `main` de `reg-conformance`, est le seul index faisant foi pour l'autorité, les décisions, les versions et leurs statuts.
+2. **Lecture et citation :** `specs/reg-arch/v0.4.1-candidate/REG-ARCH.md` est la seule transcription publiée de la candidate. Elle est **dérivée**, non rédigée indépendamment.
+3. **Origine textuelle vérifiable :** `audits/reg-arch-v0.4.1/REG-ARCH_v0.4.1-candidate.docx` est l'entrée figée du générateur ; le DOCX v0.4 est également conservé dans `audits/reg-arch-v0.4.1/source/`. Le contrôle COH-X06 exige l'identité de régénération et des mots. En cas de divergence, de perte d'une entrée, ou de contrôle impossible, **aucune copie n'est promue automatiquement** : `CANNOT_EVALUATE` / HOLD.
+4. **Lignée historique :** `draft/reg-arch-v0.4.1-candidate` et `docs/reg-arch-v0.1-source` sont les branches d'origine et de provenance documentaire ; elles ne constituent pas des sources normatives concurrentes après la fusion. Les conserver, les marquer historiquement archivées, ne pas les supprimer.
+5. **Future source Markdown :** la règle 6 ci-dessous demeure une **proposition** pour v0.5, pas une migration déjà décidée.
+
+## Statut d'applicabilité et frontière de preuve
+
+**Source canonique établie à la fusion de ce registre sur `main` ; aucune version ratifiée ; couverture de conformité exécutable du runtime pour REG-ARCH-001–024 non démontrée ; applicabilité normative : NON.**
+
+La candidate présente des contrats et des oracles de **modèle**. Ceux-ci ne démontrent ni le raffinement ni la conformité d'une implémentation TENIR-Gov. L'absence de machines d'états applicables au runtime demeure une lacune à traiter. Les exigences 025–027 de la candidate restent également non ratifiées. Le fait de clôturer le sprint 0 n'ouvre aucun droit de revendication normative.
+
+## R-E — Obligation probatoire des contrôles (règle d'outillage)
+
+L'absence de la chose qu'un contrôle est appelé à vérifier n'est jamais une absence de problème. Chaque contrôle émet un statut explicite : `PASS`, `FAIL`, `CANNOT_EVALUATE` ou `NOT_APPLICABLE`. `CANNOT_EVALUATE` est non-passant et ne peut être neutralisé par la baseline ; `NOT_APPLICABLE` requiert une déclaration explicite du périmètre par l'appelant, jamais l'inférence d'un fichier absent. Lorsque c'est possible, les tests négatifs sont eux-mêmes qualifiés par mutation du comportement fautif, avec journal archivé. Cette règle gouverne l'**outillage de preuve**, sans ratifier une version de REG-ARCH.
+
+## Contradiction historique consignée — ESCALATED (non résolue)
+
+- **Source antérieure alléguée :** page « Sortie de l'état ESCALATED », datée du 17 novembre 2026, actuellement **hors dépôt**. URL / identifiant de l'artefact **à verser** ; sa teneur exacte ne peut pas être opposée sans cette pièce.
+- **Source postérieure déposée :** `glossary/glossary-v1.yaml` (PR #79, 20 novembre 2026), **brouillon non normatif**. Projection proposée : label runtime `ESCALATED` → état constaté `UNKNOWN`, avec réconciliation requise.
+- **Lecture provisoire :** `ESCALATED_CLOSED` ne devient pas un nouvel état canonique ; la clôture administrative est à représenter comme **événement journalisé**, sans qualifier automatiquement l'issue.
+- **État :** `CONTRADICTION_RECORDED / PROVISIONAL_MAPPING / HISTORICAL_SOURCE_PENDING`, **pas « resolved »**. À revoir à réception de la pièce historique et lors de l'arbitrage du glossaire.
+
 ## Transcription de la candidate
 
 `v0.4.1-candidate/REG-ARCH.md` est généré depuis le DOCX de la candidate par `tools/reg_arch_markdown.py`. Il ne se modifie pas à la main : toute évolution du texte relève de la version suivante.
