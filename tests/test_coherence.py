@@ -1,5 +1,6 @@
 """The coherence check is an instrument: these tests check the instrument, not the repository."""
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -16,7 +17,13 @@ TRACKED = ["tools", "vectors", "catalog", "crosswalk", "capabilities", "profiles
 
 
 def run(root, *args):
-    p = subprocess.run([sys.executable, "tools/check_coherence.py", *args], cwd=root, capture_output=True, text=True)
+    env = os.environ.copy()
+    if root != ROOT:
+        # The caller declares that this isolated test fixture has no git metadata.
+        # No checker may infer NOT_APPLICABLE merely from a missing file.
+        env["COHERENCE_FIXTURE_MODE"] = "1"
+    p = subprocess.run([sys.executable, "tools/check_coherence.py", *args],
+                       cwd=root, capture_output=True, text=True, env=env)
     return p.returncode, p.stdout
 
 
@@ -36,7 +43,14 @@ def report(root):
 
 
 def findings(root):
-    return {r["id"] for r in report(root)["results"] if r["evidence"]}
+    return {r["id"] for r in report(root)["results"]
+            if r["status"] in ("FAIL", "CANNOT_EVALUATE")}
+
+
+def check_result(root, cid):
+    matches = [r for r in report(root)["results"] if r["id"] == cid]
+    assert len(matches) == 1
+    return matches[0]
 
 
 def test_repository_matches_its_baseline():
@@ -152,3 +166,93 @@ def test_a_hand_edit_of_the_reg_arch_transcription_is_seen(copy):
 def test_a_reg_arch_transcription_without_its_source_is_seen(copy):
     (copy / "audits" / "reg-arch-v0.4.1" / "REG-ARCH_v0.4.1-candidate.docx").unlink()
     assert "COH-X06" in findings(copy)
+
+
+def test_coh_x06_missing_generator_is_a_finding(copy):
+    (copy / "tools" / "reg_arch_markdown.py").unlink()
+    result = check_result(copy, "COH-X06")
+    assert result["status"] == "CANNOT_EVALUATE"
+    assert any("tools/reg_arch_markdown.py" in reason for reason in result["evidence"])
+    assert run(copy)[0] != 0
+
+
+def test_coh_x06_missing_target_is_a_finding(copy):
+    (copy / "specs" / "reg-arch" / "v0.4.1-candidate" / "REG-ARCH.md").unlink()
+    result = check_result(copy, "COH-X06")
+    assert result["status"] == "CANNOT_EVALUATE"
+    assert any("v0.4.1-candidate/REG-ARCH.md" in reason for reason in result["evidence"])
+    assert run(copy)[0] != 0
+
+
+def test_coh_x06_both_missing_reports_both(copy):
+    (copy / "tools" / "reg_arch_markdown.py").unlink()
+    (copy / "specs" / "reg-arch" / "v0.4.1-candidate" / "REG-ARCH.md").unlink()
+    result = check_result(copy, "COH-X06")
+    assert result["status"] == "CANNOT_EVALUATE"
+    assert len(result["evidence"]) == 2
+    assert "tools/reg_arch_markdown.py" in " ".join(result["evidence"])
+    assert "v0.4.1-candidate/REG-ARCH.md" in " ".join(result["evidence"])
+    assert run(copy)[0] != 0
+
+
+def test_coh_x06_present_and_divergent_fails(copy):
+    doc = copy / "specs" / "reg-arch" / "v0.4.1-candidate" / "REG-ARCH.md"
+    content = doc.read_text(encoding="utf-8")
+    assert "Distinction des statuts" in content
+    doc.write_text(content.replace("Distinction des statuts", "Distinction des STATUS"), encoding="utf-8")
+    result = check_result(copy, "COH-X06")
+    assert result["status"] == "FAIL"
+    assert any("differs" in reason or "text drift" in reason for reason in result["evidence"])
+    assert run(copy)[0] != 0
+
+
+def test_coh_x06_source_docx_missing_is_not_a_pass(copy):
+    (copy / "audits" / "reg-arch-v0.4.1" / "REG-ARCH_v0.4.1-candidate.docx").unlink()
+    result = check_result(copy, "COH-X06")
+    assert result["status"] == "CANNOT_EVALUATE"
+    assert any(".docx" in reason for reason in result["evidence"])
+    assert run(copy)[0] != 0
+
+
+def test_cannot_evaluate_is_blocking_even_if_baselined(copy):
+    baseline = copy / "coherence-baseline.json"
+    b = json.loads(baseline.read_text(encoding="utf-8"))
+    b["COH-X06"] = "this baseline entry may never whitelist missing required input"
+    baseline.write_text(json.dumps(b), encoding="utf-8")
+    (copy / "tools" / "reg_arch_markdown.py").unlink()
+    status, _ = run(copy)
+    assert status != 0
+    assert "COH-X06" in report(copy)["cannot_evaluate"]
+
+
+def test_coh_x06_old_fail_open_mutant_is_killed(copy):
+    """Run the new negative tests against the old return-[] mutation, not just against the fix."""
+    checker = copy / "tools" / "check_coherence.py"
+    old = checker.read_text(encoding="utf-8")
+    guarded = '    if missing:\n        return cannot_evaluate(*[f"required REG-ARCH input missing: {p}" for p in missing])'
+    assert old.count(guarded) == 1
+    checker.write_text(old.replace(guarded, "    if missing:\n        return []"), encoding="utf-8")
+    shutil.copytree(ROOT / "tests", copy / "tests", ignore=shutil.ignore_patterns("__pycache__"))
+    env = os.environ.copy()
+    env["COHERENCE_FIXTURE_MODE"] = "1"
+    selection = (
+        "coh_x06_missing_generator_is_a_finding or "
+        "coh_x06_missing_target_is_a_finding or "
+        "coh_x06_both_missing_reports_both"
+    )
+    p = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "tests/test_coherence.py", "-k", selection,
+         "--tb=short"], cwd=copy, capture_output=True, text=True, env=env,
+    )
+    mutation_log = (
+        "MUTATION: old COH-X06 behavior restored (missing -> return [])\n"
+        + f"Mutant pytest exit code: {p.returncode}\n\n"
+        + p.stdout + "\n" + p.stderr
+    )
+    evidence_path = os.environ.get("COHERENCE_MUTATION_EVIDENCE_PATH")
+    if evidence_path:
+        output = Path(evidence_path)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(mutation_log, encoding="utf-8")
+    assert p.returncode == 1, mutation_log
+    assert "3 failed" in p.stdout, mutation_log
