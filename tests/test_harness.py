@@ -1268,6 +1268,32 @@ def test_not_implemented_from_a_declared_primitive_is_inconclusive():
     assert r.status == R.ReportingState.INCONCLUSIVE and "evaluate" in r.details
 
 
+def test_not_implemented_from_a_decorated_or_aliased_primitive_is_inconclusive():
+    import functools
+    def bound_wrapper(fn):
+        def wrapper(self, *a, **kw):             # binds self, named "wrapper"
+            return fn(self, *a, **kw)
+        return wrapper
+    def free_wrapper(fn):
+        @functools.wraps(fn)
+        def wrapper(*a, **kw):
+            return fn(*a, **kw)
+        return wrapper
+    def _not_there(self, intent, **kw):
+        raise NotImplementedError("not wired")
+    class Decorated(TemplatePort):
+        capabilities = frozenset({P.EVALUATE})
+        intents = frozenset({P.NO_STANDING})
+        evaluate = bound_wrapper(_not_there)
+    class Wrapped(Decorated):
+        evaluate = free_wrapper(_not_there)
+    class Aliased(Decorated):
+        evaluate = _not_there
+    for port in (Decorated(), Wrapped(), Aliased()):
+        r = PortAdapter(port).run_vector("C1")
+        assert r.status == R.ReportingState.INCONCLUSIVE, (type(port).__name__, r.status, r.details)
+
+
 def test_not_implemented_below_a_declared_primitive_is_inconclusive():
     class Delegates(TemplatePort):
         capabilities = frozenset({P.EVALUATE})

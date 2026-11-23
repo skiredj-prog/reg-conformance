@@ -153,17 +153,36 @@ class PortAdapter(R.BaseAdapter):
         return out
 
 
+def _primitive_codes(port) -> dict:
+    """Code object -> primitive name, for the functions the port's class binds
+    to each primitive name, through any decorator (`__wrapped__`) and whatever
+    the function is called: a wrapper or an alias still is that primitive."""
+    codes = {}
+    for name in PRIMITIVES:
+        fn = getattr(type(port), name, None)
+        while fn is not None:
+            code = getattr(fn, "__code__", None)
+            if code is not None:
+                codes.setdefault(code, name)
+            fn = getattr(fn, "__wrapped__", None)
+    return codes
+
+
 def _entry_primitive(port, exc):
-    """The primitive through which the exception left the port, if the scenario
-    called it and its capability is declared; None otherwise. The first frame
-    of this port object on the way down is where scenario code entered the
-    port; what the primitive calls below it is the primitive's own concern."""
+    """The primitive through which the exception left the port, if its
+    capability is declared; None otherwise. The first frame of the port on the
+    way down is where scenario code entered it; what the primitive calls below
+    is the primitive's own concern."""
+    codes = _primitive_codes(port)
     tb = exc.__traceback__
     while tb is not None:
         frame = tb.tb_frame
+        bound = frame.f_locals.get("self", port)
+        name = codes.get(frame.f_code) if bound is port else None
+        if name is not None:
+            return name if PRIMITIVES[name] in port.capabilities else None
         if frame.f_locals.get("self") is port:
-            name = frame.f_code.co_name
-            return name if PRIMITIVES.get(name) in port.capabilities else None
+            return None            # entered through a port method that is no primitive
         tb = tb.tb_next
     return None
 

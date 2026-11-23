@@ -29,7 +29,7 @@ is a REG vector, and neither changes the vector summary.
   summary or `conformance_status`. A `HARNESS_ERROR` among them does (below).
 - `PASS`, `FAIL` and `INCONCLUSIVE` come from a scenario, with one exception:
   a `NotImplementedError` that leaves the port through the primitive of a
-  declared capability (`port.PRIMITIVES`) is `INCONCLUSIVE`, because the port's
+  declared capability (`PRIMITIVES` in `harness/port.py`) is `INCONCLUSIVE`, because the port's
   claim is wrong, not the subject. The same exception raised by scenario or
   harness code, by `reset`, by a port method that is no primitive, or by the
   primitive of an undeclared capability is `HARNESS_ERROR`. Any other exception that
