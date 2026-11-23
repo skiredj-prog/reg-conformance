@@ -21,16 +21,18 @@ is a REG vector, and neither changes the vector summary.
 - A refusal by the runtime's own policy (`DENIED`) never satisfies a vector
   about REG structural admissibility (`INADMISSIBLE`).
 - Effect probes (`HX-EFFECT-*`) and property checks (`PX-*`) are not REG
-  vectors. They are reported apart and never enter a vector summary or
-  `conformance_status`.
-- Only a scenario decides `PASS`, `FAIL` or `INCONCLUSIVE`. An exception that
-  escapes it (a crash of the port or of the harness, or a refusal the scenario
-  did not expect) is reported `HARNESS_ERROR`: the subject was not evaluated.
-  The report lists every such id, vectors, probes and property checks alike,
-  under `harness_errors`, and the harness exits 4, ahead of `FAIL` (1),
-  `INCONCLUSIVE` (3) and gaps (2). A run with one is not a conformance result.
-  A declared capability that raises `NotImplementedError` stays `INCONCLUSIVE`:
-  the port's claim is wrong, the subject is not at fault.
+  vectors. They are reported apart, and their results never enter a vector
+  summary or `conformance_status`. A `HARNESS_ERROR` among them does (below).
+- `PASS`, `FAIL` and `INCONCLUSIVE` come from a scenario, with one exception:
+  a declared capability that raises `NotImplementedError` is `INCONCLUSIVE`,
+  because the port's claim is wrong, not the subject. Any other exception that
+  escapes a scenario (a crash of the port or of the harness, a refusal the
+  scenario did not expect, a port calling `sys.exit`) is `HARNESS_ERROR`: the
+  subject was not evaluated. The report lists every such id, vectors, probes
+  and property checks alike, under `harness_errors`, and sets
+  `conformance_status` to `HARNESS_ERROR`. The harness exits 4, ahead of `FAIL`
+  (1), `INCONCLUSIVE` (3) and gaps (2), and also exits 4 on a usage error or
+  when it stops before a result. A run with one is not a conformance result.
 
 ## What counts as an admission
 

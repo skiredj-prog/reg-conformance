@@ -733,7 +733,9 @@ SCENARIOS = {s.vector_id: s for s in [
     # The positive control evaluates an admissible attempt before the expired one.
     _vector("CT-R4-004a", {_E, _C, P.STALE_GRANT}, r4_004a, _A, EXEC,
             "the passage of time across the bound: the authorization is created already expired",
-            "an effect under a fresh authorization and its four conditions (RFC-4 v0.3 revision §2.1)"),
+            "an effect under a fresh authorization and its four conditions (RFC-4 v0.3 revision §2.1)",
+            "an effect behind a reported refusal, when the port declares no effect observation "
+            "(effects): the result then rests on the refusal the port reports"),
     _vector("CT-R4-004b", {_E, _C, P.CLOCK}, r4_004b, _H, EXEC,
             "a late approval, resolution or exit authorization: the port has no such primitive",
             "the recorded resulting state (CONFIRMED_NONEXECUTION or UNKNOWN with reconciliation)",

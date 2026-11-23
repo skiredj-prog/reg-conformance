@@ -268,7 +268,11 @@ def v13():
     # count of their own version and are not checked here.
     text = re.sub(r"\s+", " ", re.sub(r"\n>\s?", " ", read("CLAIMS.md")))
     total, out = len(runner_module().VECTORS), []
-    for m in re.finditer(r"(\d+) of (\d+) REG vectors \w+(?: \((\d+) adapter required\))?", text):
+    quoted = list(re.finditer(r"(\d+) of (\d+) REG vectors \w+(?: \((\d+) adapter required\))?", text))
+    if not quoted:
+        # Nothing to compare is not agreement: a reworded or missing example is a finding.
+        return ["CLAIMS.md quotes no count of REG vectors: this check did not run"]
+    for m in quoted:
         part, whole, ar = int(m.group(1)), int(m.group(2)), m.group(3)
         if whole != total:
             out.append(f"CLAIMS.md quotes \"{m.group(0)}\"; runner.py registers {total} vectors")

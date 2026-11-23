@@ -5,6 +5,7 @@ to show that each effect probe detects the fault it is meant to detect. They
 are not runtimes under qualification and produce no conformance evidence.
 """
 import json
+import re
 import subprocess
 import sys
 import time
@@ -941,9 +942,11 @@ def test_a_harness_error_in_a_probe_alone_still_stops_the_run(monkeypatch, tmp_p
     out = tmp_path / "report.json"
     assert H.main(["--port", "x:Y", "--probes", "--output", str(out)]) == 4
     report = json.loads(out.read_text())
-    # Probes stay out of the vector summary; they do not stay out of the exit code.
+    # Probes stay out of the vector summary; a probe that did not run stays out of
+    # neither the exit code nor the run's status.
     assert report["summary"]["HARNESS_ERROR"] == 0
     assert set(report["harness_errors"]) == set(PROBES)
+    assert report["conformance_status"] == "HARNESS_ERROR"
 
 
 def test_the_harness_itself_stopping_is_not_exit_1(monkeypatch, tmp_path):
@@ -1107,5 +1110,76 @@ def test_the_workflow_runs_the_resolved_port_and_fails_on_a_harness_error():
     assert run["env"]["PORT"] == "${{ steps.target.outputs.port }}"
     assert '--port "$PORT"' in run["run"] and "ReferencePort" not in run["run"]
     gate = steps[-1]["run"]
-    assert "4)" in gate and "0|2)" in gate
+    branch = lambda pat: re.search(r"^\s*" + pat + r"\)[^\n]*$", gate, re.M).group(0)
+    for code in ("1", "3", "4", r"\*"):
+        assert branch(code).rstrip().endswith("exit 1;;"), code
+    assert "exit" not in branch(r"0\|2")
     assert "matrix" not in WORKFLOW.read_text(encoding="utf-8")
+
+
+# Second round of review on #83 (Codex, cubic).
+
+def test_a_port_that_calls_sys_exit_does_not_end_the_run_or_choose_its_code(monkeypatch, tmp_path):
+    import harness.__main__ as H
+    class Exits(ReferencePort):
+        def commit(self, decision, *, action_type=None):
+            sys.exit(0)                          # 0 would read as a clean run
+    r = PortAdapter(Exits()).run_vector("CT-R4-001")
+    assert r.status.value == HARNESS_ERROR and "SystemExit" in r.details
+    monkeypatch.setattr(H, "load_port", lambda spec: Exits())
+    assert H.main(["--port", "x:Y", "--output", str(tmp_path / "r.json")]) == 4
+    def exits_on_load(spec):
+        sys.exit(1)                              # 1 would read as FAIL
+    monkeypatch.setattr(H, "load_port", exits_on_load)
+    assert H.main(["--port", "x:Y", "--output", str(tmp_path / "r2.json")]) == 4
+
+
+def test_help_still_exits_0():
+    import harness.__main__ as H
+    with pytest.raises(SystemExit) as e:
+        H.main(["--help"])
+    assert e.value.code == 0
+
+
+def test_a_row_with_a_pass_and_a_harness_error_is_not_counted_as_a_pass():
+    class Row:
+        def __init__(self, vid, status):
+            self.vector_id, self.status = vid, status
+    exercises = {"PX-REG-STATE-010": "REG-STATE-010"}
+    data = properties.load()
+    base = properties.view([Row("C1", "PASS")], registered={"C1"}, executable={"C1"}, data=data)
+    view = properties.view([Row("C1", "PASS"), Row("REG-STATE-010", "PASS")],
+                           check_results=[Row("PX-REG-STATE-010", "HARNESS_ERROR")],
+                           registered={"C1", "REG-STATE-010"}, exercises=exercises, data=data,
+                           executable={"C1", "REG-STATE-010", "PX-REG-STATE-010"})
+    assert view["index"]["PASS"] == base["index"]["PASS"]
+    assert view["index"]["observed"] == base["index"]["observed"]
+    assert view["index"]["HARNESS_ERROR"] == 1
+
+
+def test_the_bundle_lists_harness_errors_from_a_runner_report():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+    import make_evidence_bundle as B
+    class Crashing(R.NativeKernelAdapter):
+        def _v_c1(self): raise RuntimeError("kernel crashed")
+    a = Crashing(KERNEL)
+    report = json.loads(json.dumps(R.generate_report(a, a.run_all(["C1", "C2"])), default=str))
+    assert "harness_errors" not in report                 # runner.py does not write it
+    verdict = B.build_verdict(report)
+    assert verdict["harness_errors"] == ["C1"]
+    assert verdict["reg_vectors"]["status"] == "HARNESS_ERROR"
+
+
+def test_native_ct_r4_004a_accepts_a_flag_as_the_valid_authorization():
+    class Flags(R.NativeKernelAdapter):
+        def _evaluate(self, *a, **kw):
+            g = super()._evaluate(*a, **kw)
+            if g["final_disposition"] == "PASS":
+                g["final_disposition"] = "FLAG"          # RFC-0 §4: FLAG admits too
+            return g
+    assert Flags(KERNEL).run_vector("CT-R4-004a").status == R.ReportingState.PASS
+
+
+def test_ct_r4_004a_states_what_it_rests_on_without_effect_observation():
+    assert any("declares no effect observation" in line
+               for line in SCENARIOS["CT-R4-004a"].not_observed)

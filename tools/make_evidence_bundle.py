@@ -61,7 +61,9 @@ def build_verdict(report: dict) -> dict:
         "missing_bindings": binding.get("missing_bindings", []),
         # Tests that did not run to a result (vectors, probes and property checks).
         # Non-empty: this run is not a conformance result, whatever else it holds.
-        "harness_errors": report.get("harness_errors", []),
+        "harness_errors": sorted(set(report.get("harness_errors") or []) | {
+            r["vector_id"] for r in report["results"] + probes + checks.get("results", [])
+            if r["status"] == "HARNESS_ERROR"}),
         "reg_vectors": {
             "total": report["vector_sets"]["total"],
             "status": report["conformance_status"],

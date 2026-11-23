@@ -160,3 +160,10 @@ def test_a_vector_count_whose_parts_exceed_the_total_is_caught(copy):
     claims.write_text(text.replace("0 of 61 REG vectors executed (61 adapter",
                                    "3 of 61 REG vectors executed (61 adapter"), encoding="utf-8")
     assert "COH-V13" in findings(copy)
+
+
+def test_claims_with_no_vector_count_is_a_finding_not_a_pass(copy):
+    claims = copy / "CLAIMS.md"
+    text = claims.read_text(encoding="utf-8")
+    claims.write_text(text.replace("REG vectors executed", "vectors run"), encoding="utf-8")
+    assert "COH-V13" in findings(copy)

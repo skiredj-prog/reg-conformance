@@ -71,8 +71,9 @@ def _state(counts: dict) -> str:
 
 
 def _worst(found) -> str | None:
-    """One state for several observed results: a failure outweighs a pass."""
-    for state in ("FAIL", "PASS", "INCONCLUSIVE"):
+    """One state for several results: a failure outweighs everything, and a check
+    that did not run to a result outweighs a pass, as for a family."""
+    for state in ("FAIL", HARNESS_ERROR, "PASS", "INCONCLUSIVE"):
         if state in found:
             return state
     return None
@@ -147,12 +148,14 @@ def view(results, probe_results=(), check_results=(), *, registered=(), executab
     # The same run read row by row: how much of the index this harness can
     # execute, and how much of it gave an observation on this subject.
     rows = [r for r in data["checks"] if not r.startswith("HX-")]
-    states = [_worst(observed(r)) for r in rows]
+    states = [_worst({statuses[c] for c in own(r) if statuses.get(c) in COUNTED}) for r in rows]
     index = {"indexed": len(rows),
              "with_check": sum(has_check(r) for r in rows),
-             "observed": sum(s is not None for s in states),
+             # A row whose checks include one that did not run, and no failure,
+             # is neither observed nor a pass.
+             "observed": sum(s in OBSERVED for s in states),
              **{s: states.count(s) for s in OBSERVED},
-             # Rows where a check did not run to a result: not observed, and not a pass.
+             # Rows where some check did not run to a result, whatever the others gave.
              HARNESS_ERROR: sum(any(statuses.get(c) == HARNESS_ERROR for c in own(r)) for r in rows)}
     return {"note": NOTE, "source": "harness/properties.yaml", "status": data.get("status"),
             "summary": summary, "index": index, "families": out,

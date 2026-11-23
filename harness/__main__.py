@@ -27,20 +27,23 @@ class _Parser(argparse.ArgumentParser):
 
 
 def main(argv=None):
+    # Parsed outside the guard, so that --help keeps 0 and a usage error its 4.
+    args = _parser().parse_args(argv)
     try:
-        return _main(argv)
-    except Exception:
+        return _run(args)
+    except (Exception, SystemExit):
         # The harness itself stopped (a port that cannot load, a port that breaks
-        # a harness rule). Python would exit 1, which reads as FAIL: it is not one.
+        # a harness rule, a port that calls sys.exit). Python would exit 1, which
+        # reads as FAIL, or whatever code the port chose, 0 included: not a result.
         traceback.print_exc()
         print("\n  HARNESS_ERROR: the run stopped before a result; the subject was not "
               "evaluated.", file=sys.stderr)
         return EXIT_HARNESS_ERROR
 
 
-def _main(argv=None):
+def _parser():
     p = _Parser(prog="python -m harness",
-                                description="Run the REG vector set against a RuntimePort.")
+                description="Run the REG vector set against a RuntimePort.")
     p.add_argument("--port", required=True, help="package.module:ClassName")
     p.add_argument("--probes", action="store_true",
                    help="also run the harness effect probes (not REG vectors)")
@@ -53,8 +56,10 @@ def _main(argv=None):
     p.add_argument("--subject-worktree-state", choices=["clean", "dirty", "unknown"], default="unknown")
     p.add_argument("--environment-digest", default="")
     p.add_argument("--output", default="results/port-run.json")
-    args = p.parse_args(argv)
+    return p
 
+
+def _run(args):
     adapter = PortAdapter(load_port(args.port))
     results = adapter.run_all()
     for r in results:
@@ -160,6 +165,9 @@ def _main(argv=None):
                     if r.status == R.ReportingState.HARNESS_ERROR)
     report["harness_errors"] = errors
     if errors:
+        # Probe and check results never enter conformance_status; a test that did
+        # not run does: the run as a whole is not a conformance result.
+        report["conformance_status"] = "HARNESS_ERROR"
         print(f"\n  HARNESS_ERROR on {len(errors)} test(s): " + ", ".join(errors))
         print("  These did not run to a result. The run is not a conformance result.")
     code = EXIT_HARNESS_ERROR if errors else 1 if s["FAIL"] else 3 if s["INCONCLUSIVE"] else \

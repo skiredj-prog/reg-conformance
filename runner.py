@@ -521,7 +521,7 @@ class HTTPAdapter(BaseAdapter):
         # (INCONCLUSIVE), it does not violate it. HTTP 0 is a transport failure.
         c, r = self._post("/evaluations", self._eb(
             measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
-        if self._disp(r) != "PASS":
+        if self._disp(r) not in ("PASS","FLAG"):     # RFC-0 §4: both admit
             return self._inconclusive("CT-R4-004a",
                 f"could not establish a valid authorization (HTTP {c}, disposition={self._disp(r)})")
         eid = r.get("evaluation_id")
@@ -533,7 +533,7 @@ class HTTPAdapter(BaseAdapter):
         # commit, or a refusal proves nothing.
         c0, r0 = self._post("/evaluations", self._eb(
             measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
-        if self._disp(r0) != "PASS":
+        if self._disp(r0) not in ("PASS","FLAG"):
             return self._inconclusive("CT-R4-004a",
                 f"could not establish a valid authorization (HTTP {c0}, disposition={self._disp(r0)})")
         pc, pr = self._post(f"/evaluations/{r0.get('evaluation_id')}/events", self._commit_body(r0))
@@ -944,7 +944,7 @@ class NativeKernelAdapter(BaseAdapter):
         # bound has passed. Positive control first, as in harness/scenarios.py
         # r4_004a: a kernel that refuses every commit proves nothing.
         ok = self._evaluate("a","valid","wire_transfer",0.2,0.2,0.90,uuid.uuid4().hex)
-        if ok["final_disposition"] != "PASS":
+        if ok["final_disposition"] not in ("PASS","FLAG"):     # RFC-0 §4: both admit
             return self._inconclusive("CT-R4-004a",
                 f"could not establish a valid authorization (disposition={ok['final_disposition']}) (native)")
         try:

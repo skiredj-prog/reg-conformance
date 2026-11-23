@@ -79,8 +79,8 @@ class PortAdapter(R.BaseAdapter):
         except NotImplementedError as e:
             # Declared but not implemented: the port's claim is wrong, not the subject.
             return self._inconclusive(vid, f"declared capability not implemented: {e}")
-        except Exception as e:
-            # Raised past the scenario: the scenario decides PASS and FAIL, and it
+        except (Exception, SystemExit) as e:
+            # Raised past the scenario (sys.exit included: a port does not end the run): the scenario decides PASS and FAIL, and it
             # decided nothing here. A crash of the port or of the harness, or a
             # refusal the scenario did not expect, is HARNESS_ERROR (C3 included),
             # never a FAIL of the subject (review of pull request #80).
