@@ -27,6 +27,7 @@
 version: "1.0.0"
 status: draft            # becomes "in force" when the author ratifies it
 date: "2026-11-19"
+amended: "2026-11-23"   # aligned with the revised manuscript/ERRATA-v7.2.md; still draft
 
 sources:
   manuscript: {file: manuscript/v7.2.md, release: "7.2", commit: 98bf685, doi: "10.5281/zenodo.24249646 (as stated in the repository; not checked on Zenodo)"}
@@ -42,7 +43,7 @@ sources:
     term of the canonical vocabulary v6.3; expiry records CONFIRMED_NONEXECUTION
     or UNKNOWN with reconciliation (B3).
   rfc_4_v0_3: "revisions/rfc-4-v0.3-2026-11-19.md (ratified by the author 2026-11-19, amended 2026-11-20; in force from v0.7.0; outside the frozen baseline; RFC-4 v0.2 stays frozen)"
-  canonical_vocabulary_v6_3: "cited by the author; no file of that name or version was found in the five repositories (searched 2026-11-19). Terms below are taken from the decision and RFC-4 v0.3 §2.3, not from a v6.3 text."
+  canonical_vocabulary_v6_3: "cited by the author; no file of that name or version was found in the five repositories (searched 2026-11-19). Terms below are taken from the decision and RFC-4 v0.3 §2.3, not from a v6.3 text. Searched again on 2026-11-23 in the seven project repositories: not found."
 
 terms:
 
@@ -97,7 +98,7 @@ terms:
     definition: "Aggregate budget conservation: reserved + committed <= capacity, per resource_id, at every intermediate state."
     defined_in: catalog/capabilities-v1.yaml normative_invariants[BUD]; specs/consensus-contract-v1.md §2.4
     aliases:
-      - {alias: I8, where: "tenir_governance; catalogue <= v1.1.0 (tag v0.6.2 included); evidence logs written before the rename", read_as: BUD}
+      - {alias: I8, where: "tenir_governance up to 5.7.6 (code, CHANGELOG, .zenodo.json; verified at 1881c90); catalogue <= v1.1.0 (tag v0.6.2 included); harness/ports/tenir_gov.py, which names the TENIR-Gov invariant; evidence logs written before the rename (ERR-7.2-04)", read_as: BUD}
       - {alias: I8_maintained, where: "field name in specs/evidence-type-specs-v1.md (kept as is) and in historical fault-injection logs such as evidence/test-fault-tolerance.log", refers_to: BUD, note: "The field keeps its name. This glossary does not introduce BUD_maintained; a new field name needs a versioned revision of the evidence contract with an explicit compatibility rule (author's decision, 2026-11-20)."}
     finding: verified
     pending:
@@ -136,6 +137,7 @@ terms:
       written_as: "τ_K"
       locations: ["l.86 §2.2 (S2)", "l.229-230 §4.4 (admit and await, timeout)", "l.383 §6.1 (clock advance by τ_K)", "l.485 §7.1 (S2)"]
       errata: ERR-7.2-01
+    implementation_names: "tenir-conformance-s1-g1 parameter tau_k_ms (AWAITING_QUALIFICATION deadline, membrane.py l.754 at d42499b) and explorer event advance(tau_K): read as τ_R, not renamed (verified)"
     suite_uses_needing_rename:
       - "runner.py l.13, l.16, l.114, l.116 at v0.7.0 (T6/T7 descriptions; l.107, l.109 at b943f06)"
       - "vectors/core.yaml CT-R4-011 input ('under τ_K discipline'), and vectors/dist/vectors.json"
@@ -318,10 +320,10 @@ terms:
       - {source: "#77, in v0.7.0", says: "no effect; terminal refusal, or suspension with a declared resumption condition"}
     resolution: "The #77 text (v0.7.0) is canonical; RFC-4 v0.3 §3 (in force from v0.7.0) carries the RN-001 §4 outcome and supersedes the v0.2 §2.2 HARD_VETO sentence."
     manuscript_v7_2:
-      same_meaning: false
+      same_meaning: true    # v7.2 cites this suite vector; the id appears in no revision of tenir-conformance-s1-g1
       locations: ["l.10 changelog 7.1", "l.61 §1.1 (traceability list)", "l.647 §10.1"]
-      used_for: GL-MEM-COMMIT-BINDING
-      errata: ERR-7.2-02
+      clash: "§10.1 attaches to it the S11 commit binding (GL-MEM-COMMIT-BINDING), which does not test it; the evaluated membrane has no policy epoch or state hash, so neither environment drift nor governance-state change is captured"
+      errata: ERR-7.2-02   # revised 2026-11-23; the 19-20 November draft read the id as a name for the S11 binding
     finding: verified
 
   - id: GL-MEM-COMMIT-BINDING
@@ -332,8 +334,9 @@ terms:
       hashes at verdict and at commit (§7.9, S11). It does not capture drift of
       the external environment between verdict and commit.
     defined_in: "manuscript/v7.2.md §7.9, §10.1"
-    closest_suite_vectors: ["CT-R4-001", "CT-R4-002"]   # inferred: they bind action/payload; CT-R4-005 binds governance state
-    finding: "verified (definition); inferred (closest vectors)"
+    closest_suite_vectors: ["CT-R4-001", "CT-R4-002"]   # CT-R4-002 verified: the membrane labels its S11 action-binding test CT-R4-002 (tests/test_g0_s11_transition.py at d42499b); CT-R4-001 inferred
+    does_not_test: CT-R4-005
+    finding: "verified (definition, CT-R4-002 label); inferred (CT-R4-001)"
 
   - id: GL-LIFECYCLE-T
     canonical: "T6, T7, T8"
@@ -347,7 +350,7 @@ terms:
       T7 and T8 are reported in canonical terms only after mapping FAILED
       (GL-RUNTIME-LABEL). T8's "new attempt" is the new attempt identity that
       GL-BOUND-HELD-ATTEMPT requires for any later effect.
-    defined_in: "tenir-conformance-s1-g1 at 8bc0e5e (pinned in .github/workflows/lifecycle.yml); runner.py header"
+    defined_in: "T6: this suite only (LIFECYCLE_INTEGRATION.md, lifecycle/attempt_state.py, runner.py header); tenir-conformance-s1-g1 does not use the name (d42499b, 8bc0e5e, main). T7, T8: tenir-conformance-s1-g1 (membrane docstring, tests/test_t7_t8_failed_retry.py) at d42499b and 8bc0e5e (pinned in .github/workflows/lifecycle.yml); T7 also manuscript v7.2 §4.4"
     manuscript_v7_2:
       names_only: T7      # §4.4 'declare failed (T7)'
       absent: [T6, T8]
@@ -356,7 +359,7 @@ terms:
       transition T6" and "transition T8". The manuscript names neither.
     finding: verified
     pending:
-      - {where: [vectors/core.yaml, vectors/dist/vectors.json, runner.py, VECTORS.md, lifecycle/register_core_lifecycle.py], change: "cite T6 and T8 to tenir-conformance-s1-g1@8bc0e5e; keep §4.4 only for T7 and for the untagged rows it mirrors", after: "next suite revision (#77 merged in v0.7.0 without this change)"}
+      - {where: [vectors/core.yaml, vectors/dist/vectors.json, runner.py, VECTORS.md, lifecycle/register_core_lifecycle.py], change: "cite T6 to this suite's lifecycle vocabulary and T8 to tenir-conformance-s1-g1@8bc0e5e; keep §4.4 only for T7 and for the untagged rows it mirrors", after: "next suite revision (#77 merged in v0.7.0 without this change)"}
     guard:
       pattern: 'v7\.2 §4\.4.*\bT[68]\b|\bT[68] \(manuscript v7\.2'
       allowed: []
@@ -372,7 +375,7 @@ terms:
   - id: GL-SCENARIO-S
     canonical: "S1 … S12"
     kind: scenario-namespace
-    definition: "Scenario campaign of tenir-conformance-s1-g1 (manuscript §7). Suffixed cases (S1a, S2c, S12f …) are sub-cases of the same campaign."
+    definition: "Scenario campaign of tenir-conformance-s1-g1 (manuscript §7). Suffixed cases (S1a, S2c, S12f …) are sub-cases of the same campaign. There is no S9: eleven numbered scenarios, S1–S8 and S10–S12 (manuscript §7.1; CI workflow at d42499b)."
     same_meaning: true
     finding: verified
 
@@ -386,7 +389,13 @@ terms:
       `PASS` is also a test outcome (GL-OUTCOME). Write `disposition PASS` or
       `outcome PASS` whenever both can be read. The manuscript's client
       projection (UNKNOWN, HOLD) in §4.2 uses HOLD as the disposition shown to
-      the client; same meaning.
+      the client; same meaning. v7.2 §1.1 (l.51) also calls QUARANTINE_LOCK
+      (an LEI-level guard) and FAILED (an attempt label) dispositions; the
+      evaluated membrane returns PASS, HOLD and HARD_VETO.
+    manuscript_v7_2:
+      same_meaning: false
+      locations: ["l.51 §1.1"]
+      errata: ERR-7.2-06
     finding: verified
 
   - id: GL-OUTCOME
@@ -423,7 +432,7 @@ terms:
     canonical: "EXP-E1, EXP-E2 | EXT-E1 … EXT-E7"
     kind: id-namespace
     definition:
-      EXP: "Experiments of the manuscript: E1 bounded exploration, E2 four-world matrix (§6)."
+      EXP: "Experiments of the manuscript: E1 the 53-sequence baseline comparison (§8), E2 the bounded explicit-state exploration under the four-world matrix (§6)."
       EXT: "Entries of the exteriority registry (docs/exteriority-registry-v0.2.md)."
     clash: "Both write E1, E2. CHANGELOG audit items E2–E7 (v0.4) are a third use; historical, left as is."
     finding: verified
