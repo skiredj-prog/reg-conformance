@@ -1,7 +1,7 @@
 # Reading notes for manuscript v7.2 — vocabulary shared with the REG suite
 
-Status: ratification candidate, 23 November 2026. Not in force until the
-author ratifies it.
+Status: ratified by the author on 23 November 2026; in force for readers of
+v7.2.
 
 History: drafted 19 November 2026 (`7b6f45e`); amended 19–20 November 2026
 (`f9711c0`, `e247e1e`, `858b716`, `7080d49`); revised 23 November 2026 after a
