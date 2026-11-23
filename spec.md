@@ -46,6 +46,8 @@ A report mixing native and adapter results without explicit labeling is non-conf
 | `ADAPTER_REQUIRED` | ~ | Testable only through a translation layer |
 | `IMPLEMENTATION_GAP` | △ | Requirement understood; not yet engineered |
 
+`HARNESS_ERROR` (`!`) is not a reporting state of RFC-7 §8.3 and says nothing about the subject. It records that a test did not run to a result: the port, the adapter or the harness raised an exception that the test's own oracle did not decide. Only a test's oracle reports `FAIL` or `INCONCLUSIVE`; a crash is neither. This holds for C3: a crash is not outcome C3-C, because the oracle did not run. A report that holds one has `conformance_status: HARNESS_ERROR` and is not a conformance result. Exit codes of `runner.py` and `python -m harness`: 4 on any `HARNESS_ERROR`, then 1 on `FAIL`, 3 on `INCONCLUSIVE`, 2 on gaps or `ADAPTER_REQUIRED`, 0 otherwise.
+
 ---
 
 ## Core invariants (C-series)

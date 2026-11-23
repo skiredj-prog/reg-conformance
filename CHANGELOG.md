@@ -1,5 +1,23 @@
 # Changelog
 
+## Non publié
+
+Suite à la revue de sécurité externe de la PR #80 (Mergestorm, six constats). Aucun résultat publié ne change : le noyau de référence rend les mêmes états, vecteur par vecteur, en mode natif et par le port de référence, sondes et contrôles de propriété compris.
+
+### Added
+
+- **`HARNESS_ERROR`**. Un test qui ne va pas jusqu'à un résultat (exception du port, de l'adaptateur ou du harness que l'oracle du test n'a pas tranchée) n'est plus lu comme un `FAIL`, ni comme un `INCONCLUSIVE` pour C3 : il est `HARNESS_ERROR`. Ce n'est pas un état de rapport de RFC-7 §8.3 et il ne dit rien du sujet. Un rapport qui en contient a `conformance_status: HARNESS_ERROR` ; `python -m harness` et `runner.py` sortent en 4, avant 1 (`FAIL`), 3 (`INCONCLUSIVE`) et 2 (lacunes). Le harness liste les identifiants sous `harness_errors`, vecteurs, sondes et contrôles de propriété compris, et sort aussi en 4 s'il s'arrête lui-même (port introuvable, port qui viole une règle du harness), au lieu du 1 de Python, qui se lisait comme un `FAIL`, et sur une erreur d'usage, au lieu du 2 d'argparse, que le workflow laissait passer comme des lacunes. La vue par familles le compte à part (`harness_error`) : une famille qui en contient n'est jamais lue comme passante. Le paquet de preuve le reprend (`verdict.json`, `harness_errors`). `NotImplementedError` sur une capacité déclarée reste `INCONCLUSIVE`.
+- `COH-V13` (`tools/check_coherence.py`) : les comptes de vecteurs cités dans `CLAIMS.md` sont ceux du runner.
+
+### Fixed
+
+- **`CT-R4-004a` natif : contrôle positif.** La sonde native rendait `PASS` sur tout refus, y compris d'un noyau qui refuse tout commit. Elle commit d'abord une autorisation valide (sinon `INCONCLUSIVE`), puis vérifie qu'aucun effet n'est enregistré sous l'autorisation expirée, même si un refus est rapporté (sinon `FAIL`). Même oracle que le scénario du harness. En HTTP, une autorisation valide qu'on ne peut pas obtenir donne `INCONCLUSIVE` au lieu de `FAIL`.
+- `CT-R4-004a` (harness) déclare `evaluate` et l'intention `admissible`, qu'il utilise pour son contrôle positif : un port sans `evaluate` est `ADAPTER_REQUIRED`.
+- Workflow `REG Conformance - Run` : l'entrée `target` de `workflow_call` était ignorée et le port de référence tournait sous n'importe quel nom. Une étape « Resolve the target » traduit le nom en port et fait échouer le job sur un nom inconnu, avant toute exécution. Le code 4 fait échouer le job avec son propre message. Le job `lifecycle` refuse un run de référence qui contient un `HARNESS_ERROR`.
+- `tests/test_harness.py` (contrôles de propriété sur TENIR-Gov) : `PX-REG-STATE-010` n'accepte un `FAIL` que décidé par l'oracle du contrôle ; un plantage est rejeté.
+- Familles candidates : `CT-R4-004b` et `REG-STATE-024` (tentative retenue à sa borne déclarée) passent de `EGP-12` à `EGP-03`, avec `CT-R4-004a` et `CT-R4-016`. Les comptes par famille du port de référence et du double de test ne changent pas.
+- `CLAIMS.md` : l'exemple de citation compte 61 vecteurs, pas 59.
+
 ## v0.7.0 — 2026-11-20
 
 Cohérence REG / REG+ / suite, RN-001 inscrit dans le registre des vecteurs, harness neutre et `CLAIMS.md` en vigueur. Une seule version de chaque chose. Détail et état : `python tools/check_coherence.py`.

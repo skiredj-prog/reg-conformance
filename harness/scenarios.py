@@ -730,7 +730,8 @@ SCENARIOS = {s.vector_id: s for s in [
             *_ONE_REPLAY),
     _vector("CT-R4-004", {_C, P.STALE_GRANT}, r4_004, _none, EXEC,
             "the passage of time across the bound: the grant is created already expired"),
-    _vector("CT-R4-004a", {_C, P.STALE_GRANT}, r4_004a, _none, EXEC,
+    # The positive control evaluates an admissible attempt before the expired one.
+    _vector("CT-R4-004a", {_E, _C, P.STALE_GRANT}, r4_004a, _A, EXEC,
             "the passage of time across the bound: the authorization is created already expired",
             "an effect under a fresh authorization and its four conditions (RFC-4 v0.3 revision §2.1)"),
     _vector("CT-R4-004b", {_E, _C, P.CLOCK}, r4_004b, _H, EXEC,

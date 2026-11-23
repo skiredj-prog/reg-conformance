@@ -33,7 +33,9 @@ separate when a result is quoted.
 | `ADAPTER_REQUIRED` | Not tested: the port or the harness cannot test it yet. |
 | `IMPLEMENTATION_GAP` | The implementer declares the capability missing. |
 
-Only `PASS` counts as a pass.
+Only `PASS` counts as a pass. `HARNESS_ERROR` is not an outcome of a test: the
+test did not run to a result, because the port or the harness raised an
+exception. A run that holds one is not quoted as a result.
 
 **Which set the test belongs to.** REG vectors test properties specified by
 the REG RFCs. Effect probes (`HX-EFFECT-*`) check that a refusal matches zero
@@ -80,7 +82,7 @@ A statement about a result names all of the following:
 Example:
 
 > `<subject>` `<version>` at commit `<commit>`, run with reg-conformance at
-> `<commit>`, evidence level 2: 0 of 59 REG vectors executed (59 adapter
+> `<commit>`, evidence level 2: 0 of 61 REG vectors executed (61 adapter
 > required); 4 of 4 effect probes passed. By property: 2 of 14 candidate
 > families with a passing check, none with a failing check, 12 not exercised.
 > Bundle: `<link>`.

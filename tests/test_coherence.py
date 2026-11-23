@@ -11,7 +11,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 TRACKED = ["tools", "vectors", "catalog", "crosswalk", "capabilities", "profiles", "specs", "manuscript", "registry",
            "reg-standards-baseline", "kernel", "lifecycle", "runner.py", "reg_common.py", "shim.py", "spec.md",
-           "VECTORS.md", "README.md", "CHANGELOG.md", "validate_profiles.py", "compatibility-rules-v2.yaml",
+           "VECTORS.md", "README.md", "CHANGELOG.md", "CLAIMS.md", "validate_profiles.py", "compatibility-rules-v2.yaml",
            "coherence-baseline.json", "policy.json", "requirements.txt", "conformance-target.json",
            "capability-evidence-contract-v1.json", "evidence"]
 
@@ -141,3 +141,22 @@ def test_a_malformed_vector_reference_is_caught(copy):
     data = copy / "crosswalk/data/crosswalk.json"
     data.write_text(data.read_text(encoding="utf-8").replace('"vector_ref": "C3; CT-R4-005"', '"vector_ref": "c3 and CT-R4-005"'), encoding="utf-8")
     assert "COH-X05" in findings(copy)
+
+
+def test_a_vector_count_quoted_in_claims_that_left_the_registry_is_caught(copy):
+    # Review of pull request #80: CLAIMS.md quoted 59 vectors when the runner registered 61.
+    claims = copy / "CLAIMS.md"
+    text = claims.read_text(encoding="utf-8")
+    assert "0 of 61 REG vectors executed (61 adapter\n> required)" in text
+    claims.write_text(text.replace("0 of 61 REG vectors executed (61 adapter",
+                                   "0 of 59 REG vectors executed (59 adapter"), encoding="utf-8")
+    assert "COH-V13" in findings(copy)
+    assert run(copy)[0] == 1
+
+
+def test_a_vector_count_whose_parts_exceed_the_total_is_caught(copy):
+    claims = copy / "CLAIMS.md"
+    text = claims.read_text(encoding="utf-8")
+    claims.write_text(text.replace("0 of 61 REG vectors executed (61 adapter",
+                                   "3 of 61 REG vectors executed (61 adapter"), encoding="utf-8")
+    assert "COH-V13" in findings(copy)

@@ -5,7 +5,9 @@ to show that each effect probe detects the fault it is meant to detect. They
 are not runtimes under qualification and produce no conformance evidence.
 """
 import json
+import subprocess
 import sys
+import time
 import uuid
 from pathlib import Path
 
@@ -16,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import runner as R
 from harness import port as P
 from harness import properties
-from harness.adapter import PortAdapter
+from harness.adapter import PortAdapter, load_port
 from harness.ports.reference import ReferencePort
 from harness.ports.template import TemplatePort
 from harness.scenarios import CHECKS, PROBES, SCENARIOS
@@ -172,7 +174,11 @@ def test_tenir_gov_port_on_the_property_checks():
     # Unreadable evidence is held, and lower confidence widens nothing.
     assert got["PX-REG-STATE-001"] == got["PX-REG-STATE-013"] == got["PX-REG-STATE-015"] == "PASS"
     # Missing evidence: the check runs on every input; its outcome belongs to the version.
-    assert got["PX-REG-STATE-010"] in ("PASS", "FAIL")
+    # Only the check's own oracle may give that FAIL: a crash of the port or the
+    # harness is HARNESS_ERROR and must not be read as the version's outcome
+    # (review of pull request #80; test_a_crash_is_never_read_as_a_fail).
+    assert got["PX-REG-STATE-010"] != "HARNESS_ERROR", "the check did not run to a result"
+    assert got["PX-REG-STATE-010"] in ("PASS", "FAIL"), got["PX-REG-STATE-010"]
     # One value per measurement, no age: stale and contradictory cannot be produced.
     assert got["PX-REG-STATE-002"] == got["PX-REG-STATE-004"] == "ADAPTER_REQUIRED"
 
@@ -327,7 +333,7 @@ def test_property_view_counts_probes_and_leaves_the_vector_tally_alone():
     summary = R.generate_report(adapter, results)["summary"]
     assert summary["PASS"] == 0 and summary["ADAPTER_REQUIRED"] == 61
     assert view["families"]["EGP-06"]["PASS"] == 2 and view["families"]["EGP-12"]["PASS"] == 2
-    assert view["summary"] == {"families": 14, "has_pass": 2, "has_fail": 0,
+    assert view["summary"] == {"families": 14, "has_pass": 2, "has_fail": 0, "harness_error": 0,
                                "inconclusive": 0, "not_exercised": 12}
     assert view["unattached"] == []
 
@@ -863,3 +869,243 @@ def test_bundle_verdict_carries_the_residue_of_each_observed_result():
     assert set(kept) == observed and set(CHECKS) <= observed
     assert kept["PX-CT-R3-001"]["not_observed"][0] == "that the rejection comes before evaluation"
     assert verdict["observation"]["conditions"]["declared_bounds_s"][P.B_TAU_K] == 120.0
+
+
+# -- review of pull request #80 (Mergestorm): each test fails if its defect returns --
+
+HARNESS_ERROR = "HARNESS_ERROR"   # a string, so that each test fails on its own without it
+
+
+class _CrashingEvidence(_Governed):
+    """The port breaks while producing degraded evidence: a port-side crash."""
+    def evaluate_degraded(self, state, measurement, *, principal, action_type):
+        raise RuntimeError("port crashed while degrading evidence")
+
+
+def test_a_crash_is_never_read_as_a_fail():
+    got = {r.vector_id: r for r in PortAdapter(_CrashingEvidence()).run_checks()}
+    for check in _ON_EVIDENCE:
+        assert got[check].status.value == HARNESS_ERROR, (check, got[check].status)
+        assert "RuntimeError: port crashed" in got[check].details
+    # The assertion of test_tenir_gov_port_on_the_property_checks rejects it.
+    assert got["PX-REG-STATE-010"].status.value not in ("PASS", "FAIL")
+    # A FAIL the check's oracle decides is still a FAIL, and says what it saw.
+    class Faulty(_Governed): pass
+    Faulty.fault = "defaults_a_missing_limit"
+    failed = {r.vector_id: r for r in PortAdapter(Faulty()).run_checks()}["PX-REG-STATE-010"]
+    assert failed.status == R.ReportingState.FAIL
+    assert not failed.details.startswith(R.HARNESS_ERROR_PREFIX)
+
+
+def test_a_crash_in_c3_is_a_harness_error_not_an_inconclusive():
+    class Crashing(ReferencePort):
+        def commit(self, decision, *, action_type=None):
+            raise RuntimeError("port crashed on commit")
+    results = {r.vector_id: r for r in PortAdapter(Crashing()).run_all()}
+    assert results["C3"].status.value == HARNESS_ERROR
+    crashed = {v for v, r in results.items() if r.status.value == HARNESS_ERROR}
+    assert {"C3", "CT-R4-001", "CT-R4-004a"} <= crashed
+    # No result anywhere carries the crash under another name.
+    assert not [v for v, r in results.items() if r.status.value != HARNESS_ERROR
+                and "port crashed" in (r.details + r.gap_note)]
+
+
+def test_a_refusal_the_scenario_did_not_expect_is_not_a_fail():
+    class RefusesToEvaluate(ReferencePort):
+        def evaluate(self, intent, **kw):
+            raise P.Refused("UNEXPECTED", "HARD_VETO", "refused at evaluation")
+    r = PortAdapter(RefusesToEvaluate()).run_vector("C1")
+    assert r.status.value == HARNESS_ERROR and "Refused" in r.details
+
+
+def test_a_harness_error_makes_the_run_no_result(monkeypatch, tmp_path):
+    import harness.__main__ as H
+    class Crashing(ReferencePort):
+        def commit(self, decision, *, action_type=None):
+            raise RuntimeError("port crashed on commit")
+    monkeypatch.setattr(H, "load_port", lambda spec: Crashing())
+    out = tmp_path / "report.json"
+    code = H.main(["--port", "x:Crashing", "--probes", "--checks", "--output", str(out)])
+    report = json.loads(out.read_text())
+    assert code == H.EXIT_HARNESS_ERROR == 4
+    assert report["exit_code"] == 4 and report["conformance_status"] == "HARNESS_ERROR"
+    assert "C3" in report["harness_errors"] and report["summary"]["HARNESS_ERROR"] >= 1
+
+
+def test_a_harness_error_in_a_probe_alone_still_stops_the_run(monkeypatch, tmp_path):
+    import harness.__main__ as H
+    class CrashingProbe(_Fixture):
+        def observed_effects(self, decision):
+            raise RuntimeError("journal unreadable")
+    monkeypatch.setattr(H, "load_port", lambda spec: CrashingProbe())
+    out = tmp_path / "report.json"
+    assert H.main(["--port", "x:Y", "--probes", "--output", str(out)]) == 4
+    report = json.loads(out.read_text())
+    # Probes stay out of the vector summary; they do not stay out of the exit code.
+    assert report["summary"]["HARNESS_ERROR"] == 0
+    assert set(report["harness_errors"]) == set(PROBES)
+
+
+def test_the_harness_itself_stopping_is_not_exit_1(monkeypatch, tmp_path):
+    import harness.__main__ as H
+    def broken(spec):
+        raise ImportError("no such port")
+    monkeypatch.setattr(H, "load_port", broken)
+    assert H.main(["--port", "x:Y", "--output", str(tmp_path / "r.json")]) == 4
+
+
+def test_a_usage_error_is_not_exit_2(capsys):
+    # 2 is "gaps or ADAPTER_REQUIRED", which the workflow lets through.
+    import harness.__main__ as H
+    with pytest.raises(SystemExit) as e:
+        H.main(["--port", "x:Y", "--no-such-flag"])
+    assert e.value.code == 4
+
+
+def test_a_family_with_a_harness_error_never_reads_as_passing():
+    class Half(_Governed):
+        def evaluate_degraded(self, state, measurement, *, principal, action_type):
+            if state == P.E_MISSING:
+                raise RuntimeError("port crashed on missing evidence")
+            return super().evaluate_degraded(state, measurement, principal=principal,
+                                             action_type=action_type)
+    _, _, checks, view = _view_with_checks(Half())
+    family = properties.load()["checks"]["REG-STATE-010"]
+    f = view["families"][family]
+    assert f["PASS"] >= 1 and f["HARNESS_ERROR"] >= 1
+    assert f["state"] == "harness_error"
+    assert view["summary"]["harness_error"] >= 1 and view["index"]["HARNESS_ERROR"] >= 1
+    assert any("did not run to a result" in line for line in properties.render(view))
+
+
+def test_the_runner_reports_a_crash_as_a_harness_error_in_every_vector():
+    class Crashing(R.NativeKernelAdapter):
+        def _v_c1(self): raise RuntimeError("kernel crashed")
+        def _v_c3(self): raise RuntimeError("kernel crashed")
+    a = Crashing(KERNEL)
+    for vid in ("C1", "C3"):
+        r = a.run_vector(vid)
+        assert r.status.value == HARNESS_ERROR, (vid, r.status)
+    report = R.generate_report(a, a.run_all(["C1", "C2"]))
+    assert report["conformance_status"] == "HARNESS_ERROR" and report["summary"]["HARNESS_ERROR"] == 1
+
+
+# CT-R4-004a, native: the positive control (Mergestorm finding 1).
+
+def test_native_ct_r4_004a_refusing_every_commit_proves_nothing():
+    class RefusesAll(R.NativeKernelAdapter):
+        def _commit(self, *a, **kw): raise ValueError("REFUSE_ALL")
+    r = RefusesAll(KERNEL).run_vector("CT-R4-004a")
+    assert r.status == R.ReportingState.INCONCLUSIVE, r.details
+    assert "a valid authorization was refused too" in r.details
+
+
+def test_native_ct_r4_004a_without_a_valid_authorization_is_inconclusive():
+    class VetoesAll(R.NativeKernelAdapter):
+        def _evaluate(self, *a, **kw):
+            g = super()._evaluate(*a, **kw)
+            g["final_disposition"] = "HARD_VETO"
+            return g
+    assert VetoesAll(KERNEL).run_vector("CT-R4-004a").status == R.ReportingState.INCONCLUSIVE
+
+
+def test_native_ct_r4_004a_effect_then_refusal_is_a_fail():
+    class EffectThenRefusal(R.NativeKernelAdapter):
+        def _commit(self, eid, action_type=None, action_id=None, nonce=None):
+            g = self._grants[eid]
+            if time.time() > g["valid_until"]:
+                g["_committed"] = True              # the effect happens...
+                raise ValueError("EVALUATION_EXPIRED")   # ...and a refusal is reported
+            return super()._commit(eid, action_type, action_id=action_id, nonce=nonce)
+    r = EffectThenRefusal(KERNEL).run_vector("CT-R4-004a")
+    assert r.status == R.ReportingState.FAIL and "effect was recorded" in r.details
+
+
+def test_native_ct_r4_004a_passes_on_the_bundled_kernel_with_its_control():
+    a = R.NativeKernelAdapter(KERNEL)
+    assert a.run_vector("CT-R4-004a").status == R.ReportingState.PASS
+    committed = [g for g in a._grants.values() if g.get("_committed")]
+    assert len(committed) == 1 and committed[0]["valid_until"] > committed[0]["created_at"]
+
+
+def test_http_ct_r4_004a_without_a_valid_authorization_is_not_a_fail():
+    class Down(R.HTTPAdapter):
+        def _post(self, path, body): return 0, {"error": "connection refused"}
+    r = Down("http://127.0.0.1:9").run_vector("CT-R4-004a")
+    assert r.status == R.ReportingState.INCONCLUSIVE and "HTTP 0" in r.details
+
+
+# CT-R4-004a, harness: the scenario evaluates, so it declares EVALUATE (finding 5).
+
+def test_ct_r4_004a_needs_evaluate_and_an_admissible_intent():
+    assert P.EVALUATE in SCENARIOS["CT-R4-004a"].requires
+    assert P.ADMISSIBLE in SCENARIOS["CT-R4-004a"].intents
+    class CommitOnly(TemplatePort):
+        capabilities = frozenset({P.COMMIT, P.STALE_GRANT})
+    r = PortAdapter(CommitOnly()).run_vector("CT-R4-004a")
+    assert r.status == R.ReportingState.ADAPTER_REQUIRED and P.EVALUATE in r.gap_note
+    class NoIntent(TemplatePort):
+        capabilities = frozenset({P.EVALUATE, P.COMMIT, P.STALE_GRANT})
+    r = PortAdapter(NoIntent()).run_vector("CT-R4-004a")
+    assert r.status == R.ReportingState.ADAPTER_REQUIRED and P.ADMISSIBLE in r.gap_note
+
+
+def test_harness_ct_r4_004a_refusing_every_commit_proves_nothing():
+    # Already true of the scenario before the review: kept beside the native test.
+    class RefusesAll(ReferencePort):
+        def commit(self, decision, *, action_type=None):
+            raise P.Refused(P.R_EXPIRED, "HARD_VETO")
+    assert PortAdapter(RefusesAll()).run_vector("CT-R4-004a").status == R.ReportingState.INCONCLUSIVE
+
+
+# Families (finding 4): the two bounds sit with the other bound checks.
+
+def test_bounds_on_an_authorization_and_on_a_held_attempt_share_one_family():
+    checks = properties.load()["checks"]
+    assert checks["CT-R4-004b"] == checks["REG-STATE-024"] == checks["CT-R4-016"] \
+        == checks["CT-R4-004a"] == "EGP-03"
+
+
+# The workflow (finding 2): `target` is resolved, and an unknown one stops the job.
+
+WORKFLOW = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "conformance-run.yml"
+
+
+def _workflow():
+    import yaml
+    return yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+
+
+def _resolve(target, tmp_path):
+    step = next(s for s in _workflow()["jobs"]["run"]["steps"] if s.get("id") == "target")
+    out = tmp_path / "out"
+    out.write_text("")
+    p = subprocess.run(["bash", "-c", step["run"]], capture_output=True, text=True,
+                       env={"TARGET": target, "GITHUB_OUTPUT": str(out), "PATH": "/usr/bin:/bin"})
+    return p.returncode, dict(l.split("=", 1) for l in out.read_text().splitlines() if "=" in l)
+
+
+def test_the_workflow_target_resolves_to_a_port_and_an_unknown_one_fails(tmp_path):
+    wf = _workflow()
+    on = wf.get("on", wf.get(True))
+    assert "target" in on["workflow_call"]["inputs"]
+    for name in on["workflow_dispatch"]["inputs"]["target"]["options"]:
+        code, out = _resolve(name, tmp_path)
+        assert code == 0 and out["name"] == name
+        PortAdapter(load_port(out["port"]))               # the port exists and loads
+    for bad in ("tenir-gov", "", "reference; touch /tmp/x", "Reference"):
+        assert _resolve(bad, tmp_path)[0] != 0, bad
+
+
+def test_the_workflow_runs_the_resolved_port_and_fails_on_a_harness_error():
+    steps = _workflow()["jobs"]["run"]["steps"]
+    names = [s.get("id") or s.get("name") for s in steps]
+    assert names.index("target") < names.index("run")
+    target = next(s for s in steps if s.get("id") == "target")
+    assert "inputs.target" in target["env"]["TARGET"]
+    run = next(s for s in steps if s.get("id") == "run")
+    assert run["env"]["PORT"] == "${{ steps.target.outputs.port }}"
+    assert '--port "$PORT"' in run["run"] and "ReferencePort" not in run["run"]
+    gate = steps[-1]["run"]
+    assert "4)" in gate and "0|2)" in gate
+    assert "matrix" not in WORKFLOW.read_text(encoding="utf-8")

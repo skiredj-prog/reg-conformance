@@ -57,7 +57,7 @@ checks:
   CT-R4-003: EGP-05
   CT-R4-004: EGP-03
   CT-R4-004a: EGP-03
-  CT-R4-004b: EGP-12
+  CT-R4-004b: EGP-03
   CT-R4-005: EGP-03
   CT-R4-006: EGP-06
   CT-R4-007: EGP-07
@@ -135,7 +135,7 @@ checks:
   REG-STATE-021: EGP-11
   REG-STATE-022: EGP-11
   REG-STATE-023: EGP-09
-  REG-STATE-024: EGP-12
+  REG-STATE-024: EGP-03
   # Effect probes (harness checks, not REG vectors)
   HX-EFFECT-001: EGP-06
   HX-EFFECT-002: EGP-12

@@ -23,6 +23,14 @@ is a REG vector, and neither changes the vector summary.
 - Effect probes (`HX-EFFECT-*`) and property checks (`PX-*`) are not REG
   vectors. They are reported apart and never enter a vector summary or
   `conformance_status`.
+- Only a scenario decides `PASS`, `FAIL` or `INCONCLUSIVE`. An exception that
+  escapes it (a crash of the port or of the harness, or a refusal the scenario
+  did not expect) is reported `HARNESS_ERROR`: the subject was not evaluated.
+  The report lists every such id, vectors, probes and property checks alike,
+  under `harness_errors`, and the harness exits 4, ahead of `FAIL` (1),
+  `INCONCLUSIVE` (3) and gaps (2). A run with one is not a conformance result.
+  A declared capability that raises `NotImplementedError` stays `INCONCLUSIVE`:
+  the port's claim is wrong, the subject is not at fault.
 
 ## What counts as an admission
 
@@ -162,6 +170,8 @@ EGP-06 A refusal or a suspension produces no governed effect   PASS 2  FAIL 0  n
   on this subject. `no check` counts rows of `VECTORS.md` that have neither a
   registered vector nor a property check.
 - A family with a failing check is reported as such, whatever else passes in it.
+- A family with a check that gave `HARNESS_ERROR` is reported `harness_error`,
+  never as passing. Only a failing check ranks above it.
 - A family with a passing check is not a family satisfied. One check observed
   one behaviour.
 

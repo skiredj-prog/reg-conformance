@@ -44,6 +44,8 @@ jobs:
           assert len(r["results"]) == 61
           counts = r["summary"]
           assert sum(counts.values()) == 61
+          # A vector that did not run to a result is not a reference result.
+          assert not counts.get("HARNESS_ERROR"), counts
           print("REFERENCE_RUN_ONLY:", counts, "exit_code:", r["exit_code"])
           Path("artifacts/lifecycle/verification.json").write_text(
               json.dumps({"scope": "bundled-reference-only", "total": 61,

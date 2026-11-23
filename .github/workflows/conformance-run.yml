@@ -8,8 +8,13 @@ name: REG Conformance - Run
 #     the suite from their own repository without write access to this one
 #   - push to the harness branch, which runs the reference target as a self-check
 #
-# A green run is not a certification. FAIL makes the job fail; gaps and
+# A green run is not a certification. FAIL, INCONCLUSIVE and HARNESS_ERROR
+# (a test that did not run to a result) make the job fail; gaps and
 # ADAPTER_REQUIRED do not, and are listed in the bundle.
+#
+# `target` names what the vectors run against. The step "Resolve the target"
+# is the only place a name becomes a port; an unknown name fails the job there,
+# before anything runs, instead of running the reference under another name.
 
 on:
   workflow_dispatch:
@@ -21,7 +26,10 @@ on:
         default: reference
   workflow_call:
     inputs:
-      target: {type: string, default: reference}
+      target:
+        description: "What to run the vectors against: reference (the only target today)"
+        type: string
+        default: reference
       harness_ref:
         description: "reg-conformance commit to run"
         type: string
@@ -37,11 +45,21 @@ jobs:
   run:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [reference]
     steps:
+      - name: Resolve the target
+        id: target
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target || 'reference' }}
+        run: |
+          set -euo pipefail
+          case "$TARGET" in
+            reference) port="harness.ports.reference:ReferencePort";;
+            *) echo "::error::unknown target '$TARGET'; this workflow runs: reference"; exit 1;;
+          esac
+          echo "name=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "port=$port" >> "$GITHUB_OUTPUT"
+
       - name: Check out the harness
         uses: actions/checkout@v4
         with:
@@ -64,12 +82,15 @@ jobs:
         id: run
         working-directory: harness-src
         shell: bash
+        env:
+          PORT: ${{ steps.target.outputs.port }}
         run: |
-          # The harness exits 2 on gaps and 1 on FAIL: capture the code, decide later.
+          # The harness exits 4 on HARNESS_ERROR, 1 on FAIL, 3 on INCONCLUSIVE and
+          # 2 on gaps: capture the code, decide later.
           set +e
           set -uo pipefail
           out="$RUNNER_TEMP/run"; mkdir -p "$out"
-          args=(--port harness.ports.reference:ReferencePort)
+          args=(--port "$PORT")
           python -m harness "${args[@]}" --probes --output "$out/report.json" 2>&1 | tee "$out/run.log"
           code=${PIPESTATUS[0]}
           echo "code=$code" >> "$GITHUB_OUTPUT"
@@ -81,9 +102,9 @@ jobs:
         run: |
           python tools/make_evidence_bundle.py --report "$RUNNER_TEMP/run/report.json" \
             --log "$RUNNER_TEMP/run/run.log" --out "$RUNNER_TEMP/evidence" \
-            --zip "$RUNNER_TEMP/reg-evidence-${{ matrix.target }}.zip" | tee "$RUNNER_TEMP/bundle.txt"
+            --zip "$RUNNER_TEMP/reg-evidence-${{ steps.target.outputs.name }}.zip" | tee "$RUNNER_TEMP/bundle.txt"
           {
-            echo "### REG Conformance run: ${{ matrix.target }}"
+            echo "### REG Conformance run: ${{ steps.target.outputs.name }}"
             echo
             echo "Not a certification. One subject revision, one run."
             echo
@@ -96,15 +117,17 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: reg-evidence-${{ matrix.target }}
+          name: reg-evidence-${{ steps.target.outputs.name }}
           path: ${{ runner.temp }}/evidence/
           if-no-files-found: error
 
-      - name: Fail on FAIL only
+      - name: Fail on FAIL, INCONCLUSIVE or HARNESS_ERROR
         shell: bash
         run: |
           case "${{ steps.run.outputs.code }}" in
             0|2) echo "no FAIL (code ${{ steps.run.outputs.code }}: 2 means gaps or adapter required)";;
+            1)   echo "FAIL results present"; exit 1;;
             3)   echo "INCONCLUSIVE results present"; exit 1;;
-            *)   echo "FAIL results present"; exit 1;;
+            4)   echo "HARNESS_ERROR: a test did not run to a result; this run is not a conformance result"; exit 1;;
+            *)   echo "unexpected harness exit code ${{ steps.run.outputs.code }}: not a result"; exit 1;;
           esac

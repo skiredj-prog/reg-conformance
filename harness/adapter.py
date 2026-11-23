@@ -80,8 +80,11 @@ class PortAdapter(R.BaseAdapter):
             # Declared but not implemented: the port's claim is wrong, not the subject.
             return self._inconclusive(vid, f"declared capability not implemented: {e}")
         except Exception as e:
-            status = self._inconclusive if vid == "C3" else self._fail
-            return status(vid, f"exception prevents a determinate result: {e}")
+            # Raised past the scenario: the scenario decides PASS and FAIL, and it
+            # decided nothing here. A crash of the port or of the harness, or a
+            # refusal the scenario did not expect, is HARNESS_ERROR (C3 included),
+            # never a FAIL of the subject (review of pull request #80).
+            return self._harness_error(vid, e)
         fact = self.facts.get(vid)
         if fact and fact.get("admitted_on") == "FLAG" and not fact.get("flag_conditions"):
             # Author's decision 3 (19 November 2026), CLAIMS.md, RN-001 §1: the FLAG
