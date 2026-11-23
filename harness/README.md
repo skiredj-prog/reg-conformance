@@ -24,8 +24,9 @@ is a REG vector, and neither changes the vector summary.
   vectors. They are reported apart, and their results never enter a vector
   summary or `conformance_status`. A `HARNESS_ERROR` among them does (below).
 - `PASS`, `FAIL` and `INCONCLUSIVE` come from a scenario, with one exception:
-  a declared capability that raises `NotImplementedError` is `INCONCLUSIVE`,
-  because the port's claim is wrong, not the subject. Any other exception that
+  a declared capability whose primitive raises `NotImplementedError` is
+  `INCONCLUSIVE`, because the port's claim is wrong, not the subject. The same
+  exception raised by scenario or harness code, or by `reset`, is not. Any other exception that
   escapes a scenario (a crash of the port or of the harness, a refusal the
   scenario did not expect, a port calling `sys.exit`) is `HARNESS_ERROR`: the
   subject was not evaluated. The report lists every such id, vectors, probes

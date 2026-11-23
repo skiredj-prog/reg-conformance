@@ -70,20 +70,26 @@ class PortAdapter(R.BaseAdapter):
         lacking = [label + ", ".join(names) for label, names in lacking if names]
         if lacking:
             return self._ar(vid, "; ".join(lacking))
+        # Raised past the scenario (sys.exit included: a port does not end the run):
+        # the scenario decides PASS and FAIL, and it decided nothing here. A crash of
+        # the port or of the harness, or a refusal the scenario did not expect, is
+        # HARNESS_ERROR (C3 included), never a FAIL of the subject (review of #80).
         try:
-            self.port.reset()
+            self.port.reset()                 # not a capability: any failure is a crash
+        except (Exception, SystemExit) as e:
+            return self._harness_error(vid, e)
+        try:
             outcome = scenario.run(self.port)
             state, details = outcome[0], outcome[1]
             if len(outcome) > 2 and outcome[2]:
                 self.facts[vid] = outcome[2]
         except NotImplementedError as e:
+            if not _raised_in(self.port, e):
+                # Raised by the scenario or the harness, not by a primitive of the port.
+                return self._harness_error(vid, e)
             # Declared but not implemented: the port's claim is wrong, not the subject.
             return self._inconclusive(vid, f"declared capability not implemented: {e}")
         except (Exception, SystemExit) as e:
-            # Raised past the scenario (sys.exit included: a port does not end the run): the scenario decides PASS and FAIL, and it
-            # decided nothing here. A crash of the port or of the harness, or a
-            # refusal the scenario did not expect, is HARNESS_ERROR (C3 included),
-            # never a FAIL of the subject (review of pull request #80).
             return self._harness_error(vid, e)
         fact = self.facts.get(vid)
         if fact and fact.get("admitted_on") == "FLAG" and not fact.get("flag_conditions"):
@@ -141,6 +147,18 @@ class PortAdapter(R.BaseAdapter):
                 r.gap_note = f"{r.gap_note} | {note}" if r.gap_note else note
             out.append(r)
         return out
+
+
+def _raised_in(port, exc) -> bool:
+    """True if the exception passed through a method of this port object: a
+    primitive the port declares and does not implement, or one whose runtime
+    does not. False if scenario or harness code raised it on its own."""
+    tb = exc.__traceback__
+    while tb is not None:
+        if tb.tb_frame.f_locals.get("self") is port:
+            return True
+        tb = tb.tb_next
+    return False
 
 
 def load_port(spec: str) -> RuntimePort:

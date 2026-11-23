@@ -1183,3 +1183,26 @@ def test_native_ct_r4_004a_accepts_a_flag_as_the_valid_authorization():
 def test_ct_r4_004a_states_what_it_rests_on_without_effect_observation():
     assert any("declares no effect observation" in line
                for line in SCENARIOS["CT-R4-004a"].not_observed)
+
+
+def test_not_implemented_is_inconclusive_only_from_a_port_primitive():
+    import dataclasses
+    def scenario_raises(rt):
+        raise NotImplementedError("helper missing in the scenario")
+    broken = dataclasses.replace(SCENARIOS["C1"], run=scenario_raises)
+    r = PortAdapter(ReferencePort())._run_scenario("C1", broken)
+    assert r.status.value == HARNESS_ERROR and "NotImplementedError" in r.details
+    class ResetMissing(ReferencePort):
+        armed = False
+        def reset(self):
+            if self.armed:
+                raise NotImplementedError("reset")
+            super().reset()
+    port = ResetMissing()
+    port.armed = True
+    assert PortAdapter(port).run_vector("C1").status.value == HARNESS_ERROR
+    # Declared and not implemented by the port: unchanged.
+    class Hollow(TemplatePort):
+        capabilities = frozenset({P.EVALUATE})
+        intents = frozenset({P.NO_STANDING})
+    assert PortAdapter(Hollow()).run_vector("C1").status == R.ReportingState.INCONCLUSIVE
