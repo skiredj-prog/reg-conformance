@@ -138,10 +138,20 @@ def r4_004(rt):
     return FAIL, "expired grant accepted"
 
 
+def _effect_count(rt, d):
+    """The effects observed for a decision, or None if the observer gives no count."""
+    n = _effects(rt, d)
+    return n if isinstance(n, int) and not isinstance(n, bool) and n >= 0 else None
+
+
 def r4_004a(rt):
     """RFC-4 v0.3 revision §2.1: no effect under an authorization whose declared
-    bound has passed. The observable is the effect, not the refusal code.
-    Positive control first: a port that refuses every commit proves nothing."""
+    bound has passed. The observable is the effect, not the refusal code, so the
+    scenario requires an observer independent of the runtime (`effects`): a
+    refusal alone does not establish that no effect took place.
+    Positive control first: a valid authorization must commit and produce an
+    observed effect. A port that refuses every commit, or an observer that never
+    sees an effect, proves nothing about the expired one."""
     ok = rt.evaluate(P.ADMISSIBLE, principal="a", action_type="wire_transfer")
     if not _admitted(ok):
         return INCONCLUSIVE, f"could not establish a valid authorization (disposition={ok.disposition})"
@@ -149,14 +159,28 @@ def r4_004a(rt):
         rt.commit(ok, action_type="wire_transfer")
     except P.Refused as e:
         return INCONCLUSIVE, f"a valid authorization was refused too, so a refusal proves nothing: {e}"
+    seen = _effect_count(rt, ok)
+    if seen is None:
+        return INCONCLUSIVE, "the effect observer gave no count for the valid authorization"
+    if seen == 0:
+        return INCONCLUSIVE, ("a valid authorization committed and no effect was observed: "
+                              "the observer's silence on the expired one would prove nothing")
     d = rt.stale_grant(action_type="wire_transfer")
+    refused = None
     try:
         rt.commit(d)
     except P.Refused as e:
-        if P.EFFECTS in rt.capabilities and _effects(rt, d):
-            return FAIL, f"commit refused ({e.code}) but an effect matched the expired authorization"
-        return PASS, f"commit refused under the expired authorization ({e.code})"
-    return FAIL, "commit accepted under the expired authorization"
+        refused = e
+    seen = _effect_count(rt, d)
+    if seen is None:
+        return INCONCLUSIVE, "the effect observer gave no count for the expired authorization"
+    if seen:
+        how = f"commit refused ({refused.code})" if refused else "commit accepted"
+        return FAIL, f"{how} and {seen} effect(s) observed under the expired authorization"
+    if refused is None:
+        return FAIL, "commit accepted under the expired authorization (no effect observed yet)"
+    return PASS, (f"commit refused under the expired authorization ({refused.code}); no effect "
+                  "observed, against a valid authorization whose effect was observed")
 
 
 def r4_004b(rt):
@@ -730,12 +754,12 @@ SCENARIOS = {s.vector_id: s for s in [
             *_ONE_REPLAY),
     _vector("CT-R4-004", {_C, P.STALE_GRANT}, r4_004, _none, EXEC,
             "the passage of time across the bound: the grant is created already expired"),
-    # The positive control evaluates an admissible attempt before the expired one.
-    _vector("CT-R4-004a", {_E, _C, P.STALE_GRANT}, r4_004a, _A, EXEC,
+    # The positive control evaluates an admissible attempt before the expired one,
+    # and both are read through the effect observer (PMO decision on #83).
+    _vector("CT-R4-004a", {_E, _C, P.STALE_GRANT, P.EFFECTS}, r4_004a, _A, EXEC,
             "the passage of time across the bound: the authorization is created already expired",
             "an effect under a fresh authorization and its four conditions (RFC-4 v0.3 revision §2.1)",
-            "an effect behind a reported refusal, when the port declares no effect observation "
-            "(effects): the result then rests on the refusal the port reports"),
+            "an effect the port's observer does not see: the observer is the port's own claim"),
     _vector("CT-R4-004b", {_E, _C, P.CLOCK}, r4_004b, _H, EXEC,
             "a late approval, resolution or exit authorization: the port has no such primitive",
             "the recorded resulting state (CONFIRMED_NONEXECUTION or UNKNOWN with reconciliation)",

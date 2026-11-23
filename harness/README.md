@@ -20,13 +20,19 @@ is a REG vector, and neither changes the vector summary.
 - A port cannot report evidence level 3, and cannot override a neutral scenario.
 - A refusal by the runtime's own policy (`DENIED`) never satisfies a vector
   about REG structural admissibility (`INADMISSIBLE`).
+- A refusal alone never establishes that no effect took place. `CT-R4-004a`
+  runs only on a port that declares `effects`, an observer independent of the
+  runtime, and its positive control must show an effect under the valid
+  authorization. The reference port declares none: `ADAPTER_REQUIRED`.
 - Effect probes (`HX-EFFECT-*`) and property checks (`PX-*`) are not REG
   vectors. They are reported apart, and their results never enter a vector
   summary or `conformance_status`. A `HARNESS_ERROR` among them does (below).
 - `PASS`, `FAIL` and `INCONCLUSIVE` come from a scenario, with one exception:
-  a declared capability whose primitive raises `NotImplementedError` is
-  `INCONCLUSIVE`, because the port's claim is wrong, not the subject. The same
-  exception raised by scenario or harness code, or by `reset`, is not. Any other exception that
+  a `NotImplementedError` that leaves the port through the primitive of a
+  declared capability (`port.PRIMITIVES`) is `INCONCLUSIVE`, because the port's
+  claim is wrong, not the subject. The same exception raised by scenario or
+  harness code, by `reset`, by a port method that is no primitive, or by the
+  primitive of an undeclared capability is `HARNESS_ERROR`. Any other exception that
   escapes a scenario (a crash of the port or of the harness, a refusal the
   scenario did not expect, a port calling `sys.exit`) is `HARNESS_ERROR`: the
   subject was not evaluated. The report lists every such id, vectors, probes

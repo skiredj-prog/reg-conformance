@@ -6,7 +6,7 @@ import importlib
 
 import runner as R
 from .port import (ALL_BOUNDS, ALL_CAPABILITIES, ALL_EPISTEMIC, ALL_INTENTS, CLOCK,
-                   CONFIDENCE, RuntimePort)
+                   CONFIDENCE, PRIMITIVES, RuntimePort)
 from .scenarios import CHECKS, PROBES, SCENARIOS
 
 FLAG_RESERVE = ("obtained under a declared mapping interpretation, pending ratification; "
@@ -84,11 +84,15 @@ class PortAdapter(R.BaseAdapter):
             if len(outcome) > 2 and outcome[2]:
                 self.facts[vid] = outcome[2]
         except NotImplementedError as e:
-            if not _raised_in(self.port, e):
-                # Raised by the scenario or the harness, not by a primitive of the port.
+            primitive = _entry_primitive(self.port, e)
+            if primitive is None:
+                # Raised by the scenario or the harness, or by a port method that
+                # is no capability's primitive, or by a primitive of a capability
+                # the port does not declare: not the port's claim, a crash.
                 return self._harness_error(vid, e)
             # Declared but not implemented: the port's claim is wrong, not the subject.
-            return self._inconclusive(vid, f"declared capability not implemented: {e}")
+            return self._inconclusive(
+                vid, f"declared capability not implemented: {PRIMITIVES[primitive]} ({primitive}): {e}")
         except (Exception, SystemExit) as e:
             return self._harness_error(vid, e)
         fact = self.facts.get(vid)
@@ -149,16 +153,19 @@ class PortAdapter(R.BaseAdapter):
         return out
 
 
-def _raised_in(port, exc) -> bool:
-    """True if the exception passed through a method of this port object: a
-    primitive the port declares and does not implement, or one whose runtime
-    does not. False if scenario or harness code raised it on its own."""
+def _entry_primitive(port, exc):
+    """The primitive through which the exception left the port, if the scenario
+    called it and its capability is declared; None otherwise. The first frame
+    of this port object on the way down is where scenario code entered the
+    port; what the primitive calls below it is the primitive's own concern."""
     tb = exc.__traceback__
     while tb is not None:
-        if tb.tb_frame.f_locals.get("self") is port:
-            return True
+        frame = tb.tb_frame
+        if frame.f_locals.get("self") is port:
+            name = frame.f_code.co_name
+            return name if PRIMITIVES.get(name) in port.capabilities else None
         tb = tb.tb_next
-    return False
+    return None
 
 
 def load_port(spec: str) -> RuntimePort:

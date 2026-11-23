@@ -33,6 +33,18 @@ ALL_CAPABILITIES = frozenset({
     RECEIPTS, MANIFEST, TENIR_SCORE, EFFECTS, COMBINE, CLOCK, DEGRADE, CONFIDENCE,
 })
 
+# The primitive of RuntimePort that each capability puts at the scenario's
+# disposal. NONCE is a parameter of evaluate, not a primitive. reset and
+# run_custom are not capabilities.
+PRIMITIVES = {
+    "evaluate": EVALUATE, "evaluate_combined": COMBINE, "evaluate_degraded": DEGRADE,
+    "evaluate_at_confidence": CONFIDENCE, "elapse_past": CLOCK, "commit": COMMIT,
+    "revoke": REVOKE, "drift_state": STATE_DRIFT, "stale_grant": STALE_GRANT,
+    "receipt_verifies": RECEIPTS, "tampered_receipt_verifies": RECEIPTS,
+    "manifest_intact": MANIFEST, "tampered_manifest_intact": MANIFEST,
+    "tenir_score": TENIR_SCORE, "observed_effects": EFFECTS,
+}
+
 # Intents the harness asks for. The port maps each one to its own inputs.
 ADMISSIBLE = "admissible"            # standing valid, structure comfortably inside bounds
 INADMISSIBLE = "inadmissible"        # standing valid, structure outside bounds
