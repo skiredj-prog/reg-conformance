@@ -6,10 +6,13 @@
     python tools/check_coherence.py --markdown # report for COHERENCE.md
     python tools/check_coherence.py --json
 
-Each check has a stable id and returns evidence lines; no evidence means the
-check holds. A check that cannot be evaluated here (no git tags, a missing
-optional package) is reported as skipped and counts neither way. `coherence-baseline.json` lists the findings that are known and
-awaiting a decision. A finding outside the baseline fails the build, so the
+Each check has a stable id and returns an explicit PASS, FAIL,
+CANNOT_EVALUATE, or NOT_APPLICABLE outcome. Missing required inputs,
+missing dependencies, or unexpected exceptions are CANNOT_EVALUATE and
+always block CI, including when a baseline entry exists. NOT_APPLICABLE
+must be explicitly declared by a check with a reason; it is never
+inferred from missing input. `coherence-baseline.json` lists known FAIL
+findings awaiting a decision. A finding outside the baseline fails the build, so the
 list can shrink but cannot grow unnoticed. A baseline entry whose check now
 holds also fails, so the baseline is never left stale.
 
@@ -31,6 +34,20 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = ROOT / "coherence-baseline.json"
 CHECKS = []
+
+
+def cannot_evaluate(*reasons):
+    """An invoked check cannot establish its subject; always blocks CI."""
+    if not reasons or not all(isinstance(r, str) and r.strip() for r in reasons):
+        raise ValueError("CANNOT_EVALUATE requires one or more non-empty reasons")
+    return {"status": "CANNOT_EVALUATE", "evidence": list(reasons)}
+
+
+def not_applicable(reason):
+    """Explicit applicability decision; never infer this from missing files."""
+    if not isinstance(reason, str) or not reason.strip():
+        raise ValueError("NOT_APPLICABLE requires a reason")
+    return {"status": "NOT_APPLICABLE", "evidence": [reason]}
 
 
 def check(cid, layer, title):
@@ -239,7 +256,7 @@ def native_run():
         subprocess.run([sys.executable, "runner.py", "--mode", "native", "--output", str(out)],
                        cwd=ROOT, capture_output=True, text=True)
         if not out.is_file():
-            return {}
+            raise RuntimeError("native runner did not produce a report")
         return {r["vector_id"]: r["status"] for r in json.loads(out.read_text(encoding="utf-8"))["results"]}
 
 
@@ -273,8 +290,10 @@ def _run(args):
 
 @check("COH-P01", "REG+", "The two profile validators agree")
 def p01():
-    if not ((ROOT / "validate_profiles.py").is_file() and (ROOT / "tools/validate_profiles.py").is_file()):
-        return []
+    required = (ROOT / "validate_profiles.py", ROOT / "tools/validate_profiles.py")
+    missing = [p.relative_to(ROOT).as_posix() for p in required if not p.is_file()]
+    if missing:
+        return cannot_evaluate(*[f"required profile validator missing: {p}" for p in missing])
     names = [p.name for p in _profiles()]
     a_out = _run(["tools/validate_profiles.py"])
     b_out = _run(["validate_profiles.py"] + [f"profiles/{n}" for n in names])
@@ -290,7 +309,9 @@ def p01():
 def p02():
     files = [f for f in ("catalog/compatibility-rules-v1.yaml", "compatibility-rules-v2.yaml") if (ROOT / f).is_file()]
     if len(files) < 2:
-        return []
+        return cannot_evaluate(
+            "expected compatibility rule sources are missing; cannot compare v1 and v2"
+        )
     users = {f: [p.relative_to(ROOT).as_posix() for p in list((ROOT / "tools").glob("*.py")) + [ROOT / "validate_profiles.py"]
                  if p.is_file() and p.name != "check_coherence.py" and Path(f).name in p.read_text(encoding="utf-8")] for f in files}
     return [f"{f} is read by {users[f] or 'no tool'}" for f in files]
@@ -370,7 +391,7 @@ def p11():
     records = {r["id"]: r for r in cat.get("guarantee_records") or []}
     files = {d.get("capability_id") for _, d in _capabilities()}
     if not files:
-        return []
+        return cannot_evaluate("capability declaration inventory is absent; cannot check catalogue coverage")
     axes = (yaml.safe_load(read("catalog/hypotheses-v1.yaml")) or {}).get("axes", {})
     out = []
     if files - set(records):
@@ -500,8 +521,8 @@ def p08():
 def p09():
     try:
         tags = subprocess.run(["git", "-C", str(ROOT), "tag", "--list", "v*"], capture_output=True, text=True).stdout.split()
-    except OSError:
-        return []
+    except OSError as exc:
+        return cannot_evaluate(f"git tag listing could not execute: {exc}")
     releases = sorted((t for t in tags if re.fullmatch(r"v\d+\.\d+\.\d+", t)), key=lambda t: tuple(map(int, t[1:].split("."))))
     entries = set(re.findall(r"^## \[?(v\d+\.\d+\.\d+)", read("CHANGELOG.md"), re.M))
     if not releases or not entries:
@@ -542,9 +563,9 @@ def _vector_refs(row):
 
 def crosswalk_rows():
     try:
-        return json.loads(read("crosswalk/data/crosswalk.json") or "[]")
-    except json.JSONDecodeError:
-        return []
+        return json.loads(read("crosswalk/data/crosswalk.json"))
+    except (json.JSONDecodeError, FileNotFoundError, ValueError) as exc:
+        raise ValueError(f"crosswalk/data/crosswalk.json could not be read and parsed: {exc}") from exc
 
 
 @check("COH-X02", "Across layers", "Something links REG vectors to REG+ properties")
@@ -605,13 +626,21 @@ def x04():
 def x06():
     script = ROOT / "tools" / "reg_arch_markdown.py"
     target = ROOT / "specs" / "reg-arch" / "v0.4.1-candidate" / "REG-ARCH.md"
-    if not script.exists() or not target.exists():
-        return []
+    source = ROOT / "audits" / "reg-arch-v0.4.1" / "REG-ARCH_v0.4.1-candidate.docx"
+    required = (script, target, source)
+    missing = [p.relative_to(ROOT).as_posix() for p in required if not p.is_file()]
+    if missing:
+        return cannot_evaluate(*[f"required REG-ARCH input missing: {p}" for p in missing])
     done = subprocess.run([sys.executable, str(script), "--check"], capture_output=True, text=True)
     if done.returncode == 0:
-        return []
+        return [] if "REG-ARCH Markdown matches its DOCX:" in done.stdout else cannot_evaluate(
+            "reg_arch_markdown.py returned success without the expected verification receipt"
+        )
     problems = [line[5:] for line in done.stdout.splitlines() if line.startswith("FAIL ")]
-    return problems or ["tools/reg_arch_markdown.py --check failed without naming a problem"]
+    return problems or cannot_evaluate(
+        f"reg_arch_markdown.py could not evaluate (exit {done.returncode}): "
+        + (done.stderr.strip() or done.stdout.strip() or "no diagnostic")[:500]
+    )
 
 
 # ── driver ───────────────────────────────────────────────────────────────────
@@ -620,10 +649,30 @@ def run_all():
     results = []
     for cid, layer, title, fn in CHECKS:
         try:
-            evidence = fn()
-        except Exception as e:                      # a check that cannot run is itself a finding
-            evidence = [f"check could not run: {type(e).__name__}: {e}"]
-        results.append({"id": cid, "layer": layer, "title": title, "evidence": evidence})
+            outcome = fn()
+            if isinstance(outcome, dict):
+                status, evidence = outcome.get("status"), outcome.get("evidence")
+                if status not in {"PASS", "FAIL", "CANNOT_EVALUATE", "NOT_APPLICABLE"}:
+                    raise ValueError(f"unrecognized check status: {status!r}")
+                if not isinstance(evidence, list) or not all(isinstance(x, str) for x in evidence):
+                    raise TypeError("structured check result needs a list of text evidence")
+                if status in {"FAIL", "CANNOT_EVALUATE", "NOT_APPLICABLE"} and not evidence:
+                    raise ValueError(f"{status} needs an explanation")
+                if status == "PASS" and evidence:
+                    raise ValueError("PASS cannot include findings")
+            elif outcome is None:
+                status = "CANNOT_EVALUATE"
+                evidence = ["check returned None without an explicit applicability decision"]
+            elif isinstance(outcome, list):
+                status = "FAIL" if outcome else "PASS"
+                evidence = outcome
+            else:
+                raise TypeError(f"unsupported outcome type: {type(outcome).__name__}")
+        except Exception as exc:
+            status = "CANNOT_EVALUATE"
+            evidence = [f"check could not run: {type(exc).__name__}: {exc}"]
+        results.append({"id": cid, "layer": layer, "title": title,
+                        "status": status, "evidence": evidence})
     return results
 
 
@@ -636,40 +685,47 @@ def main(argv=None):
 
     results = run_all()
     baseline = json.loads(BASELINE.read_text(encoding="utf-8")) if BASELINE.is_file() else {}
-    findings = {r["id"] for r in results if r["evidence"]}
-    skipped = {r["id"] for r in results if r["evidence"] is None}
-    new, healed = sorted(findings - set(baseline)), sorted(set(baseline) - findings - skipped)
+    findings = {r["id"] for r in results if r["status"] == "FAIL"}
+    cannot = {r["id"] for r in results if r["status"] == "CANNOT_EVALUATE"}
+    not_applicable_ids = {r["id"] for r in results if r["status"] == "NOT_APPLICABLE"}
+    new = sorted(findings - set(baseline))
+    healed = sorted(set(baseline) - findings - cannot - not_applicable_ids)
 
     if args.json:
-        print(json.dumps({"results": results, "new": new, "healed": healed, "skipped": sorted(skipped)}, indent=2, ensure_ascii=False))
+        print(json.dumps({"results": results, "new": new, "healed": healed,
+                          "cannot_evaluate": sorted(cannot),
+                          "skipped": sorted(not_applicable_ids)}, indent=2, ensure_ascii=False))
     elif args.markdown:
         print("# Coherence report\n")
         print("Generated by `python tools/check_coherence.py --markdown`. Do not edit by hand.\n")
-        print(f"{len(findings)} of {len(results)} checks report a finding. "
-              "Where two sources disagree, both are quoted; the report does not say which is right.\n")
+        print(f"{len(findings)} FAIL, {len(cannot)} CANNOT_EVALUATE, "
+              f"{len(not_applicable_ids)} NOT_APPLICABLE across {len(results)} checks. "
+              "A non-evaluable check never passes, regardless of baseline.\n")
         layer = None
         for r in results:
             if r["layer"] != layer:
-                layer = r["layer"]; print(f"\n## {layer}\n")
-            mark = "FINDING" if r["evidence"] else ("skipped" if r["evidence"] is None else "holds")
-            print(f"### {r['id']} — {r['title']}: {mark}\n")
-            for e in r["evidence"] or []:
-                print(f"- {e}")
-            if r["id"] in baseline and r["evidence"]:
+                layer = r["layer"]
+                print(f"\n## {layer}\n")
+            print(f"### {r['id']} — {r['title']}: {r['status']}\n")
+            for evidence in r["evidence"]:
+                print(f"- {evidence}")
+            if r["id"] in baseline and r["status"] == "FAIL":
                 print(f"\nAwaiting: {baseline[r['id']]}")
             print()
     else:
+        icons = {"PASS": "✓", "FAIL": "✗", "CANNOT_EVALUATE": "!", "NOT_APPLICABLE": "–"}
         for r in results:
-            print(f"{'✗' if r['evidence'] else ('–' if r['evidence'] is None else '✓')} {r['id']}  {r['title']}")
-            for e in r["evidence"] or []:
-                print(f"      {e}")
-        print(f"\n{len(findings)} finding(s) in {len(results)} checks | new: {new or 'none'} | fixed but still in baseline: {healed or 'none'}"
-              + (f" | skipped: {sorted(skipped)}" if skipped else ""))
+            print(f"{icons[r['status']]} {r['id']} [{r['status']}]  {r['title']}")
+            for evidence in r["evidence"]:
+                print(f"      {evidence}")
+        print(f"\n{len(findings)} FAIL, {len(cannot)} CANNOT_EVALUATE in {len(results)} checks "
+              f"| new: {new or 'none'} | fixed but still in baseline: {healed or 'none'}"
+              + (f" | not applicable: {sorted(not_applicable_ids)}" if not_applicable_ids else ""))
 
+    # A known FAIL may remain in the baseline; CANNOT_EVALUATE never may.
     if args.strict:
-        return 1 if findings else 0
-    return 1 if new or healed else 0
-
+        return 1 if findings or cannot else 0
+    return 1 if cannot or new or healed else 0
 
 if __name__ == "__main__":
     sys.exit(main())
