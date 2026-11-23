@@ -285,7 +285,13 @@ def _profiles():
 
 
 def _run(args):
-    return subprocess.run([sys.executable] + args, cwd=ROOT, capture_output=True, text=True).stdout
+    result = subprocess.run([sys.executable] + args, cwd=ROOT, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"validator {args[0]} exited {result.returncode}: "
+            + (result.stderr.strip() or result.stdout.strip() or "no diagnostic")[:500]
+        )
+    return result.stdout
 
 
 @check("COH-P01", "REG+", "The two profile validators agree")
