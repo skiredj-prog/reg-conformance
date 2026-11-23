@@ -118,6 +118,23 @@ def main(argv=None):
                  "proceed. A FLAG proceeds only under an explicit condition or supervision."),
         "checks_admitted_on_flag": on_flag,
         "flag_condition_observed": observed,
+        # P1 (review of 2026-11-23): where a FLAG condition is recorded, it is the
+        # one the port's own deployment policy declares and the port acknowledges
+        # at dispatch. The harness reads it back from the runtime; it is not a
+        # condition of any deployment under supervision.
+        "flag_conditions_provenance": (
+            "port-declared and port-acknowledged: the FLAG conditions recorded here are "
+            "declared by the port's deployment policy (a declaration of this harness) and "
+            "acknowledged by the port when it dispatches; the harness reads them back from "
+            "the runtime's decision and invents none. They are not conditions of any "
+            "supervised deployment."),
+        # P2: what a recorded acknowledgement does and does not establish.
+        "what_an_acknowledgement_establishes": (
+            "A recorded acknowledgement establishes that the runtime saw the declared "
+            "condition acknowledged before it dispatched, in this process. It does not "
+            "establish that the dispatch took effect outside this process, nor that any "
+            "external production supervision of the condition exists: neither is observed "
+            "by this harness."),
         # CLAIMS.md / RN-001 §1: a FLAG without a condition is an implementation gap,
         # recorded here; the result it went forward on carries the reserve.
         "implementation_gaps": sorted(c for c, f in adapter.facts.items() if f.get("implementation_gap")),
@@ -125,8 +142,10 @@ def main(argv=None):
     if on_flag:
         print(f"\n  {len(on_flag)} check(s) went forward on FLAG (ALLOW_WITH_MONITORING, RFC-0 §4): "
               + ", ".join(on_flag))
-        print(f"  Condition or supervision observed through the port: "
+        print(f"  Port-declared condition read back and acknowledged through the port: "
               f"{sum(observed.values())} of {len(on_flag)}")
+        print("  The condition is the port's own declaration; the acknowledgement proves "
+              "neither effective dispatch outside this process nor external supervision.")
 
     s = report["summary"]
     code = 1 if s["FAIL"] else 3 if s["INCONCLUSIVE"] else \

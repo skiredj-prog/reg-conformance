@@ -55,8 +55,10 @@ jobs:
           mkdir -p "$RUNNER_TEMP/subject-checks"
           python -m pip install --require-hashes --no-deps --only-binary=:all: \
             --report "$RUNNER_TEMP/subject-checks/pip-install-report.json" -r "$PINS"
-          # The subject's only runtime dependency, not part of the subject.
-          python -m pip install "jsonschema>=4.22,<5"
+          # The subject's only runtime dependency, not part of the subject: pinned by
+          # archive hash with its closure (pins/jsonschema-4.26.0.txt, P6 of the
+          # review of 2026-11-23), so the whole subject environment is hash-checked.
+          python -m pip install --require-hashes --only-binary=:all: -r pins/jsonschema-4.26.0.txt
           python -m pip freeze > "$RUNNER_TEMP/subject-checks/pip-freeze.txt"
           python -c 'import tenir_governance as t, os; assert t.__version__ == os.environ["SUBJECT_VERSION"], t.__version__'
 
@@ -121,6 +123,10 @@ jobs:
             echo "Not a certification. Harness exit code $reading"
             echo
             echo "Subject: $SUBJECT_REPOSITORY @ $SUBJECT_COMMIT ($SUBJECT_TAG), installed from PyPI."
+            echo
+            echo "FLAG conditions (P1): declared by the port's own deployment policy and acknowledged by the port at dispatch; read back from the runtime, not conditions of any supervised deployment."
+            echo
+            echo "Acknowledgement (P2): a recorded acknowledgement proves neither effective dispatch outside the harness process nor any external production supervision."
             echo
             echo '```'
             cat "$RUNNER_TEMP/bundle.txt"

@@ -188,8 +188,18 @@ class TenirGovPort(P.RuntimePort):
         passage = Passage(agent_id=principal, action_type=action_type,
                           amount=amount or 0.0, idempotency_key=key)
         budget = dict(resource_id=_BUDGET, amount=amount) if amount else {}
-        result = self._gov.adjudicate(passage, payload={"action_type": action_type},
-                                      **measured, **budget)
+        try:
+            result = self._gov.adjudicate(passage, payload={"action_type": action_type},
+                                          **measured, **budget)
+        except ValueError as exc:
+            # Since the 5.7.7 candidate a malformed request raises
+            # `InvalidArgumentError` (code INVALID_ARGUMENT) at the API boundary
+            # instead of returning a HARD_VETO: an API-level refusal, never a
+            # governance decision. Matched by code so that this port still loads
+            # on 5.7.0 and 5.7.6, which have no such class.
+            if getattr(exc, "code", None) == "INVALID_ARGUMENT":
+                raise P.Refused("NATIVE:invalid_argument", None, str(exc)) from exc
+            raise
         if str(result.get("composed_rationale", "")).startswith("Duplicate operation blocked"):
             raise P.Refused(P.R_REPLAY, result.get("composed_decision"),
                             result["composed_rationale"])

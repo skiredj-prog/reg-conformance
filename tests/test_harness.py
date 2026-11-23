@@ -872,3 +872,28 @@ def test_bundle_verdict_carries_the_residue_of_each_observed_result():
     assert set(kept) == observed and set(CHECKS) <= observed
     assert kept["PX-CT-R3-001"]["not_observed"][0] == "that the rejection comes before evaluation"
     assert verdict["observation"]["conditions"]["declared_bounds_s"][P.B_TAU_K] == 120.0
+
+
+# -- P1 / P2 (review of 2026-11-23): what the report says about FLAG conditions --
+
+def test_report_states_flag_conditions_are_port_declared_and_what_an_ack_proves(tmp_path, capsys):
+    """P1: a recorded FLAG condition is the port's own declaration, acknowledged by the
+    port; P2: a recorded acknowledgement proves neither effective dispatch outside the
+    process nor external supervision. Both statements travel with every report, and
+    with the bundle verdict, whether or not a check went forward on a FLAG."""
+    from harness.__main__ import main
+    out = tmp_path / "report.json"
+    code = main(["--port", "harness.ports.reference:ReferencePort", "--output", str(out)])
+    report = json.loads(out.read_text())
+    adm = report["admission"]
+    assert adm["flag_conditions_provenance"].startswith("port-declared and port-acknowledged")
+    assert "not conditions of any supervised deployment" in adm["flag_conditions_provenance"]
+    ack = adm["what_an_acknowledgement_establishes"]
+    assert "does not establish that the dispatch took effect outside this process" in ack
+    assert "external production supervision" in ack
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+    import make_evidence_bundle as B
+    verdict = B.build_verdict(json.loads(json.dumps(report, default=str)))
+    assert verdict["admission"]["flag_conditions_provenance"] == adm["flag_conditions_provenance"]
+    assert verdict["admission"]["what_an_acknowledgement_establishes"] == ack
+    assert code in (0, 2, 3)

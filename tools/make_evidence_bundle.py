@@ -91,6 +91,8 @@ def build_verdict(report: dict) -> dict:
             "rule": admission.get("rule"),
             "checks_admitted_on_flag": admission.get("checks_admitted_on_flag", []),
             "flag_condition_observed": admission.get("flag_condition_observed", {}),
+            "flag_conditions_provenance": admission.get("flag_conditions_provenance"),
+            "what_an_acknowledgement_establishes": admission.get("what_an_acknowledgement_establishes"),
             "implementation_gaps": admission.get("implementation_gaps", []),
         } if admission else None,
         # For each result that gave an observation: where it observed and what

@@ -138,3 +138,42 @@ def test_576_acknowledgement_is_recorded_even_when_the_dispatch_is_refused():
                     and "acknowledged at dispatch" in (x.rationale or "")]
     assert len(acknowledged) == 1
     assert port.observed_effects(d) == 0
+
+
+# -- R8 (review of 2026-11-23): an API refusal is not a governance veto ---------
+
+def test_port_maps_invalid_argument_to_a_native_refusal_not_a_decision():
+    """From the 5.7.7 candidate on, a malformed request raises an error carrying
+    `code == "INVALID_ARGUMENT"` instead of returning a HARD_VETO dict. The port
+    surfaces it as a `Refused` outside the neutral mapping (`NATIVE:invalid_argument`,
+    no disposition), never as a `Decision`: an API-level rejection is kept apart from
+    a governance-level veto. Matched by code, so the test needs no 5.7.7 install."""
+    from harness.ports.tenir_gov import TenirGovPort
+
+    class _InvalidArgument(ValueError):
+        code = "INVALID_ARGUMENT"
+
+    class _Gov:
+        def adjudicate(self, passage, **kw):
+            raise _InvalidArgument("INVALID_ARGUMENT (amount): Amount is invalid.")
+
+    port = TenirGovPort.__new__(TenirGovPort)
+    port._gov = _Gov()
+    with pytest.raises(P.Refused) as exc:
+        port._adjudicate({"pressure": 0.2}, 10.0, principal="a", action_type="wire_transfer")
+    assert exc.value.code == "NATIVE:invalid_argument"
+    assert exc.value.disposition is None
+    assert "HARD_VETO" not in str(exc.value)
+
+
+def test_port_lets_other_value_errors_through():
+    from harness.ports.tenir_gov import TenirGovPort
+
+    class _Gov:
+        def adjudicate(self, passage, **kw):
+            raise ValueError("something else")
+
+    port = TenirGovPort.__new__(TenirGovPort)
+    port._gov = _Gov()
+    with pytest.raises(ValueError, match="something else"):
+        port._adjudicate({"pressure": 0.2}, 10.0, principal="a", action_type="wire_transfer")
