@@ -298,6 +298,16 @@ def _run_lifecycle_membrane_vector(adapter, vector_id):
 
 HARNESS_ERROR_PREFIX = "the test did not run to a result, exception: "
 
+# CT-R4-004a (RFC-4 v0.3 revision §2.1) is observed on the effect: a refusal
+# alone does not establish that no effect took place, and a runtime's own
+# commit record is the runtime reporting on itself. The bundled kernel and the
+# shim have no effect journal independent of them, so neither mode tests the
+# vector; harness/scenarios.py r4_004a does, on a port that declares `effects`.
+NO_EFFECT_OBSERVER = ("needs an effect observer independent of the runtime: the bundled kernel's "
+                      "commit record (_committed, GET /manifest) is its own report, and a refusal "
+                      "alone does not establish that no effect took place (PMO decision on #83); "
+                      "run it through harness/scenarios.py on a port that declares `effects`")
+
 class BaseAdapter(ABC):
     interface_mode: str          = "base"
     evidence_level: EvidenceLevel = EvidenceLevel.ADAPTER_TESTED
@@ -379,18 +389,6 @@ class HTTPAdapter(BaseAdapter):
                 "nonce": evaluation["nonce"],
                 "action_type": action_type or evaluation["action_type"],
                 "policy_version": evaluation["policy_version"]}
-
-    def _commits_recorded(self, eid) -> Optional[int]:
-        """Commit entries the kernel's manifest holds for an evaluation, or None if
-        the manifest cannot be read. The record is the runtime's own: it is the
-        effect record of this kernel, not a journal independent of it."""
-        code, m = self._get("/manifest")
-        entries = m.get("entries") if code == 200 and isinstance(m, dict) else None
-        if not isinstance(entries, list):
-            return None
-        return sum(1 for e in entries if isinstance(e, dict)
-                   and (e.get("entry") or {}).get("type") == "commit"
-                   and (e.get("entry") or {}).get("evaluation_id") == eid)
 
     def _pub_bytes(self) -> Optional[bytes]:
         if self._jwks_cache: return self._jwks_cache
@@ -528,60 +526,9 @@ class HTTPAdapter(BaseAdapter):
 
     # CT-R4-004a — RFC-4 v0.3 revision §2.1: the observable is the effect, not the refusal code
     def _v_ct_r4_004a(self):
-        # Same oracle as harness/scenarios.py r4_004a and the native probe: an
-        # authorization that cannot be obtained leaves the property untested
-        # (INCONCLUSIVE), it does not violate it. HTTP 0 is a transport failure.
-        c, r = self._post("/evaluations", self._eb(
-            measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
-        if self._disp(r) not in ("PASS","FLAG"):     # RFC-0 §4: both admit
-            return self._inconclusive("CT-R4-004a",
-                f"could not establish a valid authorization (HTTP {c}, disposition={self._disp(r)})")
-        eid = r.get("evaluation_id")
-        ec, er = self._post(f"/admin/expire-eval/{eid}", {})
-        if ec != 200:
-            return self._ar("CT-R4-004a",
-                "/admin/expire-eval absent — cannot pass the authorization's bound without waiting")
-        # Positive control, only once expiry is available: a valid authorization must
-        # commit, or a refusal proves nothing.
-        c0, r0 = self._post("/evaluations", self._eb(
-            measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
-        if self._disp(r0) not in ("PASS","FLAG"):
-            return self._inconclusive("CT-R4-004a",
-                f"could not establish a valid authorization (HTTP {c0}, disposition={self._disp(r0)})")
-        pc, pr = self._post(f"/evaluations/{r0.get('evaluation_id')}/events", self._commit_body(r0))
-        if pc not in (200, 201):
-            return self._inconclusive("CT-R4-004a",
-                f"a valid authorization was not committed either (HTTP {pc}: {pr}), so a refusal proves nothing")
-        # A response code is not an effect (PMO decision on #83): read the kernel's
-        # commit record for the valid authorization, then for the expired one.
-        done = self._commits_recorded(r0.get("evaluation_id"))
-        if done is None:
-            return self._ar("CT-R4-004a",
-                "GET /manifest unavailable: no commit record to read, and a response code alone does not establish an effect")
-        if not done:
-            return self._inconclusive("CT-R4-004a",
-                "a valid authorization was accepted and no commit was recorded: the record cannot show an effect")
-        cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
-        recorded = self._commits_recorded(eid)
-        if cc in (200, 201):
-            # Acceptance already fails the oracle, whatever the record shows.
-            return self._fail("CT-R4-004a", f"commit accepted under the expired authorization {eid} "
-                              f"(commits recorded: {'unreadable' if recorded is None else recorded})")
-        if recorded is None:
-            return self._inconclusive("CT-R4-004a", "commit record unreadable after the expired attempt")
-        if recorded:
-            return self._fail("CT-R4-004a",
-                f"a commit is recorded under the expired authorization {eid} (HTTP {cc})")
-        if cc == 409:
-            return self._pass("CT-R4-004a",
-                f"commit refused under the expired authorization (HTTP {cc}: {cr}); no commit recorded for it, "
-                "one recorded for the valid authorization (kernel's own record)")
-        if 400 <= cc < 500:
-            return self._inconclusive("CT-R4-004a",
-                f"commit not accepted, but HTTP {cc} does not establish a refusal of the commit itself: {cr}")
-        return self._inconclusive("CT-R4-004a", f"outcome of the commit not established (HTTP {cc}: {cr})")
+        # PMO decision on #83, and the author's: one rule for every mode (23 November 2026).
+        return self._ar("CT-R4-004a", NO_EFFECT_OBSERVER)
 
-    # CT-R4-004b — RFC-4 v0.3 revision §2.2
     def _v_ct_r4_004b(self):
         return self._ar("CT-R4-004b",
             "The shim declares no bound on a held attempt (its only HOLD is insufficient evidence): an adapter that can hold an attempt under a declared bound and pass it is required.")
@@ -971,39 +918,8 @@ class NativeKernelAdapter(BaseAdapter):
                     if "EXPIRED" in str(e) else self._fail("CT-R4-004",str(e)))
 
     def _v_ct_r4_004a(self):
-        # RFC-4 v0.3 revision §2.1: no effect under an authorization whose declared
-        # bound has passed. Positive control first, as in harness/scenarios.py
-        # r4_004a: a kernel that refuses every commit proves nothing.
-        # The effect read here is the kernel's own commit record (_committed), at
-        # evidence level 1. The harness scenario requires an observer independent
-        # of the runtime (`effects`), which the reference port does not declare, so
-        # the same kernel gives ADAPTER_REQUIRED there (PMO decision on #83).
-        ok = self._evaluate("a","valid","wire_transfer",0.2,0.2,0.90,uuid.uuid4().hex)
-        if ok["final_disposition"] not in ("PASS","FLAG"):     # RFC-0 §4: both admit
-            return self._inconclusive("CT-R4-004a",
-                f"could not establish a valid authorization (disposition={ok['final_disposition']}) (native)")
-        try:
-            self._commit(ok["evaluation_id"],action_type="wire_transfer",
-                         action_id=ok["action_id"],nonce=ok["nonce"])
-        except ValueError as e:
-            return self._inconclusive("CT-R4-004a",
-                f"a valid authorization was refused too, so a refusal proves nothing (native): {e}")
-        if not self._grants[ok["evaluation_id"]].get("_committed"):
-            return self._inconclusive("CT-R4-004a",
-                "the commit under a valid authorization reported success and recorded no effect (native)")
-        stale = self._inject_stale()
-        try:
-            self._commit(stale["evaluation_id"],action_id=stale["action_id"],nonce=stale["nonce"])
-            return self._fail("CT-R4-004a","commit accepted under the expired authorization (native)")
-        except ValueError as e:
-            # The observable is the effect, not the refusal: a refusal raised after the
-            # effect was recorded is still an effect under the expired authorization.
-            if self._grants[stale["evaluation_id"]].get("_committed"):
-                return self._fail("CT-R4-004a",
-                    f"commit refused ({e}) but the effect was recorded under the expired authorization (native)")
-            return self._pass("CT-R4-004a", f"commit refused under the expired authorization (native): {e}; "
-                              "no commit recorded for it, one recorded for the valid authorization "
-                              "(kernel's own record)")
+        # PMO decision on #83, and the author's: one rule for every mode (23 November 2026).
+        return self._ar("CT-R4-004a", NO_EFFECT_OBSERVER)
 
     def _v_ct_r4_004b(self):
         return self._ar("CT-R4-004b",

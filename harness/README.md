@@ -23,12 +23,15 @@ is a REG vector, and neither changes the vector summary.
 - A refusal alone never establishes that no effect took place. `CT-R4-004a`
   runs only on a port that declares `effects`, an observer independent of the
   runtime, and its positive control must show an effect under the valid
-  authorization. The reference port declares none: `ADAPTER_REQUIRED`.
+  authorization. The reference port declares none: `ADAPTER_REQUIRED`, as in
+  the runner's native and HTTP modes, which have no such observer either.
+- A scenario sees the port through a thin proxy that names each primitive it
+  calls; that is how a declared primitive's `NotImplementedError` is told apart.
 - Effect probes (`HX-EFFECT-*`) and property checks (`PX-*`) are not REG
   vectors. They are reported apart, and their results never enter a vector
   summary or `conformance_status`. A `HARNESS_ERROR` among them does (below).
 - `PASS`, `FAIL` and `INCONCLUSIVE` come from a scenario, with one exception:
-  a `NotImplementedError` that leaves the port through the primitive of a
+  a `NotImplementedError` raised by the scenario's call to the primitive of a
   declared capability (`PRIMITIVES` in `harness/port.py`) is `INCONCLUSIVE`, because the port's
   claim is wrong, not the subject. The same exception raised by scenario or
   harness code, by `reset`, by a port method that is no primitive, or by the

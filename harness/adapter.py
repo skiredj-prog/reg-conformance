@@ -79,21 +79,20 @@ class PortAdapter(R.BaseAdapter):
         except (Exception, SystemExit) as e:
             return self._harness_error(vid, e)
         try:
-            outcome = scenario.run(self.port)
+            # The scenario sees the port through _Watched, which knows the name of
+            # each primitive it calls (PMO decision on #83).
+            outcome = scenario.run(_Watched(self.port))
             state, details = outcome[0], outcome[1]
             if len(outcome) > 2 and outcome[2]:
                 self.facts[vid] = outcome[2]
-        except NotImplementedError as e:
-            primitive = _entry_primitive(self.port, e)
-            if primitive is None:
-                # Raised by the scenario or the harness, or by a port method that
-                # is no capability's primitive, or by a primitive of a capability
-                # the port does not declare: not the port's claim, a crash.
-                return self._harness_error(vid, e)
+        except _DeclaredNotImplemented as e:
             # Declared but not implemented: the port's claim is wrong, not the subject.
             return self._inconclusive(
-                vid, f"declared capability not implemented: {PRIMITIVES[primitive]} ({primitive}): {e}")
+                vid, f"declared capability not implemented: {PRIMITIVES[e.primitive]} ({e.primitive}): {e.cause}")
         except (Exception, SystemExit) as e:
+            # Any other NotImplementedError (from the scenario or the harness, from
+            # a port method that is no primitive, from the primitive of a capability
+            # the port does not declare) is a crash like any other.
             return self._harness_error(vid, e)
         fact = self.facts.get(vid)
         if fact and fact.get("admitted_on") == "FLAG" and not fact.get("flag_conditions"):
@@ -153,38 +152,49 @@ class PortAdapter(R.BaseAdapter):
         return out
 
 
-def _primitive_codes(port) -> dict:
-    """Code object -> primitive name, for the functions the port's class binds
-    to each primitive name, through any decorator (`__wrapped__`) and whatever
-    the function is called: a wrapper or an alias still is that primitive."""
-    codes = {}
-    for name in PRIMITIVES:
-        fn = getattr(type(port), name, None)
-        while fn is not None:
-            code = getattr(fn, "__code__", None)
-            if code is not None:
-                codes.setdefault(code, name)
-            fn = getattr(fn, "__wrapped__", None)
-    return codes
+class _DeclaredNotImplemented(BaseException):
+    """A primitive of a declared capability raised NotImplementedError.
+
+    A BaseException, so that a scenario's own `except Exception` (CT-R2-003
+    catches the port's crash as the failure it tests) does not read the port's
+    wrong claim as a result about the subject. Only _run_scenario catches it."""
+
+    def __init__(self, primitive, cause):
+        super().__init__(primitive, cause)
+        self.primitive, self.cause = primitive, cause
 
 
-def _entry_primitive(port, exc):
-    """The primitive through which the exception left the port, if its
-    capability is declared; None otherwise. The first frame of the port on the
-    way down is where scenario code entered it; what the primitive calls below
-    is the primitive's own concern."""
-    codes = _primitive_codes(port)
-    tb = exc.__traceback__
-    while tb is not None:
-        frame = tb.tb_frame
-        bound = frame.f_locals.get("self", port)
-        name = codes.get(frame.f_code) if bound is port else None
-        if name is not None:
-            return name if PRIMITIVES[name] in port.capabilities else None
-        if frame.f_locals.get("self") is port:
-            return None            # entered through a port method that is no primitive
-        tb = tb.tb_next
-    return None
+class _Watched:
+    """What a scenario sees of the port: the port itself, except that a call to
+    the primitive of a declared capability that raises NotImplementedError comes
+    out as _DeclaredNotImplemented, named by the attribute the scenario called.
+    Decorators, aliases and shared wrappers change nothing: the name is the one
+    called. Every other attribute and every other exception passes unchanged.
+    What a primitive calls inside the port is that primitive's own concern."""
+
+    __slots__ = ("_port",)
+
+    def __init__(self, port):
+        object.__setattr__(self, "_port", port)
+
+    def __getattr__(self, name):
+        port = object.__getattribute__(self, "_port")
+        attr = getattr(port, name)
+        capability = PRIMITIVES.get(name)
+        if capability is None or not callable(attr):
+            return attr
+
+        def call(*args, **kwargs):
+            try:
+                return attr(*args, **kwargs)
+            except NotImplementedError as e:
+                if capability in port.capabilities:
+                    raise _DeclaredNotImplemented(name, e) from e
+                raise
+        return call
+
+    def __setattr__(self, name, value):
+        setattr(object.__getattribute__(self, "_port"), name, value)
 
 
 def load_port(spec: str) -> RuntimePort:

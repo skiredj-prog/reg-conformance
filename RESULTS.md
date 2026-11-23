@@ -43,7 +43,8 @@ The line above stays as it was recorded at `v0.7.0`. Since the change of
 `ADAPTER_REQUIRED` on this port: the vector now needs an effect observer
 independent of the runtime, and the port declares none. A run of the same
 kernel after that change gives 14 PASS, 1 not applicable, 2 adapter required
-and 44 implementation gaps; the reading by property does not change. The line
+and 44 implementation gaps, through this port as through the runner's native
+mode; the reading by property does not change. The line
 will be replaced by the next published run, not edited.
 
 The reference kernel is a teaching implementation. Its passes are not results

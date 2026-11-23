@@ -31,12 +31,10 @@ def test_reference_port_matches_legacy_native_mode_on_every_vector():
     legacy = {r.vector_id: r.status for r in R.NativeKernelAdapter(KERNEL).run_all()}
     ported = {r.vector_id: r.status for r in PortAdapter(ReferencePort()).run_all()}
     assert len(legacy) == 61
-    # One divergence, by decision (PMO on #83): CT-R4-004a needs an effect observer
-    # independent of the runtime, which the reference port does not declare; the
-    # native probe reads the kernel's own commit record, at evidence level 1.
-    assert {v for v in legacy if ported[v] != legacy[v]} == {"CT-R4-004a"}
-    assert ported["CT-R4-004a"] == R.ReportingState.ADAPTER_REQUIRED
-    assert legacy["CT-R4-004a"] == R.ReportingState.PASS
+    assert ported == legacy
+    # CT-R4-004a (PMO decision on #83): neither mode has an effect observer
+    # independent of the bundled kernel.
+    assert ported["CT-R4-004a"] == legacy["CT-R4-004a"] == R.ReportingState.ADAPTER_REQUIRED
 
 
 def test_empty_port_passes_nothing():
@@ -999,49 +997,39 @@ def test_the_runner_reports_a_crash_as_a_harness_error_in_every_vector():
     assert report["conformance_status"] == "HARNESS_ERROR" and report["summary"]["HARNESS_ERROR"] == 1
 
 
-# CT-R4-004a, native: the positive control (Mergestorm finding 1).
+# CT-R4-004a, native and HTTP (Mergestorm finding 1, then PMO decision on #83).
+# Finding 1: the native probe gave PASS on any refusal. The decision: no mode of
+# the runner has an effect observer independent of the bundled kernel, so no
+# mode reports a result; the positive control lives in the harness scenario.
 
-def test_native_ct_r4_004a_refusing_every_commit_proves_nothing():
+def test_native_ct_r4_004a_reports_no_result_whatever_the_kernel_does():
     class RefusesAll(R.NativeKernelAdapter):
         def _commit(self, *a, **kw): raise ValueError("REFUSE_ALL")
-    r = RefusesAll(KERNEL).run_vector("CT-R4-004a")
-    assert r.status == R.ReportingState.INCONCLUSIVE, r.details
-    assert "a valid authorization was refused too" in r.details
-
-
-def test_native_ct_r4_004a_without_a_valid_authorization_is_inconclusive():
-    class VetoesAll(R.NativeKernelAdapter):
-        def _evaluate(self, *a, **kw):
-            g = super()._evaluate(*a, **kw)
-            g["final_disposition"] = "HARD_VETO"
-            return g
-    assert VetoesAll(KERNEL).run_vector("CT-R4-004a").status == R.ReportingState.INCONCLUSIVE
-
-
-def test_native_ct_r4_004a_effect_then_refusal_is_a_fail():
     class EffectThenRefusal(R.NativeKernelAdapter):
         def _commit(self, eid, action_type=None, action_id=None, nonce=None):
-            g = self._grants[eid]
-            if time.time() > g["valid_until"]:
-                g["_committed"] = True              # the effect happens...
-                raise ValueError("EVALUATION_EXPIRED")   # ...and a refusal is reported
-            return super()._commit(eid, action_type, action_id=action_id, nonce=nonce)
-    r = EffectThenRefusal(KERNEL).run_vector("CT-R4-004a")
-    assert r.status == R.ReportingState.FAIL and "effect was recorded" in r.details
+            self._grants[eid]["_committed"] = True
+            raise ValueError("EVALUATION_EXPIRED")
+    for adapter in (R.NativeKernelAdapter(KERNEL), RefusesAll(KERNEL), EffectThenRefusal(KERNEL)):
+        r = adapter.run_vector("CT-R4-004a")
+        assert r.status == R.ReportingState.ADAPTER_REQUIRED, type(adapter).__name__
+        assert "independent of the runtime" in r.gap_note and "effects" in r.gap_note
 
 
-def test_native_ct_r4_004a_passes_on_the_bundled_kernel_with_its_control():
-    a = R.NativeKernelAdapter(KERNEL)
-    assert a.run_vector("CT-R4-004a").status == R.ReportingState.PASS
-    committed = [g for g in a._grants.values() if g.get("_committed")]
-    assert len(committed) == 1 and committed[0]["valid_until"] > committed[0]["created_at"]
+def test_http_ct_r4_004a_reports_no_result_and_calls_nothing():
+    class Recording(R.HTTPAdapter):
+        calls = []
+        def _post(self, path, body): self.calls.append(path); return 0, {}
+        def _get(self, path): self.calls.append(path); return 0, {}
+    a = Recording("http://shim.test")
+    r = a.run_vector("CT-R4-004a")
+    assert r.status == R.ReportingState.ADAPTER_REQUIRED and a.calls == []
 
 
-def test_http_ct_r4_004a_without_a_valid_authorization_is_not_a_fail():
-    class Down(R.HTTPAdapter):
-        def _post(self, path, body): return 0, {"error": "connection refused"}
-    r = Down("http://127.0.0.1:9").run_vector("CT-R4-004a")
-    assert r.status == R.ReportingState.INCONCLUSIVE and "HTTP 0" in r.details
+def test_the_registry_marks_ct_r4_004a_specified_with_the_runner_result():
+    import yaml
+    entry = next(v for v in yaml.safe_load((Path(__file__).resolve().parents[1] / "vectors" / "commit.yaml")
+                                           .read_text(encoding="utf-8"))["vectors"] if v["id"] == "CT-R4-004a")
+    assert entry["status"] == "specified" and entry["native"] == "ADAPTER_REQUIRED"
 
 
 # CT-R4-004a, harness: the scenario evaluates, so it declares EVALUATE (finding 5).
@@ -1139,22 +1127,6 @@ def test_harness_ct_r4_004a_an_accepted_expired_commit_fails_even_with_no_count(
             return super().observed_effects(decision)
     r = _r4_004a(AcceptsAndCannotCount())
     assert r.status == R.ReportingState.FAIL and "commit accepted" in r.details
-
-
-def test_http_ct_r4_004a_an_accepted_expired_commit_fails_even_with_no_record():
-    class AcceptsThenNoManifest(_Shim):
-        expired_code = 200
-        def _get(self, path):
-            if getattr(self, "expired", None) and self.recorded and self._after:
-                return 404, {}
-            return super()._get(path)
-        def _post(self, path, body):
-            out = super()._post(path, body)
-            self._after = path.startswith(f"/evaluations/{getattr(self, 'expired', '?')}/")
-            return out
-    s = AcceptsThenNoManifest(); s._after = False
-    r = s.run_vector("CT-R4-004a")
-    assert r.status == R.ReportingState.FAIL and "accepted" in r.details
 
 
 def test_harness_ct_r4_004a_an_observer_that_crashes_is_a_harness_error():
@@ -1273,16 +1245,6 @@ def test_the_bundle_lists_harness_errors_from_a_runner_report():
     assert verdict["reg_vectors"]["status"] == "HARNESS_ERROR"
 
 
-def test_native_ct_r4_004a_accepts_a_flag_as_the_valid_authorization():
-    class Flags(R.NativeKernelAdapter):
-        def _evaluate(self, *a, **kw):
-            g = super()._evaluate(*a, **kw)
-            if g["final_disposition"] == "PASS":
-                g["final_disposition"] = "FLAG"          # RFC-0 §4: FLAG admits too
-            return g
-    assert Flags(KERNEL).run_vector("CT-R4-004a").status == R.ReportingState.PASS
-
-
 def test_ct_r4_004a_states_what_its_observer_does_not_establish():
     assert any("the observer is the port's own claim" in line
                for line in SCENARIOS["CT-R4-004a"].not_observed)
@@ -1382,60 +1344,51 @@ def test_not_implemented_from_a_port_method_that_is_no_primitive_is_a_harness_er
     assert PortAdapter(WithHelper())._run_scenario("C1", broken).status.value == HARNESS_ERROR
 
 
+def test_a_decorator_shared_by_two_primitives_names_the_one_called():
+    # Codex, review of 6552179: one wrapper code object for evaluate and
+    # tenir_score bound both to the first name. The scenario's call names it now.
+    def shared(fn):
+        def wrapper(self, *a, **kw):
+            return fn(self, *a, **kw)
+        return wrapper
+    def _missing(self, *a, **kw):
+        raise NotImplementedError("not wired")
+    class Port(TemplatePort):
+        capabilities = frozenset({P.TENIR_SCORE})
+        evaluate = shared(_missing)
+        tenir_score = shared(_missing)
+    import dataclasses
+    calls_score = dataclasses.replace(SCENARIOS["C1"], run=lambda rt: rt.tenir_score(0.4, 0.3, 0.75),
+                                      requires=frozenset({P.TENIR_SCORE}), intents=frozenset())
+    r = PortAdapter(Port())._run_scenario("CT-R2-002", calls_score)
+    assert r.status == R.ReportingState.INCONCLUSIVE and "tenir_score" in r.details
+    calls_evaluate = dataclasses.replace(calls_score, run=lambda rt: rt.evaluate(P.ADMISSIBLE))
+    assert PortAdapter(Port())._run_scenario("C1", calls_evaluate).status.value == HARNESS_ERROR
+
+
+def test_a_scenarios_own_except_does_not_turn_a_wrong_claim_into_a_fail():
+    # CT-R2-003 catches the port's crash as the failure it tests. A tenir_score
+    # that is declared and not implemented is the port's claim, not that crash.
+    class Claims(TemplatePort):
+        capabilities = frozenset({P.TENIR_SCORE})
+    r = PortAdapter(Claims()).run_vector("CT-R2-003")
+    assert r.status == R.ReportingState.INCONCLUSIVE, (r.status, r.details)
+    class Crashes(Claims):
+        def tenir_score(self, P_v, V, K):
+            raise ZeroDivisionError("division by zero")
+    assert PortAdapter(Crashes()).run_vector("CT-R2-003").status == R.ReportingState.FAIL
+
+
+def test_the_scenario_sees_the_port_unchanged_apart_from_that_tag():
+    from harness.adapter import _Watched
+    port = ReferencePort()
+    w = _Watched(port)
+    assert w.capabilities == port.capabilities and w.intents == port.intents
+    assert w.evaluate(P.ADMISSIBLE, principal="a", action_type="wire_transfer").disposition in ("PASS", "FLAG")
+    with pytest.raises(P.Refused):
+        w.commit(w.stale_grant(action_type="wire_transfer"))
+
+
 def test_every_capability_has_a_primitive_and_every_primitive_a_capability():
     assert set(P.PRIMITIVES.values()) == P.ALL_CAPABILITIES - {P.NONCE}
     assert all(callable(getattr(P.RuntimePort, name)) for name in P.PRIMITIVES)
-
-
-# CT-R4-004a over HTTP: the shim's commit record, not the response code.
-
-class _Shim(R.HTTPAdapter):
-    """Stub of the shim's four calls, so the oracle is tested without a server."""
-    expire_ok, manifest_ok, record_valid, record_expired, expired_code = True, True, True, False, 409
-
-    def __init__(self):
-        super().__init__("http://shim.test")
-        self.recorded = []
-
-    def _post(self, path, body):
-        if path == "/evaluations":
-            return 200, {"final_disposition": "PASS", "evaluation_id": body["evaluation_id"],
-                         "action_id": body["action_id"], "nonce": body.get("nonce", "n"),
-                         "action_type": "wire_transfer", "policy_version": "v"}
-        if path.startswith("/admin/expire-eval/"):
-            self.expired = path.rsplit("/", 1)[1]
-            return (200, {}) if self.expire_ok else (404, {})
-        eid = path.split("/")[2]
-        if eid == getattr(self, "expired", None):
-            if self.record_expired:
-                self.recorded.append(eid)
-            return self.expired_code, {"detail": "EVALUATION_EXPIRED"}
-        if self.record_valid:
-            self.recorded.append(eid)
-        return 200, {"status": "COMMITTED"}
-
-    def _get(self, path):
-        if path == "/manifest" and self.manifest_ok:
-            return 200, {"entries": [{"entry": {"type": "commit", "evaluation_id": e}} for e in self.recorded]}
-        return 404, {}
-
-
-def test_http_ct_r4_004a_passes_on_the_commit_record():
-    r = _Shim().run_vector("CT-R4-004a")
-    assert r.status == R.ReportingState.PASS and "kernel's own record" in r.details
-
-
-def test_http_ct_r4_004a_without_a_readable_record_is_adapter_required():
-    s = _Shim(); s.manifest_ok = False
-    assert s.run_vector("CT-R4-004a").status == R.ReportingState.ADAPTER_REQUIRED
-
-
-def test_http_ct_r4_004a_an_accepted_commit_with_no_record_proves_nothing():
-    s = _Shim(); s.record_valid = False
-    assert s.run_vector("CT-R4-004a").status == R.ReportingState.INCONCLUSIVE
-
-
-def test_http_ct_r4_004a_a_commit_recorded_behind_a_409_is_a_fail():
-    s = _Shim(); s.record_expired = True
-    r = s.run_vector("CT-R4-004a")
-    assert r.status == R.ReportingState.FAIL and "recorded under the expired" in r.details
