@@ -17,33 +17,33 @@ FLAG_RESERVE = ("obtained under a declared mapping interpretation, pending ratif
 HARNESS_GAP = ("HARNESS_GAP: no runtime-neutral scenario exists for this vector yet; "
                "the subject was not evaluated.")
 
-# Rule of 23 November 2026 (standard author's decision, 15:07 UTC, option A),
-# for the registered rows no port can adapt. A row the frozen RFCs do not
-# specify (RESERVED in VECTORS.md) and a row superseded by a ratified revision
-# have no normative property to test on any subject: they are reported
-# NOT_SPECIFIED, listed with their reason, and stay out of conformance_status
-# and of the exit code. A row whose property a harness check exercises is
-# reported by that check (EXERCISED_BY_CHECK) when the check ran and passed.
-# A row the implementer declares outside the runtime's perimeter, with a signed
-# reason, is NOT_IN_PERIMETER, as a property check already could be. The rule
-# is dated: it reinterprets no report produced before it. What it removes from
-# the exit code is listed in every report, under `exit_code_rule`.
-EXIT_CODE_RULE_DATE = "2026-11-23"
-OUT_OF_EXIT_CODE = ("NOT_SPECIFIED", "EXERCISED_BY_CHECK", "NOT_IN_PERIMETER", "NOT_APPLICABLE")
-# Registered under RN-001 §3, withdrawn readings: superseded by the RFC-4 v0.3
-# revision of 19 November 2026 (§4), ratified and kept outside the frozen
-# baseline. Kept with their text and ids; nothing left to test on them.
-SUPERSEDED = {"CT-R4-014": "CT-R4-004a", "CT-R4-015": "CT-R4-004a", "CT-R4-016": "CT-R4-004b"}
-_RESERVED_ROWS = None
+# Rule of 23 November 2026 (standard author's decision, 15:07 UTC, option A,
+# amended on the owner's review of 17:37 UTC), for the registered rows no port
+# can adapt. The rule itself lives in runner.py (shared by every adapter and
+# every report): a row the frozen RFCs do not specify (RESERVED in VECTORS.md)
+# or superseded by a ratified revision (`superseded_by` in vectors/*.yaml) has
+# no normative property to test: NOT_SPECIFIED unless observed, out of
+# conformance_status and of the exit code, listed with its reason. A row the
+# implementer declares outside the runtime's perimeter, from the list below,
+# is NOT_IN_PERIMETER. A row whose property a check exercised and passed is
+# EXERCISED_BY_CHECK. Dated; reinterprets no earlier report.
+EXIT_CODE_RULE_DATE = R.EXIT_CODE_RULE_DATE
+OUT_OF_EXIT_CODE = R.OUT_OF_EXIT_CODE
+# The rows the standard lets an implementer declare outside a runtime's
+# perimeter (owner's review of 2026-11-23, 17:37 UTC: a declaration is two
+# plain strings, so without this list any row could leave the exit code; the
+# probe took CT-R0-005 out and its check did not run). Today: the credential
+# layer of RFC-3 (malformed, latency window, expiry, scope, rotation), which
+# a decision runtime may leave to its caller. Any other row is refused.
+PERIMETER_DECLARABLE = frozenset({"CT-R3-001", "CT-R3-002", "CT-R3-006", "CT-R3-007", "CT-R3-008"})
 
 
 def reserved_rows() -> dict:
-    """id -> VECTORS.md row, for every row whose status is RESERVED."""
-    global _RESERVED_ROWS
-    if _RESERVED_ROWS is None:
-        _RESERVED_ROWS = {vid: row for vid, row in properties.index_rows().items()
-                          if row.get("status") == "RESERVED"}
-    return _RESERVED_ROWS
+    return R.reserved_rows()
+
+
+def superseded_rows() -> dict:
+    return R.superseded_rows()
 
 
 class PortAdapter(R.BaseAdapter):
@@ -139,6 +139,9 @@ class PortAdapter(R.BaseAdapter):
 
     @staticmethod
     def _perimeter_declaration(row, decl):
+        if row not in PERIMETER_DECLARABLE:
+            raise ValueError(f"{row}: the standard does not let an implementer declare this row "
+                             f"outside the perimeter (allowed: {sorted(PERIMETER_DECLARABLE)})")
         if not (isinstance(decl, dict) and all(
                 isinstance(decl.get(f), str) and decl[f].strip() for f in ("declared_by", "reason"))):
             raise ValueError(f"{row}: a not_in_perimeter declaration needs a "
@@ -155,8 +158,9 @@ class PortAdapter(R.BaseAdapter):
         if vid in self.port.not_in_perimeter:
             if vid in SCENARIOS:
                 raise ValueError(f"{vid}: a port may not declare a neutral scenario outside the perimeter")
-            # Rule of 23 November 2026: the implementer's signed declaration on a
-            # registered row, as on a property check. Neither PASS nor FAIL.
+            # Rule of 23 November 2026: the implementer's plain declaration on a
+            # registered row the standard allows, as on a property check. Neither
+            # PASS nor FAIL; the declaration is text, not a signature.
             return self._r(vid, R.ReportingState.NOT_IN_PERIMETER,
                            gap_note=self._perimeter_declaration(vid, self.port.not_in_perimeter[vid]))
         custom = self.port.run_custom(vid)
@@ -164,6 +168,7 @@ class PortAdapter(R.BaseAdapter):
             if vid in SCENARIOS:
                 raise ValueError(f"{vid}: a port may not override a neutral scenario")
             return custom
+        not_specified = R.not_specified_reason(vid)
         if vid in SCENARIOS:
             result = self._run_scenario(vid, SCENARIOS[vid])
             if (result.status == R.ReportingState.ADAPTER_REQUIRED
@@ -172,20 +177,18 @@ class PortAdapter(R.BaseAdapter):
                 # The scenario cannot run for want of a capability and the port
                 # declares the gap on that row: the declaration is the more
                 # precise record. Same exit code; the note travels.
-                return self._gap(vid, self.port.declared_gaps[vid])
-            return result
+                result = self._gap(vid, self.port.declared_gaps[vid])
+            # A superseded row keeps an observation (PASS, FAIL, INCONCLUSIVE);
+            # a non-observation on it is not a gap to count: the successor row
+            # carries the count (CT-R4-004 -> CT-R4-004a/b).
+            return R.apply_row_rule([result])[0] if not_specified else result
+        if not_specified:
+            # Nothing to test: a declared gap on such a row is kept as a note.
+            gap = self.port.declared_gaps.get(vid)
+            return self._r(vid, R.ReportingState.NOT_SPECIFIED,
+                           gap_note=not_specified + (f" | the port declares: {gap}" if gap else ""))
         if vid in self.port.declared_gaps:
             return self._gap(vid, self.port.declared_gaps[vid])
-        if vid in SUPERSEDED:
-            return self._r(vid, R.ReportingState.NOT_SPECIFIED, gap_note=(
-                f"superseded by {SUPERSEDED[vid]} (RFC-4 v0.3 revision of 19 November 2026, §4); "
-                f"withdrawn reading, kept with its id and text; nothing to test "
-                f"(rule of {EXIT_CODE_RULE_DATE})"))
-        row = reserved_rows().get(vid)
-        if row is not None:
-            return self._r(vid, R.ReportingState.NOT_SPECIFIED, gap_note=(
-                f"RESERVED in VECTORS.md ({row.get('rfc', '?')}): the frozen RFCs do not specify "
-                f"this row; a proposal, nothing to test (rule of {EXIT_CODE_RULE_DATE})"))
         return self._ar(vid, HARNESS_GAP)
 
     @staticmethod

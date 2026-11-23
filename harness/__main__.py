@@ -8,7 +8,7 @@ import sys
 
 import runner as R
 from . import properties
-from .adapter import EXIT_CODE_RULE_DATE, OUT_OF_EXIT_CODE, PortAdapter, load_port
+from .adapter import EXIT_CODE_RULE_DATE, PortAdapter, load_port
 from .scenarios import CHECKS, PHASES, PROBES, SCENARIOS
 
 
@@ -164,30 +164,18 @@ def main(argv=None):
     code = 1 if s["FAIL"] else 3 if s["INCONCLUSIVE"] else \
         2 if s["IMPLEMENTATION_GAP"] or s["ADAPTER_REQUIRED"] else 0
     report["exit_code"] = code
-    # What this run's exit code and conformance_status do not count, row by
-    # row, with the reason each row carries. A reader of the report sees the
-    # whole registered set; the code counts what can be tested on a subject.
-    out_of_code = {r.vector_id: {"status": r.status.value, "reason": r.gap_note or r.details}
-                   for r in results if r.status.value in OUT_OF_EXIT_CODE}
-    report["exit_code_rule"] = {
-        "date": EXIT_CODE_RULE_DATE,
-        "rule": ("FAIL -> 1; else INCONCLUSIVE -> 3; else IMPLEMENTATION_GAP or ADAPTER_REQUIRED "
-                 "-> 2; else 0. Since 2026-11-23 (standard author's decision, 15:07 UTC): a "
-                 "registered row no ratified text specifies (RESERVED, or superseded by the "
-                 "RFC-4 v0.3 revision) is NOT_SPECIFIED; a row the implementer declares outside "
-                 "the runtime's perimeter, with a signed reason, is NOT_IN_PERIMETER; a row with "
-                 "no neutral scenario whose property check passed in this run is "
-                 "EXERCISED_BY_CHECK. These are listed below and do not enter the exit code or "
-                 "conformance_status. Reports produced before that date are not reinterpreted."),
-        "statuses_out_of_exit_code": list(OUT_OF_EXIT_CODE),
-        "counted_in_exit_code": {k: s[k] for k in ("FAIL", "INCONCLUSIVE", "IMPLEMENTATION_GAP", "ADAPTER_REQUIRED")},
-        "rows_out_of_exit_code": out_of_code}
+    # The rule block comes with every report (runner.generate_report); the
+    # exit code this run returns is added to it.
+    rule = report["exit_code_rule"]
+    rule["exit_code"] = code
+    out_of_code = rule["rows_out_of_exit_code"]
     if out_of_code:
         tally = {}
         for v in out_of_code.values():
             tally[v["status"]] = tally.get(v["status"], 0) + 1
         print("  Out of the exit code (rule of " + EXIT_CODE_RULE_DATE + "): "
               + ", ".join(f"{k} {n}" for k, n in sorted(tally.items())))
+    print(f"  conformance_status: {report['conformance_status']}")
     os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
     with open(args.output, "w") as f:
         json.dump(report, f, indent=2, default=str)

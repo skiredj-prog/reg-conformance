@@ -156,7 +156,7 @@ vectors:
     intended: No effect without a fresh adjudication that includes the verdict's age
     expected: no effect, or a fresh adjudication that includes the verdict's age
     status: specified
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: "Not exercised yet. CT-R4-004 covers the refusal branch only."
     reference: withdrawn reading, RFC-4 v0.3 revision §4; was RN-001 §3.1
     superseded_by: [CT-R4-004a]
@@ -169,7 +169,7 @@ vectors:
     intended: Disposition no less restrictive than at the lesser age
     expected: disposition at the greater age is equal or more restrictive
     status: specified
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: "Not exercised yet; needs a readjudication entry point."
     reference: withdrawn reading, RFC-4 v0.3 revision §4; was RFC-2 §3.4 (one-way hardening) applied to verdict age; RN-001 §3.2
     superseded_by: [CT-R4-004a]
@@ -182,7 +182,7 @@ vectors:
     intended: Pre-declared exhaustion policy applied wherever the held operation could advance
     expected: no effect; exhaustion policy applied without a timer
     status: specified
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: "Not exercised yet; needs a policy-declared fail-safe bound in the subject."
     reference: merged into CT-R4-004b, RFC-4 v0.3 revision §4; was RFC-5 §2 (pre-declared exhaustion policy); RN-001 §2a, §3.3
     superseded_by: [CT-R4-004b]

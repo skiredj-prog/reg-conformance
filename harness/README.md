@@ -26,18 +26,27 @@ is a REG vector, and neither changes the vector summary.
 
 ## Rows no port can adapt (rule of 23 November 2026)
 
-Standard author's decision of 23 November 2026, 15:07 UTC (option A). The
-rule is dated; it reinterprets no report produced before it. Every report
-lists what the rule took out of the exit code, row by row with its reason,
-under `exit_code_rule`.
+Standard author's decision of 23 November 2026, 15:07 UTC (option A), amended
+on the owner's review of 17:37 UTC. The rule lives in `runner.py` and applies
+to every adapter and every report this repository produces (`python -m
+harness`, `runner.py --mode http|native`). It is dated; it reinterprets no
+report produced before it. Every report lists what the rule took out of the
+exit code, row by row with its reason, under `exit_code_rule`, and carries a
+`scope` block with every `conformance_status`.
 
 - A registered row no ratified text specifies, `RESERVED` in `VECTORS.md` or
-  superseded by the RFC-4 v0.3 revision (`CT-R4-014` to `CT-R4-016`), is
-  reported `NOT_SPECIFIED`: a proposal, nothing to test on any subject.
+  marked `superseded_by` in `vectors/*.yaml` (`CT-R4-004`, `CT-R4-014` to
+  `CT-R4-016`), is reported `NOT_SPECIFIED` unless it was observed: a `PASS`,
+  `FAIL` or `INCONCLUSIVE` on such a row is kept (the row keeps its text and
+  results); a gap on it is not counted, the successor row carries the count.
+  Both lists are read from the index and the vector files, not hard-coded.
 - A registered row the implementer declares outside the runtime's perimeter,
   in the port's `not_in_perimeter` with a non-empty `declared_by` and
   `reason`, is reported `NOT_IN_PERIMETER`, as a property check already could
-  be. A neutral scenario cannot be declared away.
+  be. Only the rows the standard allows can be declared (`PERIMETER_DECLARABLE`
+  in `harness/adapter.py`: the credential layer of RFC-3, `CT-R3-001`, `-002`,
+  `-006`, `-007`, `-008`); any other row is refused. A declaration is plain
+  text, not a signature. A neutral scenario cannot be declared away.
 - A row with no neutral scenario whose property check ran and passed in the
   same run is reported `EXERCISED_BY_CHECK`; the check carries the
   observation. A failing check fails the row; any other check status leaves
@@ -46,10 +55,14 @@ under `exit_code_rule`.
 
 These statuses enter neither `conformance_status` nor the exit code, whose
 formula is unchanged: `FAIL` → 1; else `INCONCLUSIVE` → 3; else
-`IMPLEMENTATION_GAP` or `ADAPTER_REQUIRED` → 2; else 0. A declared gap on a
-specified row stays `IMPLEMENTATION_GAP` and counts: on TENIR-Gov 5.7.6 and
-the 5.7.7 candidate, the authorization bound and the signed receipts hold the
-code at 2 until 5.8.0. Exit code 0 is not obtained by recounting.
+`IMPLEMENTATION_GAP` or `ADAPTER_REQUIRED` → 2; else 0. When nothing is
+counted against a run but rows stay out of the count, `conformance_status`
+is `CONFORMANT_ON_SPECIFIED_ROWS`, never a bare `CONFORMANT`: it speaks for
+the specified rows, not for coverage. A declared gap on a specified row stays
+`IMPLEMENTATION_GAP` and counts: on TENIR-Gov 5.7.6 and the 5.7.7 candidate,
+the authorization bound (`CT-R4-004a`), the signed receipts (`CT-R4-007`) and
+the revocation latency window (`CT-R3-002`) hold the code at 2 until 5.8.0.
+Exit code 0 is not obtained by recounting.
 
 ## What counts as an admission
 

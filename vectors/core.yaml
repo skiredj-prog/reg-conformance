@@ -71,7 +71,7 @@ vectors:
     intended: RESOLVED; timeout alone does not resolve
     expected: RESOLVED when qualified
     status: lab_validated
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Validated in tenir-conformance-s1-g1 membrane (S2c); native runner adapter pending
     reference: "Manuscript v7.2 §4.4, transition T6"
 
@@ -83,7 +83,7 @@ vectors:
     intended: REJECT without cryptographic verification; FAILED only with verified non-execution evidence
     expected: timeout and boolean alone cannot declare FAILED; exact attempt/LEI/nonce binding is required
     status: lab_validated
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Validated in tenir-conformance-s1-g1 (test_t7_t8); native adapter pending
     reference: "Manuscript v7.2 §4.4, transition T7"
 
@@ -95,6 +95,6 @@ vectors:
     intended: new attempt_id allowed only if retry_eligible and non-execution are verified
     expected: retry_eligible=false preserves LEI lock; true permits a fresh evaluation, never automatic execution
     status: lab_validated
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Validated in tenir-conformance-s1-g1 (T8 tests); native adapter pending
     reference: "Manuscript v7.2 §4.4, transition T8"

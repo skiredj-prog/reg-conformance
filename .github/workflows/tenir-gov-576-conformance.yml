@@ -8,8 +8,11 @@ name: TENIR-Gov 5.7.6 conformance run (candidate)
 #
 # A green run is not a certification and not a PASS. The harness exit code is
 # read on the 61 vectors only: 0 no FAIL, no INCONCLUSIVE, no gap and no
-# ADAPTER_REQUIRED; 2 INCOMPLETE (gaps or ADAPTER_REQUIRED), which is NOT a
-# PASS; 3 INCONCLUSIVE; 1 FAIL. FAIL and INCONCLUSIVE make the job fail.
+# ADAPTER_REQUIRED on the specified rows (rows NOT_SPECIFIED, NOT_IN_PERIMETER
+# or EXERCISED_BY_CHECK stay out of the count, listed under exit_code_rule:
+# rule of 2026-11-23); 2 INCOMPLETE (gap or ADAPTER_REQUIRED on a specified
+# row), which is NOT a PASS; 3 INCONCLUSIVE; 1 FAIL. FAIL and INCONCLUSIVE
+# make the job fail.
 
 on:
   workflow_dispatch:
@@ -112,8 +115,8 @@ jobs:
             --zip "$RUNNER_TEMP/reg-evidence-tenir-gov-5.7.6.zip" | tee "$RUNNER_TEMP/bundle.txt"
           (cd "$RUNNER_TEMP/subject-checks" && sha256sum * > SHA256SUMS)
           case "${{ steps.run.outputs.code }}" in
-            0) reading="0: no FAIL, no INCONCLUSIVE, no gap, no ADAPTER_REQUIRED on the vectors (still not a certification)";;
-            2) reading="2: INCOMPLETE (gaps or ADAPTER_REQUIRED). This is NOT a PASS.";;
+            0) reading="0: no FAIL, no INCONCLUSIVE, no gap, no ADAPTER_REQUIRED on the specified rows; rows NOT_SPECIFIED, NOT_IN_PERIMETER or EXERCISED_BY_CHECK stay out of the count and are listed under exit_code_rule (rule of 2026-11-23; still not a certification)";;
+            2) reading="2: INCOMPLETE (IMPLEMENTATION_GAP or ADAPTER_REQUIRED on a specified row). This is NOT a PASS.";;
             3) reading="3: INCONCLUSIVE results present";;
             *) reading="${{ steps.run.outputs.code }}: FAIL results present";;
           esac

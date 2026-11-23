@@ -1152,6 +1152,103 @@ def build_evidence_binding(adapter, args):
     }
 
 
+# ── Rule of 23 November 2026: rows no port can adapt ─────────────────────────
+# Standard author's decision (15:07 UTC, option A), amended on the owner's review
+# of 17:37 UTC. Shared by every adapter and every report this runner produces.
+EXIT_CODE_RULE_DATE = "2026-11-23"
+OUT_OF_EXIT_CODE = ("NOT_SPECIFIED", "EXERCISED_BY_CHECK", "NOT_IN_PERIMETER", "NOT_APPLICABLE")
+COUNTED_IN_EXIT_CODE = ("FAIL", "INCONCLUSIVE", "IMPLEMENTATION_GAP", "ADAPTER_REQUIRED")
+_ROWS_CACHE = {}
+
+
+def reserved_rows() -> dict:
+    """id -> {rfc, property} for every VECTORS.md row whose status is RESERVED
+    (the frozen RFCs do not specify it). Read from the index, not hard-coded."""
+    if "reserved" not in _ROWS_CACHE:
+        rows = {}
+        try:
+            text = (Path(__file__).resolve().parent / "VECTORS.md").read_text(encoding="utf-8")
+        except OSError:
+            text = ""
+        for line in text.splitlines():
+            if not line.startswith("|") or line.startswith(("|---", "| vector_id", "|vector_id")):
+                continue
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) >= 5 and cells[4] == "RESERVED":
+                rows[cells[0]] = {"rfc": cells[2], "property": cells[3]}
+        _ROWS_CACHE["reserved"] = rows
+    return _ROWS_CACHE["reserved"]
+
+
+def superseded_rows() -> dict:
+    """id -> successors, for every registered vector that vectors/*.yaml marks
+    `superseded_by` (compiled in vectors/dist/vectors.json). Read, not hard-coded:
+    CT-R4-004 (by 004a and 004b, RFC-4 v0.3 §5) and CT-R4-014 to 016 (RN-001 §3
+    readings withdrawn, RFC-4 v0.3 §4) today."""
+    if "superseded" not in _ROWS_CACHE:
+        rows = {}
+        try:
+            compiled = json.loads((Path(__file__).resolve().parent / "vectors" / "dist" / "vectors.json")
+                                  .read_text(encoding="utf-8"))
+            for v in compiled["vectors"]:
+                if v.get("superseded_by"):
+                    rows[v["id"]] = list(v["superseded_by"])
+        except Exception:
+            pass
+        _ROWS_CACHE["superseded"] = rows
+    return _ROWS_CACHE["superseded"]
+
+
+def not_specified_reason(vector_id: str) -> str | None:
+    """Why a registered row has nothing to test on any subject, or None."""
+    successors = superseded_rows().get(vector_id)
+    if successors:
+        return (f"superseded by {' and '.join(successors)} (RFC-4 v0.3 revision of 19 November 2026); "
+                f"withdrawn or replaced reading, kept with its id and text; the successor carries "
+                f"the count (rule of {EXIT_CODE_RULE_DATE})")
+    row = reserved_rows().get(vector_id)
+    if row is not None:
+        return (f"RESERVED in VECTORS.md ({row['rfc']}): the frozen RFCs do not specify this row; "
+                f"a proposal, nothing to test (rule of {EXIT_CODE_RULE_DATE})")
+    return None
+
+
+def apply_row_rule(results):
+    """A non-observation (IMPLEMENTATION_GAP, ADAPTER_REQUIRED) on a row no
+    ratified text specifies becomes NOT_SPECIFIED, the adapter's note kept
+    after the reason. An observation (PASS, FAIL, INCONCLUSIVE) on such a row
+    is kept as it is: the row is kept with its results. Returns a new list."""
+    out = []
+    for r in results:
+        reason = not_specified_reason(r.vector_id)
+        if reason and r.status in (ReportingState.IMPLEMENTATION_GAP, ReportingState.ADAPTER_REQUIRED):
+            before = r.gap_note or r.details
+            r = ConformanceResult(r.vector_id, ReportingState.NOT_SPECIFIED, r.interface_mode,
+                                  r.evidence_level, details="",
+                                  gap_note=reason + (f" | before the rule, {r.status.value}: {before}" if before else ""))
+        out.append(r)
+    return out
+
+
+def exit_code_rule_block(results, counts):
+    out_of_code = {r.vector_id: {"status": r.status.value, "reason": r.gap_note or r.details}
+                   for r in results if r.status.value in OUT_OF_EXIT_CODE}
+    return {
+        "date": EXIT_CODE_RULE_DATE,
+        "rule": ("FAIL -> 1; else INCONCLUSIVE -> 3; else IMPLEMENTATION_GAP or ADAPTER_REQUIRED -> 2; "
+                 "else 0. Since 2026-11-23 (standard author's decision, 15:07 UTC, amended on the "
+                 "owner's review of 17:37 UTC): a registered row no ratified text specifies (RESERVED "
+                 "in VECTORS.md, or superseded_by in vectors/*.yaml) is NOT_SPECIFIED unless it was "
+                 "observed (PASS, FAIL, INCONCLUSIVE); a row the implementer declares outside the "
+                 "runtime's perimeter, from the list the standard allows, is NOT_IN_PERIMETER; a row "
+                 "with no neutral scenario whose property check passed in this run is "
+                 "EXERCISED_BY_CHECK. These rows are listed below and enter neither the exit code "
+                 "nor conformance_status. Reports produced before that date are not reinterpreted."),
+        "statuses_out_of_exit_code": list(OUT_OF_EXIT_CODE),
+        "counted_in_exit_code": {k: counts[k] for k in COUNTED_IN_EXIT_CODE},
+        "rows_out_of_exit_code": out_of_code}
+
+
 def summary_by_basis(results):
     """Split the results by what the vector rests on.
 
@@ -1178,6 +1275,7 @@ def summary_by_basis(results):
 
 
 def generate_report(adapter, results, endpoint="", evidence_binding=None):
+    results = apply_row_rule(results)
     counts = {s.value:0 for s in ReportingState}
     try:
         source_revision = subprocess.check_output(
@@ -1196,7 +1294,26 @@ def generate_report(adapter, results, endpoint="", evidence_binding=None):
             "conformance_status": ("FAILED" if counts["FAIL"] else
                                    "INCONCLUSIVE" if counts["INCONCLUSIVE"] else
                                    "INCOMPLETE" if counts["IMPLEMENTATION_GAP"] or counts["ADAPTER_REQUIRED"] else
-                                   "CONFORMANT"),
+                                   # Owner's decision on L4-6 (2026-11-23): never a bare
+                                   # CONFORMANT while rows are out of the count.
+                                   "CONFORMANT_ON_SPECIFIED_ROWS" if any(
+                                       counts[k] for k in ("NOT_SPECIFIED", "NOT_IN_PERIMETER", "EXERCISED_BY_CHECK"))
+                                   else "CONFORMANT"),
+            # Mandatory with every status: what the status covers and what it leaves out.
+            "scope": {
+                "registered_rows": len(results),
+                "observed": counts["PASS"] + counts["FAIL"] + counts["INCONCLUSIVE"],
+                "passed": counts["PASS"],
+                "counted_not_observed": counts["IMPLEMENTATION_GAP"] + counts["ADAPTER_REQUIRED"],
+                "not_specified": counts["NOT_SPECIFIED"],
+                "not_in_perimeter": counts["NOT_IN_PERIMETER"],
+                "exercised_by_check": counts["EXERCISED_BY_CHECK"],
+                "not_applicable": counts["NOT_APPLICABLE"],
+                "note": ("conformance_status speaks for the specified rows this run counted. "
+                         "CONFORMANT_ON_SPECIFIED_ROWS means no FAIL, no INCONCLUSIVE and no gap on them, "
+                         "while not_specified, not_in_perimeter or exercised_by_check rows stay out of the "
+                         "count: it is not a coverage statement and not a certification.")},
+            "exit_code_rule": exit_code_rule_block(results, counts),
             "endpoint":endpoint,
             "source_revision":source_revision,
             "evidence_binding":evidence_binding,

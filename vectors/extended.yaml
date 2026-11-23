@@ -12,7 +12,7 @@ vectors:
     intended: Policy file hash verifiable independently
     expected: hash verifiable
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Policy anchor hash endpoint not yet implemented
     reference: RFC-0
 
@@ -24,7 +24,7 @@ vectors:
     intended: Implementation declares conformant RFC versions
     expected: versions declared
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: RFC version declaration endpoint absent
     reference: RFC-0
 
@@ -48,7 +48,7 @@ vectors:
     intended: All referenced RFCs pinned with SHA/date
     expected: pinned
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Normative RFC SHAs not yet pinned in implementation manifest
     reference: RFC-0
 
@@ -73,7 +73,7 @@ vectors:
     intended: Response fields match declared schema exactly
     expected: schema compliant
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Response schema validation endpoint absent; schema not machine-readable
     reference: RFC-1
 
@@ -85,7 +85,7 @@ vectors:
     intended: "Responses declare Content-Type: application/json"
     expected: declared
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Content-Type header present in practice; formal compliance test absent
     reference: RFC-1
 
@@ -109,7 +109,7 @@ vectors:
     intended: Requests time out within declared window
     expected: timeout enforced
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Configurable request timeout not enforced at server level
     reference: RFC-1
 
@@ -133,7 +133,7 @@ vectors:
     intended: Oversized payloads rejected with 413
     expected: 413 on oversized
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Request size limit not enforced (FastAPI default only)
     reference: RFC-1
 
@@ -145,7 +145,7 @@ vectors:
     intended: Parallel evaluations do not interfere
     expected: isolated
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Concurrent isolation not formally tested (in-memory dict is not thread-safe)
     reference: RFC-1
 
@@ -194,7 +194,7 @@ vectors:
     intended: Values at threshold boundaries produce consistent, declared dispositions
     expected: consistent
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Exact boundary behavior (S == threshold) not formally specified
     reference: RFC-2
 
@@ -206,7 +206,7 @@ vectors:
     intended: P/V/K outside [0,1] rejected with 422
     expected: 422 on out-of-range
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Out-of-range P/V/K accepted and computed; 422 rejection not implemented
     reference: RFC-2
 
@@ -218,7 +218,7 @@ vectors:
     intended: Threshold overrides logged with policy_epoch
     expected: logged
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Institutional threshold override audit logging absent
     reference: RFC-2
 
@@ -255,7 +255,7 @@ vectors:
     intended: Revocation of A does not affect principal B
     expected: isolated
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Multi-principal isolation not formally tested
     reference: RFC-3
 
@@ -267,7 +267,7 @@ vectors:
     intended: All revocation events appended to manifest
     expected: appended
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Revocation events not appended to hash-chain manifest
     reference: RFC-3
 
@@ -279,7 +279,7 @@ vectors:
     intended: Delegation chain depth limit enforced
     expected: enforced
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Delegation depth enforcement not implemented
     reference: RFC-3
 
@@ -352,7 +352,7 @@ vectors:
     intended: Evidence retained for declared minimum period
     expected: retained
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Evidence retention policy not declared
     reference: RFC-5
 
@@ -376,7 +376,7 @@ vectors:
     intended: Manifest chain survives policy epoch changes
     expected: continuous
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Cross-epoch manifest continuity not formally tested
     reference: RFC-5
 
@@ -389,7 +389,7 @@ vectors:
     intended: Override decisions always appended to manifest
     expected: appended
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Override audit logging absent
     reference: RFC-6
 
@@ -401,7 +401,7 @@ vectors:
     intended: Only declared principals may invoke override
     expected: rejected
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Override authority validation absent
     reference: RFC-6
 
@@ -413,7 +413,7 @@ vectors:
     intended: Override grant valid only within declared window
     expected: expired
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Override time window not implemented
     reference: RFC-6
 
@@ -425,7 +425,7 @@ vectors:
     intended: Override decisions generate signed receipts
     expected: signed receipt
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Override receipt generation absent
     reference: RFC-6
 
@@ -438,7 +438,7 @@ vectors:
     intended: Adapter and native modes produce identical dispositions for same inputs
     expected: identical
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Formal equivalence test between adapter and native modes absent
     reference: RFC-7
 
@@ -462,6 +462,6 @@ vectors:
     intended: Two independent implementations agree on disposition for same inputs
     expected: agree
     status: proposal
-    native: IMPLEMENTATION_GAP
+    native: NOT_SPECIFIED
     observed: Cross-implementation testing requires second independent implementation
     reference: RFC-7

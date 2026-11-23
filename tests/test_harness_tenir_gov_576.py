@@ -92,7 +92,7 @@ def test_576_port_on_vectors_probes_and_checks():
     # Primitives the default path does not have: the port declares the gap and the
     # scenario cannot run, so the declaration is what the report carries
     # (IMPLEMENTATION_GAP with the port's note): exit code 2, not a PASS.
-    assert {vectors[v] for v in ("CT-R4-004", "CT-R4-004a", "CT-R4-007")} == {"IMPLEMENTATION_GAP"}
+    assert {vectors[v] for v in ("CT-R4-004a", "CT-R4-007")} == {"IMPLEMENTATION_GAP"}
     # Eight neutral scenarios of 23 November 2026 on primitives the runtime has:
     # declared scope, pinned thresholds, verification from the ledger (hard facet
     # or S under the thresholds, FLAG-condition rule), UNKNOWN outcome kept open,
@@ -106,13 +106,16 @@ def test_576_port_on_vectors_probes_and_checks():
     # window) is a declared gap, counted; no row is left ADAPTER_REQUIRED.
     from collections import Counter
     tally = Counter(vectors.values())
-    assert tally["NOT_SPECIFIED"] == 28
+    assert tally["NOT_SPECIFIED"] == 29
     # Before the checks run, CT-R0-005 (no scenario, exercised by PX-CT-R0-005) is the
     # one row left ADAPTER_REQUIRED; `fold_checks` reports it by its check.
     assert tally["ADAPTER_REQUIRED"] == 1 and vectors["CT-R0-005"] == "ADAPTER_REQUIRED"
     assert {vectors[v] for v in ("CT-R3-001", "CT-R3-006", "CT-R3-007", "CT-R3-008")} == {"NOT_IN_PERIMETER"}
     assert vectors["CT-R3-002"] == "IMPLEMENTATION_GAP"
-    assert tally["IMPLEMENTATION_GAP"] == 4 and tally["PASS"] == 21 and tally["NOT_APPLICABLE"] == 3
+    # CT-R4-004 is superseded by 004a/004b: its declared gap is no longer counted
+    # twice with 004a (owner's review of 23 November 2026); three gaps counted.
+    assert vectors["CT-R4-004"] == "NOT_SPECIFIED" and vectors["CT-R4-004a"] == "IMPLEMENTATION_GAP"
+    assert tally["IMPLEMENTATION_GAP"] == 3 and tally["PASS"] == 21 and tally["NOT_APPLICABLE"] == 3
     probes = {r.vector_id: r.status.value for r in adapter.run_probes()}
     assert set(probes.values()) == {"PASS"}
     results = {r.vector_id: r for r in adapter.run_checks()}

@@ -175,7 +175,7 @@
       "intended": "No effect without a fresh adjudication that includes the verdict's age",
       "expected": "no effect, or a fresh adjudication that includes the verdict's age",
       "status": "specified",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Not exercised yet. CT-R4-004 covers the refusal branch only.",
       "reference": "withdrawn reading, RFC-4 v0.3 revision §4; was RN-001 §3.1",
       "superseded_by": [
@@ -191,7 +191,7 @@
       "intended": "Disposition no less restrictive than at the lesser age",
       "expected": "disposition at the greater age is equal or more restrictive",
       "status": "specified",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Not exercised yet; needs a readjudication entry point.",
       "reference": "withdrawn reading, RFC-4 v0.3 revision §4; was RFC-2 §3.4 (one-way hardening) applied to verdict age; RN-001 §3.2",
       "superseded_by": [
@@ -207,7 +207,7 @@
       "intended": "Pre-declared exhaustion policy applied wherever the held operation could advance",
       "expected": "no effect; exhaustion policy applied without a timer",
       "status": "specified",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Not exercised yet; needs a policy-declared fail-safe bound in the subject.",
       "reference": "merged into CT-R4-004b, RFC-4 v0.3 revision §4; was RFC-5 §2 (pre-declared exhaustion policy); RN-001 §2a, §3.3",
       "superseded_by": [
@@ -288,7 +288,7 @@
       "intended": "RESOLVED; timeout alone does not resolve",
       "expected": "RESOLVED when qualified",
       "status": "lab_validated",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Validated in tenir-conformance-s1-g1 membrane (S2c); native runner adapter pending",
       "reference": "Manuscript v7.2 §4.4, transition T6"
     },
@@ -301,7 +301,7 @@
       "intended": "REJECT without cryptographic verification; FAILED only with verified non-execution evidence",
       "expected": "timeout and boolean alone cannot declare FAILED; exact attempt/LEI/nonce binding is required",
       "status": "lab_validated",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Validated in tenir-conformance-s1-g1 (test_t7_t8); native adapter pending",
       "reference": "Manuscript v7.2 §4.4, transition T7"
     },
@@ -314,7 +314,7 @@
       "intended": "new attempt_id allowed only if retry_eligible and non-execution are verified",
       "expected": "retry_eligible=false preserves LEI lock; true permits a fresh evaluation, never automatic execution",
       "status": "lab_validated",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Validated in tenir-conformance-s1-g1 (T8 tests); native adapter pending",
       "reference": "Manuscript v7.2 §4.4, transition T8"
     },
@@ -327,7 +327,7 @@
       "intended": "Policy file hash verifiable independently",
       "expected": "hash verifiable",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Policy anchor hash endpoint not yet implemented",
       "reference": "RFC-0"
     },
@@ -340,7 +340,7 @@
       "intended": "Implementation declares conformant RFC versions",
       "expected": "versions declared",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "RFC version declaration endpoint absent",
       "reference": "RFC-0"
     },
@@ -366,7 +366,7 @@
       "intended": "All referenced RFCs pinned with SHA/date",
       "expected": "pinned",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Normative RFC SHAs not yet pinned in implementation manifest",
       "reference": "RFC-0"
     },
@@ -392,7 +392,7 @@
       "intended": "Response fields match declared schema exactly",
       "expected": "schema compliant",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Response schema validation endpoint absent; schema not machine-readable",
       "reference": "RFC-1"
     },
@@ -405,7 +405,7 @@
       "intended": "Responses declare Content-Type: application/json",
       "expected": "declared",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Content-Type header present in practice; formal compliance test absent",
       "reference": "RFC-1"
     },
@@ -431,7 +431,7 @@
       "intended": "Requests time out within declared window",
       "expected": "timeout enforced",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Configurable request timeout not enforced at server level",
       "reference": "RFC-1"
     },
@@ -457,7 +457,7 @@
       "intended": "Oversized payloads rejected with 413",
       "expected": "413 on oversized",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Request size limit not enforced (FastAPI default only)",
       "reference": "RFC-1"
     },
@@ -470,7 +470,7 @@
       "intended": "Parallel evaluations do not interfere",
       "expected": "isolated",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Concurrent isolation not formally tested (in-memory dict is not thread-safe)",
       "reference": "RFC-1"
     },
@@ -522,7 +522,7 @@
       "intended": "Values at threshold boundaries produce consistent, declared dispositions",
       "expected": "consistent",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Exact boundary behavior (S == threshold) not formally specified",
       "reference": "RFC-2"
     },
@@ -535,7 +535,7 @@
       "intended": "P/V/K outside [0,1] rejected with 422",
       "expected": "422 on out-of-range",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Out-of-range P/V/K accepted and computed; 422 rejection not implemented",
       "reference": "RFC-2"
     },
@@ -548,7 +548,7 @@
       "intended": "Threshold overrides logged with policy_epoch",
       "expected": "logged",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Institutional threshold override audit logging absent",
       "reference": "RFC-2"
     },
@@ -587,7 +587,7 @@
       "intended": "Revocation of A does not affect principal B",
       "expected": "isolated",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Multi-principal isolation not formally tested",
       "reference": "RFC-3"
     },
@@ -600,7 +600,7 @@
       "intended": "All revocation events appended to manifest",
       "expected": "appended",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Revocation events not appended to hash-chain manifest",
       "reference": "RFC-3"
     },
@@ -613,7 +613,7 @@
       "intended": "Delegation chain depth limit enforced",
       "expected": "enforced",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Delegation depth enforcement not implemented",
       "reference": "RFC-3"
     },
@@ -691,7 +691,7 @@
       "intended": "Evidence retained for declared minimum period",
       "expected": "retained",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Evidence retention policy not declared",
       "reference": "RFC-5"
     },
@@ -717,7 +717,7 @@
       "intended": "Manifest chain survives policy epoch changes",
       "expected": "continuous",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Cross-epoch manifest continuity not formally tested",
       "reference": "RFC-5"
     },
@@ -730,7 +730,7 @@
       "intended": "Override decisions always appended to manifest",
       "expected": "appended",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Override audit logging absent",
       "reference": "RFC-6"
     },
@@ -743,7 +743,7 @@
       "intended": "Only declared principals may invoke override",
       "expected": "rejected",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Override authority validation absent",
       "reference": "RFC-6"
     },
@@ -756,7 +756,7 @@
       "intended": "Override grant valid only within declared window",
       "expected": "expired",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Override time window not implemented",
       "reference": "RFC-6"
     },
@@ -769,7 +769,7 @@
       "intended": "Override decisions generate signed receipts",
       "expected": "signed receipt",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Override receipt generation absent",
       "reference": "RFC-6"
     },
@@ -782,7 +782,7 @@
       "intended": "Adapter and native modes produce identical dispositions for same inputs",
       "expected": "identical",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Formal equivalence test between adapter and native modes absent",
       "reference": "RFC-7"
     },
@@ -808,7 +808,7 @@
       "intended": "Two independent implementations agree on disposition for same inputs",
       "expected": "agree",
       "status": "proposal",
-      "native": "IMPLEMENTATION_GAP",
+      "native": "NOT_SPECIFIED",
       "observed": "Cross-implementation testing requires second independent implementation",
       "reference": "RFC-7"
     },
