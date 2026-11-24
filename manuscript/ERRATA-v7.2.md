@@ -264,5 +264,5 @@ labels; see ERR-7.2-05. (verified)
 
 ## Ratification
 
-"Status: ratified by the author on <date>; in force for readers of v7.2." The
+Ratified by the author on 23 November 2026; see the status line. The
 manuscript, its Zenodo record and the tag `7.2` are not changed.
