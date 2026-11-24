@@ -34,5 +34,6 @@ are read through `aliases`.
 guard patterns: an ambiguous use outside the allowed and pending files fails,
 and a pending file that no longer matches fails too.
 
-Pending renames in `runner.py`, `vectors/`, `VECTORS.md` and the TENIR-Gov
-port were not made in v0.7.0; they wait for the next suite revision.
+The renames in `runner.py`, `vectors/` and `VECTORS.md` were made by the
+suite revision of 24 November 2026 (#87). Two items stay pending: the label
+of the TenirGov port and the I8 → BUD rename in `tenir_governance` (5.8.0).
