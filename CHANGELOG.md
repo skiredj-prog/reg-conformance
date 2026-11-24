@@ -1,5 +1,15 @@
 # Changelog
 
+## Non publié
+
+### Changed
+
+- **Vocabulaire aligné sur les errata ratifiés de la v7.2** (`manuscript/ERRATA-v7.2.md`, ratifiés par l'auteur le 23 novembre 2026). Textes seulement : aucun identifiant, statut, attendu ni résultat de vecteur ne change.
+  - τ_R remplace τ_K là où la fenêtre de qualification du reçu est visée : en-tête et descriptions T6/T7 de `runner.py`, entrée de `CT-R4-011` (`vectors/core.yaml`), `lifecycle/register_core_lifecycle.py`. τ_K garde son sens REG (fenêtre de résolution d'un HOLD, RFC-0 §6) partout ailleurs.
+  - `CT-R4-011` cite T6 au vocabulaire de cycle de vie de cette suite (`LIFECYCLE_INTEGRATION.md`, `lifecycle/attempt_state.py`), et `CT-R4-013` cite T8 à `tenir-conformance-s1-g1` en `8bc0e5e` (note T6/T8 des errata : le manuscrit ne nomme que T7, en §4.4).
+  - `vectors/dist/vectors.json` régénéré par `vectors/compile.py` ; `VECTORS.md` aligné.
+  - Glossaire (brouillon) : éléments en attente de `GL-TAU-R` et `GL-LIFECYCLE-T` clos. Restent en attente le libellé I8 du port TenirGov (`harness/ports/tenir_gov.py`, modifié par le port 5.7.7 local) et le renommage I8 → BUD dans `tenir_governance`, prévu en 5.8.0.
+
 ## v0.7.0 — 2026-11-20
 
 Cohérence REG / REG+ / suite, RN-001 inscrit dans le registre des vecteurs, harness neutre et `CLAIMS.md` en vigueur. Une seule version de chaque chose. Détail et état : `python tools/check_coherence.py`.
