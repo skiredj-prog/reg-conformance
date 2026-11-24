@@ -27,7 +27,7 @@
 version: "1.0.0"
 status: draft            # becomes "in force" when the author ratifies it
 date: "2026-11-19"
-amended: "2026-11-23"   # aligned with the revised manuscript/ERRATA-v7.2.md; still draft
+amended: "2026-11-24"   # suite revision after the ratified ERRATA-v7.2.md (τ_R, T6/T8 citations); still draft
 
 sources:
   manuscript: {file: manuscript/v7.2.md, release: "7.2", commit: 98bf685, doi: "10.5281/zenodo.24249646 (as stated in the repository; not checked on Zenodo)"}
@@ -138,12 +138,8 @@ terms:
       locations: ["l.86 §2.2 (S2)", "l.229-230 §4.4 (admit and await, timeout)", "l.383 §6.1 (clock advance by τ_K)", "l.485 §7.1 (S2)"]
       errata: ERR-7.2-01
     implementation_names: "tenir-conformance-s1-g1 parameter tau_k_ms (AWAITING_QUALIFICATION deadline, membrane.py l.754 at d42499b) and explorer event advance(tau_K): read as τ_R, not renamed (verified)"
-    suite_uses_needing_rename:
-      - "runner.py l.13, l.16, l.114, l.116 at v0.7.0 (T6/T7 descriptions; l.107, l.109 at b943f06)"
-      - "vectors/core.yaml CT-R4-011 input ('under τ_K discipline'), and vectors/dist/vectors.json"
+    suite_renamed: "suite revision of 2026-11-24: runner.py (T6/T7 descriptions), vectors/core.yaml CT-R4-011 input (was 'under τ_K discipline'), vectors/dist/vectors.json and lifecycle/register_core_lifecycle.py now write τ_R for the receipt window"
     finding: verified
-    pending:
-      - {where: [runner.py, vectors/core.yaml, vectors/dist/vectors.json, lifecycle/register_core_lifecycle.py], change: "τ_K -> τ_R where the receipt window is meant", after: "next suite revision (#77 merged in v0.7.0 without this rename)"}
     guard:
       pattern: 'τ_K (qualification|discipline)|\(τ_K expiry\)|within τ_K'
       allowed: []
@@ -355,11 +351,12 @@ terms:
       names_only: T7      # §4.4 'declare failed (T7)'
       absent: [T6, T8]
     clash: >
-      vectors/core.yaml, runner.py and VECTORS.md cite "Manuscript v7.2 §4.4,
-      transition T6" and "transition T8". The manuscript names neither.
+      Up to the suite revision of 2026-11-24, vectors/core.yaml, runner.py and
+      VECTORS.md cited "Manuscript v7.2 §4.4, transition T6" and "transition
+      T8". The manuscript names neither. They now cite T6 to this suite's
+      lifecycle vocabulary and T8 to tenir-conformance-s1-g1 at 8bc0e5e;
+      §4.4 stays the source of T7 and of the row receipt that T6 mirrors.
     finding: verified
-    pending:
-      - {where: [vectors/core.yaml, vectors/dist/vectors.json, runner.py, VECTORS.md, lifecycle/register_core_lifecycle.py], change: "cite T6 to this suite's lifecycle vocabulary and T8 to tenir-conformance-s1-g1@8bc0e5e; keep §4.4 only for T7 and for the untagged rows it mirrors", after: "next suite revision (#77 merged in v0.7.0 without this change)"}
     guard:
       pattern: 'v7\.2 §4\.4.*\bT[68]\b|\bT[68] \(manuscript v7\.2'
       allowed: []
@@ -436,8 +433,7 @@ terms:
       EXT: "Entries of the exteriority registry (docs/exteriority-registry-v0.2.md)."
     clash: "Both write E1, E2. CHANGELOG audit items E2–E7 (v0.4) are a third use; historical, left as is."
     finding: verified
-    pending:
-      - {where: [docs/exteriority-registry-v0.2.md], change: "prefix entries EXT-", after: "next revision of the registry draft"}
+    note: "docs/exteriority-registry-v0.2.md writes EXT-E1 … EXT-E7 since 2026-11-24; the superseded v0.1 keeps E1 … E7 (history)."
 
   - id: GL-C-IDS
     canonical: "C1 … C5"

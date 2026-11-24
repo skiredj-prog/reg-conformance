@@ -64,16 +64,16 @@ vectors:
     reference: RFC-1 §2.1
 
   - id: CT-R4-011
-    rfc: "Lifecycle T6 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)"
+    rfc: "Lifecycle T6 (this suite's lifecycle vocabulary, LIFECYCLE_INTEGRATION.md; not in the frozen RFC-4 text)"
     category: core
     property: UNKNOWN → RESOLVED (qualified)
-    input: Qualified receipt or explicit resolve under τ_K discipline
+    input: Qualified receipt or explicit resolve within τ_R, the receipt qualification window
     intended: RESOLVED; timeout alone does not resolve
     expected: RESOLVED when qualified
     status: lab_validated
     native: IMPLEMENTATION_GAP
     observed: Validated in tenir-conformance-s1-g1 membrane (S2c); native runner adapter pending
-    reference: "Manuscript v7.2 §4.4, transition T6"
+    reference: "Suite lifecycle vocabulary, transition T6 (LIFECYCLE_INTEGRATION.md, lifecycle/attempt_state.py); behaviour of the manuscript v7.2 §4.4 row receipt"
 
   - id: CT-R4-012
     rfc: "Lifecycle T7 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)"
@@ -88,7 +88,7 @@ vectors:
     reference: "Manuscript v7.2 §4.4, transition T7"
 
   - id: CT-R4-013
-    rfc: "Lifecycle T8 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)"
+    rfc: "Lifecycle T8 (tenir-conformance-s1-g1 at 8bc0e5e; not in the frozen RFC-4 text)"
     category: core
     property: FAILED + retry_eligible → new attempt
     input: FAILED with verified non-execution, no observed effect, and retry_eligible true/false
@@ -97,4 +97,4 @@ vectors:
     status: lab_validated
     native: IMPLEMENTATION_GAP
     observed: Validated in tenir-conformance-s1-g1 (T8 tests); native adapter pending
-    reference: "Manuscript v7.2 §4.4, transition T8"
+    reference: "tenir-conformance-s1-g1 at 8bc0e5e, transition T8 (membrane docstring; tests/test_t7_t8_failed_retry.py)"

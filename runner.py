@@ -10,10 +10,10 @@ T6–T8 (Attempt State Lifecycle)
 ================================
 T6 (CT-R4-011): UNKNOWN → RESOLVED (qualified)
   Qualified evidence (receipt, effect confirmation, explicit qualification) transitions
-  unresolved attempt to RESOLVED state. τ_K qualification window governs timing.
+  unresolved attempt to RESOLVED state. τ_R, the receipt qualification window, governs timing.
 
 T7 (CT-R4-012): UNKNOWN → FAILED (evidence guard required)
-  FAILED requires evidence_qualified=true. Timeout alone (τ_K expiry) does NOT auto-FAILED.
+  FAILED requires evidence_qualified=true. Timeout alone (τ_R expiry) does NOT auto-FAILED.
   FAILED state distinguishes terminal failure from indefinite unresolution (UNKNOWN).
 
 T8 (CT-R4-013): FAILED + retry_eligible → new attempt
@@ -110,11 +110,11 @@ CORE_VECTORS: dict[str, TestVector] = {
                     "Third-party verifier reproduces decision from manifest without mutable state."),
     "CT-R4-010":TestVector("CT-R4-010","RFC-4 §1.1","External-Effect Claim Boundary",
                     "external_effect_atomic=false; post_commit_evidence_required=true."),
-    "CT-R4-011":TestVector("CT-R4-011","Lifecycle T6 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)","UNKNOWN → RESOLVED (qualified)",
-                    "Qualified evidence (receipt, effect confirmation) or explicit qualification transitions unresolved attempt to RESOLVED within τ_K."),
+    "CT-R4-011":TestVector("CT-R4-011","Lifecycle T6 (this suite's lifecycle vocabulary, LIFECYCLE_INTEGRATION.md; not in the frozen RFC-4 text)","UNKNOWN → RESOLVED (qualified)",
+                    "Qualified evidence (receipt, effect confirmation) or explicit qualification transitions unresolved attempt to RESOLVED within τ_R."),
     "CT-R4-012":TestVector("CT-R4-012","Lifecycle T7 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)","UNKNOWN → FAILED (evidence guard)",
-                    "FAILED requires evidence_qualified=true. Timeout (τ_K expiry) alone must NOT auto-transition to FAILED; UNKNOWN persists until qualification or explicit failure."),
-    "CT-R4-013":TestVector("CT-R4-013","Lifecycle T8 (manuscript v7.2 §4.4; not in the frozen RFC-4 text)","FAILED + retry_eligible → new attempt",
+                    "FAILED requires evidence_qualified=true. Timeout (τ_R expiry) alone must NOT auto-transition to FAILED; UNKNOWN persists until qualification or explicit failure."),
+    "CT-R4-013":TestVector("CT-R4-013","Lifecycle T8 (tenir-conformance-s1-g1 at 8bc0e5e; not in the frozen RFC-4 text)","FAILED + retry_eligible → new attempt",
                     "retry_eligible=true on FAILED allows issuing a new attempt_id on the same LEI. New attempt_id ≠ old attempt_id. LEI lock released only on (RESOLVED + qualified) or explicit reconciliation."),
     "CT-R4-014":TestVector("CT-R4-014","RFC-4 §1.1, §5.2; RN-001 §3","No Dispatch on a Stale Verdict",
                     "Verdict older than the policy's freshness threshold → no effect without a fresh adjudication that includes the verdict's age. Withdrawn reading; superseded by CT-R4-004a (RFC-4 v0.3 revision §4)."),
