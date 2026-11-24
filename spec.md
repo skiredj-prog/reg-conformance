@@ -136,6 +136,8 @@ The suite runs in two modes. **Conformance is declared per mode.** Native does n
 | `--mode http` | `"adapter"` | 2 — Adapter-Tested | Tests against a REG HTTP endpoint (`POST /evaluations`). Behavioral compatibility; not native conformance. |
 | `--mode native` | `"native"` | 3 — Native-Conformant | Tests in-process kernel directly via `NativeKernelAdapter`. No HTTP layer. |
 
+The level in this table is the highest a mode can reach. On the kernel bundled in this repository, `--mode native` reports level 1, `SEMANTIC_MAPPING`, not 3: `NativeKernelAdapter` itself keeps the standing check, the grants, nonces, expiry, action binding, receipts and manifest that the C-series and CT-R4 vectors exercise, and the kernel only computes the score and the verdict. A native run reaches level 3 only through an adapter that drives the subject's own interface; no run does today (`CLAIMS.md`, and the qualification boundary in `README.md`).
+
 ### Same vectors, same criteria — different interface only
 
 Both modes run the same 61 registered IDs from `VECTORS`. Pass/fail criteria are identical where an executable probe exists. The only legitimate differences between modes:
