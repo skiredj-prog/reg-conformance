@@ -264,6 +264,5 @@ labels; see ERR-7.2-05. (verified)
 
 ## Ratification
 
-To be completed by the author. On ratification the status line becomes:
 "Status: ratified by the author on <date>; in force for readers of v7.2." The
 manuscript, its Zenodo record and the tag `7.2` are not changed.
