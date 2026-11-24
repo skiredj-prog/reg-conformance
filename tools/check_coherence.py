@@ -302,6 +302,28 @@ def v12():
     return [f"{len(hollow)} vector(s) are marked implemented in vectors/*.yaml while the runner returns a gap without testing them: {few(hollow)}"] if hollow else []
 
 
+@check("COH-V13", "REG vectors", "The counts of REG vectors quoted in CLAIMS.md are the runner's")
+def v13():
+    # CLAIMS.md is the rule for quoting a run: its example has to quote the
+    # vector set this suite registers. Recorded runs (RESULTS.md) keep the
+    # count of their own version and are not checked here.
+    if not (ROOT / "CLAIMS.md").is_file():
+        return cannot_evaluate("CLAIMS.md absent: no quoted count to compare")
+    text = re.sub(r"\s+", " ", re.sub(r"\n>\s?", " ", read("CLAIMS.md")))
+    total, out = len(runner_module().VECTORS), []
+    quoted = list(re.finditer(r"(\d+) of (\d+) REG vectors \w+(?: \((\d+) adapter required\))?", text))
+    if not quoted:
+        # Nothing to compare is not agreement: a reworded example cannot pass.
+        return cannot_evaluate("CLAIMS.md quotes no count of REG vectors: nothing to compare")
+    for m in quoted:
+        part, whole, ar = int(m.group(1)), int(m.group(2)), m.group(3)
+        if whole != total:
+            out.append(f"CLAIMS.md quotes \"{m.group(0)}\"; runner.py registers {total} vectors")
+        elif part > whole or (ar is not None and part + int(ar) > whole):
+            out.append(f"CLAIMS.md quotes \"{m.group(0)}\": the parts exceed the {whole} vectors")
+    return out
+
+
 # ── REG+ ─────────────────────────────────────────────────────────────────────
 
 def _profiles():

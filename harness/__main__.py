@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import sys
+import traceback
 
 import runner as R
 from . import properties
@@ -12,9 +13,37 @@ from .adapter import PortAdapter, load_port
 from .scenarios import CHECKS, PHASES, PROBES, SCENARIOS
 
 
+# Exit codes. 4 comes first: a run in which a test did not run to a result
+# is not a conformance result, whatever the other tests gave.
+EXIT_HARNESS_ERROR = 4
+
+
+class _Parser(argparse.ArgumentParser):
+    def error(self, message):
+        # argparse exits 2 on a usage error, and 2 means "gaps" to the workflow:
+        # a run that never started must not read as a clean one.
+        self.print_usage(sys.stderr)
+        self.exit(EXIT_HARNESS_ERROR, f"{self.prog}: error: {message}\n")
+
+
 def main(argv=None):
-    p = argparse.ArgumentParser(prog="python -m harness",
-                                description="Run the REG vector set against a RuntimePort.")
+    # Parsed outside the guard, so that --help keeps 0 and a usage error its 4.
+    args = _parser().parse_args(argv)
+    try:
+        return _run(args)
+    except (Exception, SystemExit):
+        # The harness itself stopped (a port that cannot load, a port that breaks
+        # a harness rule, a port that calls sys.exit). Python would exit 1, which
+        # reads as FAIL, or whatever code the port chose, 0 included: not a result.
+        traceback.print_exc()
+        print("\n  HARNESS_ERROR: the run stopped before a result; the subject was not "
+              "evaluated.", file=sys.stderr)
+        return EXIT_HARNESS_ERROR
+
+
+def _parser():
+    p = _Parser(prog="python -m harness",
+                description="Run the REG vector set against a RuntimePort.")
     p.add_argument("--port", required=True, help="package.module:ClassName")
     p.add_argument("--probes", action="store_true",
                    help="also run the harness effect probes (not REG vectors)")
@@ -27,8 +56,10 @@ def main(argv=None):
     p.add_argument("--subject-worktree-state", choices=["clean", "dirty", "unknown"], default="unknown")
     p.add_argument("--environment-digest", default="")
     p.add_argument("--output", default="results/port-run.json")
-    args = p.parse_args(argv)
+    return p
 
+
+def _run(args):
     adapter = PortAdapter(load_port(args.port))
     results = adapter.run_all()
     for r in results:
@@ -129,7 +160,17 @@ def main(argv=None):
               f"{sum(observed.values())} of {len(on_flag)}")
 
     s = report["summary"]
-    code = 1 if s["FAIL"] else 3 if s["INCONCLUSIVE"] else \
+    # Vectors, probes and property checks alike: none may stand in for a result.
+    errors = sorted(r.vector_id for r in [*results, *probes, *checks]
+                    if r.status == R.ReportingState.HARNESS_ERROR)
+    report["harness_errors"] = errors
+    if errors:
+        # Probe and check results never enter conformance_status; a test that did
+        # not run does: the run as a whole is not a conformance result.
+        report["conformance_status"] = "HARNESS_ERROR"
+        print(f"\n  HARNESS_ERROR on {len(errors)} test(s): " + ", ".join(errors))
+        print("  These did not run to a result. The run is not a conformance result.")
+    code = EXIT_HARNESS_ERROR if errors else 1 if s["FAIL"] else 3 if s["INCONCLUSIVE"] else \
         2 if s["IMPLEMENTATION_GAP"] or s["ADAPTER_REQUIRED"] else 0
     report["exit_code"] = code
     os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)

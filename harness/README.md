@@ -20,9 +20,29 @@ is a REG vector, and neither changes the vector summary.
 - A port cannot report evidence level 3, and cannot override a neutral scenario.
 - A refusal by the runtime's own policy (`DENIED`) never satisfies a vector
   about REG structural admissibility (`INADMISSIBLE`).
+- A refusal alone never establishes that no effect took place. `CT-R4-004a`
+  runs only on a port that declares `effects`, an observer independent of the
+  runtime, and its positive control must show an effect under the valid
+  authorization. The reference port declares none: `ADAPTER_REQUIRED`, as in
+  the runner's native and HTTP modes, which have no such observer either.
+- A scenario sees the port through a thin proxy that names each primitive it
+  calls; that is how a declared primitive's `NotImplementedError` is told apart.
 - Effect probes (`HX-EFFECT-*`) and property checks (`PX-*`) are not REG
-  vectors. They are reported apart and never enter a vector summary or
-  `conformance_status`.
+  vectors. They are reported apart, and their results never enter a vector
+  summary or `conformance_status`. A `HARNESS_ERROR` among them does (below).
+- `PASS`, `FAIL` and `INCONCLUSIVE` come from a scenario, with one exception:
+  a `NotImplementedError` raised by the scenario's call to the primitive of a
+  declared capability (`PRIMITIVES` in `harness/port.py`) is `INCONCLUSIVE`, because the port's
+  claim is wrong, not the subject. The same exception raised by scenario or
+  harness code, by `reset`, by a port method that is no primitive, or by the
+  primitive of an undeclared capability is `HARNESS_ERROR`. Any other exception that
+  escapes a scenario (a crash of the port or of the harness, a refusal the
+  scenario did not expect, a port calling `sys.exit`) is `HARNESS_ERROR`: the
+  subject was not evaluated. The report lists every such id, vectors, probes
+  and property checks alike, under `harness_errors`, and sets
+  `conformance_status` to `HARNESS_ERROR`. The harness exits 4, ahead of `FAIL`
+  (1), `INCONCLUSIVE` (3) and gaps (2), and also exits 4 on a usage error or
+  when it stops before a result. A run with one is not a conformance result.
 
 ## What counts as an admission
 
@@ -162,6 +182,8 @@ EGP-06 A refusal or a suspension produces no governed effect   PASS 2  FAIL 0  n
   on this subject. `no check` counts rows of `VECTORS.md` that have neither a
   registered vector nor a property check.
 - A family with a failing check is reported as such, whatever else passes in it.
+- A family with a check that gave `HARNESS_ERROR` is reported `harness_error`,
+  never as passing. Only a failing check ranks above it.
 - A family with a passing check is not a family satisfied. One check observed
   one behaviour.
 

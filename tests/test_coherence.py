@@ -12,7 +12,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 TRACKED = ["tools", "vectors", "catalog", "crosswalk", "capabilities", "profiles", "specs", "manuscript", "registry",
            "reg-standards-baseline", "kernel", "lifecycle", "runner.py", "reg_common.py", "shim.py", "spec.md",
-           "VECTORS.md", "README.md", "CHANGELOG.md", "validate_profiles.py", "compatibility-rules-v2.yaml",
+           "VECTORS.md", "README.md", "CHANGELOG.md", "CLAIMS.md", "validate_profiles.py", "compatibility-rules-v2.yaml",
            "coherence-baseline.json", "coherence-applicability.json", "policy.json", "requirements.txt", "conformance-target.json",
            "capability-evidence-contract-v1.json", "evidence", "audits"]
 
@@ -282,3 +282,29 @@ def test_missing_applicability_manifest_is_not_inferred_as_pass(copy):
     assert check_result(copy, "COH-P01")["status"] == "CANNOT_EVALUATE"
     assert check_result(copy, "COH-P02")["status"] == "CANNOT_EVALUATE"
     assert run(copy)[0] != 0
+
+
+def test_a_vector_count_quoted_in_claims_that_left_the_registry_is_caught(copy):
+    # Review of pull request #80: CLAIMS.md quoted 59 vectors when the runner registered 61.
+    claims = copy / "CLAIMS.md"
+    text = claims.read_text(encoding="utf-8")
+    assert "0 of 61 REG vectors executed (61 adapter\n> required)" in text
+    claims.write_text(text.replace("0 of 61 REG vectors executed (61 adapter",
+                                   "0 of 59 REG vectors executed (59 adapter"), encoding="utf-8")
+    assert "COH-V13" in findings(copy)
+    assert run(copy)[0] == 1
+
+
+def test_a_vector_count_whose_parts_exceed_the_total_is_caught(copy):
+    claims = copy / "CLAIMS.md"
+    text = claims.read_text(encoding="utf-8")
+    claims.write_text(text.replace("0 of 61 REG vectors executed (61 adapter",
+                                   "3 of 61 REG vectors executed (61 adapter"), encoding="utf-8")
+    assert "COH-V13" in findings(copy)
+
+
+def test_claims_with_no_vector_count_is_a_finding_not_a_pass(copy):
+    claims = copy / "CLAIMS.md"
+    text = claims.read_text(encoding="utf-8")
+    claims.write_text(text.replace("REG vectors executed", "vectors run"), encoding="utf-8")
+    assert "COH-V13" in findings(copy)

@@ -50,6 +50,11 @@ class ReportingState(str, Enum):
     # Neither PASS nor FAIL: the implementer declares the property outside the
     # runtime's perimeter (harness property checks only; never a vector result).
     NOT_IN_PERIMETER   = "NOT_IN_PERIMETER"
+    # Neither PASS nor FAIL, and not a reporting state of RFC-7 §8.3: the port,
+    # the adapter or the harness raised an exception the test did not decide,
+    # so the subject was not evaluated. A run that holds one is not a
+    # conformance result (conformance_status HARNESS_ERROR, exit code 4).
+    HARNESS_ERROR      = "HARNESS_ERROR"
 
 class EvidenceLevel(int, Enum):
     SEMANTIC_MAPPING  = 1
@@ -291,6 +296,18 @@ def _run_lifecycle_membrane_vector(adapter, vector_id):
 
 # ── Base adapter ─────────────────────────────────────────────────────────────
 
+HARNESS_ERROR_PREFIX = "the test did not run to a result, exception: "
+
+# CT-R4-004a (RFC-4 v0.3 revision §2.1) is observed on the effect: a refusal
+# alone does not establish that no effect took place, and a runtime's own
+# commit record is the runtime reporting on itself. The bundled kernel and the
+# shim have no effect journal independent of them, so neither mode tests the
+# vector; harness/scenarios.py r4_004a does, on a port that declares `effects`.
+NO_EFFECT_OBSERVER = ("needs an effect observer independent of the runtime: the bundled kernel's "
+                      "commit record (_committed, GET /manifest) is its own report, and a refusal "
+                      "alone does not establish that no effect took place (PMO decision on #83); "
+                      "run it through harness/scenarios.py on a port that declares `effects`")
+
 class BaseAdapter(ABC):
     interface_mode: str          = "base"
     evidence_level: EvidenceLevel = EvidenceLevel.ADAPTER_TESTED
@@ -310,6 +327,11 @@ class BaseAdapter(ABC):
     def _na  (self, v, n=""): return self._r(v, ReportingState.NOT_APPLICABLE,  gap_note=n)
     def _ar  (self, v, n=""): return self._r(v, ReportingState.ADAPTER_REQUIRED, gap_note=n)
     def _gap (self, v, n=""): return self._r(v, ReportingState.IMPLEMENTATION_GAP, gap_note=n)
+    def _harness_error(self, v, e):
+        """An exception the test did not decide. Never a FAIL: only the test's own
+        oracle reports FAIL. Never an INCONCLUSIVE either: the oracle did not run."""
+        return self._r(v, ReportingState.HARNESS_ERROR,
+                       f"{HARNESS_ERROR_PREFIX}{type(e).__name__}: {e}")
 
 
 # ── HTTP adapter ─────────────────────────────────────────────────────────────
@@ -387,8 +409,8 @@ class HTTPAdapter(BaseAdapter):
             return self._gap(vid, note)
         try:    return m()
         except Exception as e:
-            status = self._inconclusive if vid == "C3" else self._fail
-            return status(vid, f"exception prevents a determinate result: {e}")
+            # Raised past the vector's own oracle: the subject was not evaluated (C3 included).
+            return self._harness_error(vid, e)
 
     # C1
     def _v_c1(self):
@@ -504,36 +526,9 @@ class HTTPAdapter(BaseAdapter):
 
     # CT-R4-004a — RFC-4 v0.3 revision §2.1: the observable is the effect, not the refusal code
     def _v_ct_r4_004a(self):
-        c, r = self._post("/evaluations", self._eb(
-            measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
-        if self._disp(r) != "PASS":
-            return self._fail("CT-R4-004a", "could not obtain PASS")
-        eid = r.get("evaluation_id")
-        ec, er = self._post(f"/admin/expire-eval/{eid}", {})
-        if ec != 200:
-            return self._ar("CT-R4-004a",
-                "/admin/expire-eval absent — cannot pass the authorization's bound without waiting")
-        # Positive control, only once expiry is available: a valid authorization must
-        # commit, or a refusal proves nothing.
-        c0, r0 = self._post("/evaluations", self._eb(
-            measurements={"pressure":0.2,"volatility":0.2,"capacity":0.90}))
-        if self._disp(r0) != "PASS":
-            return self._fail("CT-R4-004a", "could not obtain PASS")
-        pc, pr = self._post(f"/evaluations/{r0.get('evaluation_id')}/events", self._commit_body(r0))
-        if pc not in (200, 201):
-            return self._inconclusive("CT-R4-004a",
-                f"a valid authorization was not committed either (HTTP {pc}: {pr}), so a refusal proves nothing")
-        cc, cr = self._post(f"/evaluations/{eid}/events", self._commit_body(r))
-        if cc in (200, 201):
-            return self._fail("CT-R4-004a", f"commit accepted under the expired authorization {eid}")
-        if cc == 409:
-            return self._pass("CT-R4-004a", f"commit refused under the expired authorization (HTTP {cc}: {cr})")
-        if 400 <= cc < 500:
-            return self._inconclusive("CT-R4-004a",
-                f"commit not accepted, but HTTP {cc} does not establish a refusal of the commit itself: {cr}")
-        return self._inconclusive("CT-R4-004a", f"outcome of the commit not established (HTTP {cc}: {cr})")
+        # PMO decision on #83, and the author's: one rule for every mode (23 November 2026).
+        return self._ar("CT-R4-004a", NO_EFFECT_OBSERVER)
 
-    # CT-R4-004b — RFC-4 v0.3 revision §2.2
     def _v_ct_r4_004b(self):
         return self._ar("CT-R4-004b",
             "The shim declares no bound on a held attempt (its only HOLD is insufficient evidence): an adapter that can hold an attempt under a declared bound and pass it is required.")
@@ -841,8 +836,8 @@ class NativeKernelAdapter(BaseAdapter):
             return self._gap(vid, note)
         try:    return m()
         except Exception as e:
-            status = self._inconclusive if vid == "C3" else self._fail
-            return status(vid, f"exception prevents a determinate result: {e}")
+            # Raised past the vector's own oracle: the subject was not evaluated (C3 included).
+            return self._harness_error(vid, e)
 
     def _v_c1(self):
         g = self._evaluate("u","none","wt",0.3,0.3,0.85,uuid.uuid4().hex)
@@ -923,12 +918,8 @@ class NativeKernelAdapter(BaseAdapter):
                     if "EXPIRED" in str(e) else self._fail("CT-R4-004",str(e)))
 
     def _v_ct_r4_004a(self):
-        stale = self._inject_stale()
-        try:
-            self._commit(stale["evaluation_id"],action_id=stale["action_id"],nonce=stale["nonce"])
-            return self._fail("CT-R4-004a","commit accepted under the expired authorization (native)")
-        except ValueError as e:
-            return self._pass("CT-R4-004a", f"commit refused under the expired authorization (native): {e}")
+        # PMO decision on #83, and the author's: one rule for every mode (23 November 2026).
+        return self._ar("CT-R4-004a", NO_EFFECT_OBSERVER)
 
     def _v_ct_r4_004b(self):
         return self._ar("CT-R4-004b",
@@ -1049,7 +1040,7 @@ class NativeKernelAdapter(BaseAdapter):
 
 
 MARKS = {"PASS":"✓","FAIL":"✗","INCONCLUSIVE":"?","NOT_APPLICABLE":"○",
-         "ADAPTER_REQUIRED":"~","IMPLEMENTATION_GAP":"△"}
+         "ADAPTER_REQUIRED":"~","IMPLEMENTATION_GAP":"△","HARNESS_ERROR":"!"}
 
 
 def build_evidence_binding(adapter, args):
@@ -1182,7 +1173,8 @@ def generate_report(adapter, results, endpoint="", evidence_binding=None):
             "interface_mode":adapter.interface_mode,
             "evidence_level":int(adapter.evidence_level),
             "evidence_label":EvidenceLevel(adapter.evidence_level).name,
-            "conformance_status": ("FAILED" if counts["FAIL"] else
+            "conformance_status": ("HARNESS_ERROR" if counts["HARNESS_ERROR"] else
+                                   "FAILED" if counts["FAIL"] else
                                    "INCONCLUSIVE" if counts["INCONCLUSIVE"] else
                                    "INCOMPLETE" if counts["IMPLEMENTATION_GAP"] or counts["ADAPTER_REQUIRED"] else
                                    "CONFORMANT"),
@@ -1261,11 +1253,14 @@ def main():
     if args.mode in ("native","both"):
         run(NativeKernelAdapter(args.kernel), "Bundled reference kernel (NOT TENIR-Gov runtime)")
 
+    has_harness_error = any(rep["summary"]["HARNESS_ERROR"] for rep in all_reports)
     has_fail = any(rep["summary"]["FAIL"] for rep in all_reports)
     has_inconclusive = any(rep["summary"]["INCONCLUSIVE"] for rep in all_reports)
     has_incomplete = any(rep["summary"]["IMPLEMENTATION_GAP"] or
                          rep["summary"]["ADAPTER_REQUIRED"] for rep in all_reports)
-    exit_code = 1 if has_fail else 3 if has_inconclusive else 2 if has_incomplete else 0
+    # 4: the run did not evaluate every vector it reports, so it is not a result.
+    exit_code = (4 if has_harness_error else 1 if has_fail else 3 if has_inconclusive
+                 else 2 if has_incomplete else 0)
     out = all_reports[0] if len(all_reports)==1 else all_reports
     if isinstance(out, dict):
         out["exit_code"] = exit_code

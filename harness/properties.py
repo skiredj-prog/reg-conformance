@@ -18,6 +18,10 @@ import yaml
 FILE = Path(__file__).with_name("properties.yaml")
 INDEX = Path(__file__).resolve().parents[1] / "VECTORS.md"
 OBSERVED = ("PASS", "FAIL", "INCONCLUSIVE")
+# Not an observation: the check did not run to a result. Counted apart, and a
+# family that holds one never reads as passing.
+HARNESS_ERROR = "HARNESS_ERROR"
+COUNTED = OBSERVED + (HARNESS_ERROR,)
 NOTE = ("Candidate families, a reading aid. Not part of the frozen RFCs, not a "
         "conformance statement. Effect probes and property checks are counted "
         "here under their own ids; the REG vector summary is unchanged.")
@@ -57,6 +61,8 @@ def _status(result) -> str:
 def _state(counts: dict) -> str:
     if counts["FAIL"]:
         return "has_fail"
+    if counts[HARNESS_ERROR]:
+        return "harness_error"
     if counts["PASS"]:
         return "has_pass"
     if counts["INCONCLUSIVE"]:
@@ -65,8 +71,9 @@ def _state(counts: dict) -> str:
 
 
 def _worst(found) -> str | None:
-    """One state for several observed results: a failure outweighs a pass."""
-    for state in ("FAIL", "PASS", "INCONCLUSIVE"):
+    """One state for several results: a failure outweighs everything, and a check
+    that did not run to a result outweighs a pass, as for a family."""
+    for state in ("FAIL", HARNESS_ERROR, "PASS", "INCONCLUSIVE"):
         if state in found:
             return state
     return None
@@ -114,7 +121,7 @@ def view(results, probe_results=(), check_results=(), *, registered=(), executab
     for key, meta in list(data["families"].items()) + list(data["groups"].items()):
         rows = members.get(key, [])
         checks = {c: statuses[c] for row in rows for c in own(row) if c in statuses}
-        counts = {s: sum(v == s for v in checks.values()) for s in OBSERVED}
+        counts = {s: sum(v == s for v in checks.values()) for s in COUNTED}
         indexed = [r for r in rows if not r.startswith("HX-")]
         out[key] = {
             "title": meta["title"],
@@ -137,15 +144,19 @@ def view(results, probe_results=(), check_results=(), *, registered=(), executab
     core = [f for f in out.values() if f["core"]]
     summary = {"families": len(core),
                **{s: sum(f["state"] == s for f in core)
-                  for s in ("has_pass", "has_fail", "inconclusive", "not_exercised")}}
+                  for s in ("has_pass", "has_fail", "harness_error", "inconclusive", "not_exercised")}}
     # The same run read row by row: how much of the index this harness can
     # execute, and how much of it gave an observation on this subject.
     rows = [r for r in data["checks"] if not r.startswith("HX-")]
-    states = [_worst(observed(r)) for r in rows]
+    states = [_worst({statuses[c] for c in own(r) if statuses.get(c) in COUNTED}) for r in rows]
     index = {"indexed": len(rows),
              "with_check": sum(has_check(r) for r in rows),
-             "observed": sum(s is not None for s in states),
-             **{s: states.count(s) for s in OBSERVED}}
+             # A row whose checks include one that did not run, and no failure,
+             # is neither observed nor a pass.
+             "observed": sum(s in OBSERVED for s in states),
+             **{s: states.count(s) for s in OBSERVED},
+             # Rows where some check did not run to a result, whatever the others gave.
+             HARNESS_ERROR: sum(any(statuses.get(c) == HARNESS_ERROR for c in own(r)) for r in rows)}
     return {"note": NOTE, "source": "harness/properties.yaml", "status": data.get("status"),
             "summary": summary, "index": index, "families": out,
             "unattached": sorted(set(statuses) - set(data["checks"]) - set(exercises))}
@@ -159,6 +170,8 @@ def render(v: dict) -> list:
         cells = [f"PASS {f['PASS']}", f"FAIL {f['FAIL']}"]
         if f["INCONCLUSIVE"]:
             cells.append(f"inconclusive {f['INCONCLUSIVE']}")
+        if f[HARNESS_ERROR]:
+            cells.append(f"harness error {f[HARNESS_ERROR]}")
         cells.append(f"not run {f['not_run']}")
         if f["no_check"]:
             cells.append(f"no check {f['no_check']}")
@@ -167,13 +180,15 @@ def render(v: dict) -> list:
     core = [(k, f) for k, f in v["families"].items() if f["core"]]
     lines += [line(k, f, max(len(k) for k, _ in core)) for k, f in core]
     seen = [(k, f) for k, f in v["families"].items()
-            if not f["core"] and (f["PASS"] or f["FAIL"] or f["INCONCLUSIVE"])]
+            if not f["core"] and any(f[s] for s in COUNTED)]
     if seen:
         lines.append("  Outside the candidate core")
         lines += [line(k, f, max(len(k) for k, _ in seen)) for k, f in seen]
     s = v["summary"]
     tail = (f"  {s['families']} candidate families: {s['has_pass']} with a passing check and "
             f"no failing one, {s['has_fail']} with a failing check")
+    if s["harness_error"]:
+        tail += f", {s['harness_error']} with a check that did not run to a result"
     if s["inconclusive"]:
         tail += f", {s['inconclusive']} inconclusive only"
     lines.append(tail + f", {s['not_exercised']} not exercised")
@@ -181,4 +196,7 @@ def render(v: dict) -> list:
     seen = ", ".join(f"{k} {i[k]}" for k in OBSERVED if i[k]) or "none"
     lines.append(f"  {i['indexed']} indexed properties: {i['with_check']} have an executable check "
                  f"in this harness; {i['observed']} gave an observation on this subject ({seen})")
+    if i[HARNESS_ERROR]:
+        lines.append(f"  {i[HARNESS_ERROR]} indexed properties have a check that did not run to a "
+                     "result (HARNESS_ERROR): this run is not a conformance result")
     return lines

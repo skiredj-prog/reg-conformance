@@ -38,6 +38,15 @@ Quote it as:
 > artifact `reg-evidence-reference`,
 > `sha256:4ae006939221d0cb3d18a95a6cf7d52b34b6a3ff5ca7fae2fd49c303a30c1879`.
 
+The line above stays as it was recorded at `v0.7.0`. Since the change of
+23 November 2026 (pull request #83, not yet released), `CT-R4-004a` gives
+`ADAPTER_REQUIRED` on this port: the vector now needs an effect observer
+independent of the runtime, and the port declares none. A run of the same
+kernel after that change gives 14 PASS, 1 not applicable, 2 adapter required
+and 44 implementation gaps, through this port as through the runner's native
+mode; the reading by property does not change. The line
+will be replaced by the next published run, not edited.
+
 The reference kernel is a teaching implementation. Its passes are not results
 of the TENIR-Gov runtime or of any product. The run above replaces the one of
 16 November 2026 at `3023045`, made on a branch outside the release.

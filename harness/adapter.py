@@ -6,7 +6,7 @@ import importlib
 
 import runner as R
 from .port import (ALL_BOUNDS, ALL_CAPABILITIES, ALL_EPISTEMIC, ALL_INTENTS, CLOCK,
-                   CONFIDENCE, RuntimePort)
+                   CONFIDENCE, PRIMITIVES, RuntimePort)
 from .scenarios import CHECKS, PROBES, SCENARIOS
 
 FLAG_RESERVE = ("obtained under a declared mapping interpretation, pending ratification; "
@@ -70,18 +70,30 @@ class PortAdapter(R.BaseAdapter):
         lacking = [label + ", ".join(names) for label, names in lacking if names]
         if lacking:
             return self._ar(vid, "; ".join(lacking))
+        # Raised past the scenario (sys.exit included: a port does not end the run):
+        # the scenario decides PASS and FAIL, and it decided nothing here. A crash of
+        # the port or of the harness, or a refusal the scenario did not expect, is
+        # HARNESS_ERROR (C3 included), never a FAIL of the subject (review of #80).
         try:
-            self.port.reset()
-            outcome = scenario.run(self.port)
+            self.port.reset()                 # not a capability: any failure is a crash
+        except (Exception, SystemExit) as e:
+            return self._harness_error(vid, e)
+        try:
+            # The scenario sees the port through _Watched, which knows the name of
+            # each primitive it calls (PMO decision on #83).
+            outcome = scenario.run(_Watched(self.port))
             state, details = outcome[0], outcome[1]
             if len(outcome) > 2 and outcome[2]:
                 self.facts[vid] = outcome[2]
-        except NotImplementedError as e:
+        except _DeclaredNotImplemented as e:
             # Declared but not implemented: the port's claim is wrong, not the subject.
-            return self._inconclusive(vid, f"declared capability not implemented: {e}")
-        except Exception as e:
-            status = self._inconclusive if vid == "C3" else self._fail
-            return status(vid, f"exception prevents a determinate result: {e}")
+            return self._inconclusive(
+                vid, f"declared capability not implemented: {PRIMITIVES[e.primitive]} ({e.primitive}): {e.cause}")
+        except (Exception, SystemExit) as e:
+            # Any other NotImplementedError (from the scenario or the harness, from
+            # a port method that is no primitive, from the primitive of a capability
+            # the port does not declare) is a crash like any other.
+            return self._harness_error(vid, e)
         fact = self.facts.get(vid)
         if fact and fact.get("admitted_on") == "FLAG" and not fact.get("flag_conditions"):
             # Author's decision 3 (19 November 2026), CLAIMS.md, RN-001 §1: the FLAG
@@ -138,6 +150,51 @@ class PortAdapter(R.BaseAdapter):
                 r.gap_note = f"{r.gap_note} | {note}" if r.gap_note else note
             out.append(r)
         return out
+
+
+class _DeclaredNotImplemented(BaseException):
+    """A primitive of a declared capability raised NotImplementedError.
+
+    A BaseException, so that a scenario's own `except Exception` (CT-R2-003
+    catches the port's crash as the failure it tests) does not read the port's
+    wrong claim as a result about the subject. Only _run_scenario catches it."""
+
+    def __init__(self, primitive, cause):
+        super().__init__(primitive, cause)
+        self.primitive, self.cause = primitive, cause
+
+
+class _Watched:
+    """What a scenario sees of the port: the port itself, except that a call to
+    the primitive of a declared capability that raises NotImplementedError comes
+    out as _DeclaredNotImplemented, named by the attribute the scenario called.
+    Decorators, aliases and shared wrappers change nothing: the name is the one
+    called. Every other attribute and every other exception passes unchanged.
+    What a primitive calls inside the port is that primitive's own concern."""
+
+    __slots__ = ("_port",)
+
+    def __init__(self, port):
+        object.__setattr__(self, "_port", port)
+
+    def __getattr__(self, name):
+        port = object.__getattribute__(self, "_port")
+        attr = getattr(port, name)
+        capability = PRIMITIVES.get(name)
+        if capability is None or not callable(attr):
+            return attr
+
+        def call(*args, **kwargs):
+            try:
+                return attr(*args, **kwargs)
+            except NotImplementedError as e:
+                if capability in port.capabilities:
+                    raise _DeclaredNotImplemented(name, e) from e
+                raise
+        return call
+
+    def __setattr__(self, name, value):
+        setattr(object.__getattribute__(self, "_port"), name, value)
 
 
 def load_port(spec: str) -> RuntimePort:

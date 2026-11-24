@@ -60,9 +60,9 @@ vectors:
     input: Commit under an authorization whose declared bound has passed
     intended: No effect attributed to the expired authorization; any refusal mechanism satisfies the clause. A fresh authorization is a declared policy, attributed to the new authorization with its own identity and evidence.
     expected: no effect under the expired authorization
-    status: implemented
-    native: PASS
-    observed: "commit refused under the expired authorization (EVALUATION_EXPIRED) (native)"
+    status: specified
+    native: ADAPTER_REQUIRED
+    observed: "The bundled kernel has no effect journal independent of itself; its commit record is its own report. Until 23 November 2026 (PR #83) the runner reported PASS on the refusal; the vector is now run by harness/scenarios.py on a port that declares effects."
     reference: RFC-4 v0.3 revision (ratified 2026-11-19) §2.1, §5
 
   - id: CT-R4-004b

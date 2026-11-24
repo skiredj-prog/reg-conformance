@@ -5,7 +5,10 @@ to show that each effect probe detects the fault it is meant to detect. They
 are not runtimes under qualification and produce no conformance evidence.
 """
 import json
+import re
+import subprocess
 import sys
+import time
 import uuid
 from pathlib import Path
 
@@ -16,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import runner as R
 from harness import port as P
 from harness import properties
-from harness.adapter import PortAdapter
+from harness.adapter import PortAdapter, load_port
 from harness.ports.reference import ReferencePort
 from harness.ports.template import TemplatePort
 from harness.scenarios import CHECKS, PROBES, SCENARIOS
@@ -29,6 +32,9 @@ def test_reference_port_matches_legacy_native_mode_on_every_vector():
     ported = {r.vector_id: r.status for r in PortAdapter(ReferencePort()).run_all()}
     assert len(legacy) == 61
     assert ported == legacy
+    # CT-R4-004a (PMO decision on #83): neither mode has an effect observer
+    # independent of the bundled kernel.
+    assert ported["CT-R4-004a"] == legacy["CT-R4-004a"] == R.ReportingState.ADAPTER_REQUIRED
 
 
 def test_empty_port_passes_nothing():
@@ -172,7 +178,11 @@ def test_tenir_gov_port_on_the_property_checks():
     # Unreadable evidence is held, and lower confidence widens nothing.
     assert got["PX-REG-STATE-001"] == got["PX-REG-STATE-013"] == got["PX-REG-STATE-015"] == "PASS"
     # Missing evidence: the check runs on every input; its outcome belongs to the version.
-    assert got["PX-REG-STATE-010"] in ("PASS", "FAIL")
+    # Only the check's own oracle may give that FAIL: a crash of the port or the
+    # harness is HARNESS_ERROR and must not be read as the version's outcome
+    # (review of pull request #80; test_a_crash_is_never_read_as_a_fail).
+    assert got["PX-REG-STATE-010"] != "HARNESS_ERROR", "the check did not run to a result"
+    assert got["PX-REG-STATE-010"] in ("PASS", "FAIL"), got["PX-REG-STATE-010"]
     # One value per measurement, no age: stale and contradictory cannot be produced.
     assert got["PX-REG-STATE-002"] == got["PX-REG-STATE-004"] == "ADAPTER_REQUIRED"
 
@@ -327,7 +337,7 @@ def test_property_view_counts_probes_and_leaves_the_vector_tally_alone():
     summary = R.generate_report(adapter, results)["summary"]
     assert summary["PASS"] == 0 and summary["ADAPTER_REQUIRED"] == 61
     assert view["families"]["EGP-06"]["PASS"] == 2 and view["families"]["EGP-12"]["PASS"] == 2
-    assert view["summary"] == {"families": 14, "has_pass": 2, "has_fail": 0,
+    assert view["summary"] == {"families": 14, "has_pass": 2, "has_fail": 0, "harness_error": 0,
                                "inconclusive": 0, "not_exercised": 12}
     assert view["unattached"] == []
 
@@ -827,7 +837,8 @@ def test_reference_kernel_on_the_property_checks():
     # A failing check marks the family, whatever else passes in it.
     assert view["families"]["EGP-01"]["PASS"] == 1
     assert view["families"]["EGP-01"]["state"] == "has_fail"
-    assert (view["index"]["PASS"], view["index"]["FAIL"]) == (19, 1)
+    # 18, not 19: CT-R4-004a needs an effect observer the port does not declare.
+    assert (view["index"]["PASS"], view["index"]["FAIL"]) == (18, 1)
 
 
 def test_bundle_verdict_lists_property_checks_apart_from_the_vectors():
@@ -863,3 +874,521 @@ def test_bundle_verdict_carries_the_residue_of_each_observed_result():
     assert set(kept) == observed and set(CHECKS) <= observed
     assert kept["PX-CT-R3-001"]["not_observed"][0] == "that the rejection comes before evaluation"
     assert verdict["observation"]["conditions"]["declared_bounds_s"][P.B_TAU_K] == 120.0
+
+
+# -- review of pull request #80 (Mergestorm): each test fails if its defect returns --
+
+HARNESS_ERROR = "HARNESS_ERROR"   # a string, so that each test fails on its own without it
+
+
+class _CrashingEvidence(_Governed):
+    """The port breaks while producing degraded evidence: a port-side crash."""
+    def evaluate_degraded(self, state, measurement, *, principal, action_type):
+        raise RuntimeError("port crashed while degrading evidence")
+
+
+def test_a_crash_is_never_read_as_a_fail():
+    got = {r.vector_id: r for r in PortAdapter(_CrashingEvidence()).run_checks()}
+    for check in _ON_EVIDENCE:
+        assert got[check].status.value == HARNESS_ERROR, (check, got[check].status)
+        assert "RuntimeError: port crashed" in got[check].details
+    # The assertion of test_tenir_gov_port_on_the_property_checks rejects it.
+    assert got["PX-REG-STATE-010"].status.value not in ("PASS", "FAIL")
+    # A FAIL the check's oracle decides is still a FAIL, and says what it saw.
+    class Faulty(_Governed): pass
+    Faulty.fault = "defaults_a_missing_limit"
+    failed = {r.vector_id: r for r in PortAdapter(Faulty()).run_checks()}["PX-REG-STATE-010"]
+    assert failed.status == R.ReportingState.FAIL
+    assert not failed.details.startswith(R.HARNESS_ERROR_PREFIX)
+
+
+def test_a_crash_in_c3_is_a_harness_error_not_an_inconclusive():
+    class Crashing(ReferencePort):
+        def commit(self, decision, *, action_type=None):
+            raise RuntimeError("port crashed on commit")
+    results = {r.vector_id: r for r in PortAdapter(Crashing()).run_all()}
+    assert results["C3"].status.value == HARNESS_ERROR
+    crashed = {v for v, r in results.items() if r.status.value == HARNESS_ERROR}
+    assert {"C3", "CT-R4-001", "CT-R4-005"} <= crashed
+    # No result anywhere carries the crash under another name.
+    assert not [v for v, r in results.items() if r.status.value != HARNESS_ERROR
+                and "port crashed" in (r.details + r.gap_note)]
+
+
+def test_a_refusal_the_scenario_did_not_expect_is_not_a_fail():
+    class RefusesToEvaluate(ReferencePort):
+        def evaluate(self, intent, **kw):
+            raise P.Refused("UNEXPECTED", "HARD_VETO", "refused at evaluation")
+    r = PortAdapter(RefusesToEvaluate()).run_vector("C1")
+    assert r.status.value == HARNESS_ERROR and "Refused" in r.details
+
+
+def test_a_harness_error_makes_the_run_no_result(monkeypatch, tmp_path):
+    import harness.__main__ as H
+    class Crashing(ReferencePort):
+        def commit(self, decision, *, action_type=None):
+            raise RuntimeError("port crashed on commit")
+    monkeypatch.setattr(H, "load_port", lambda spec: Crashing())
+    out = tmp_path / "report.json"
+    code = H.main(["--port", "x:Crashing", "--probes", "--checks", "--output", str(out)])
+    report = json.loads(out.read_text())
+    assert code == H.EXIT_HARNESS_ERROR == 4
+    assert report["exit_code"] == 4 and report["conformance_status"] == "HARNESS_ERROR"
+    assert "C3" in report["harness_errors"] and report["summary"]["HARNESS_ERROR"] >= 1
+
+
+def test_a_harness_error_in_a_probe_alone_still_stops_the_run(monkeypatch, tmp_path):
+    import harness.__main__ as H
+    class CrashingProbe(_Fixture):
+        def observed_effects(self, decision):
+            raise RuntimeError("journal unreadable")
+    monkeypatch.setattr(H, "load_port", lambda spec: CrashingProbe())
+    out = tmp_path / "report.json"
+    assert H.main(["--port", "x:Y", "--probes", "--output", str(out)]) == 4
+    report = json.loads(out.read_text())
+    # Probes stay out of the vector summary; a probe that did not run stays out of
+    # neither the exit code nor the run's status.
+    assert report["summary"]["HARNESS_ERROR"] == 0
+    assert set(report["harness_errors"]) == set(PROBES)
+    assert report["conformance_status"] == "HARNESS_ERROR"
+
+
+def test_the_harness_itself_stopping_is_not_exit_1(monkeypatch, tmp_path):
+    import harness.__main__ as H
+    def broken(spec):
+        raise ImportError("no such port")
+    monkeypatch.setattr(H, "load_port", broken)
+    assert H.main(["--port", "x:Y", "--output", str(tmp_path / "r.json")]) == 4
+
+
+def test_a_usage_error_is_not_exit_2(capsys):
+    # 2 is "gaps or ADAPTER_REQUIRED", which the workflow lets through.
+    import harness.__main__ as H
+    with pytest.raises(SystemExit) as e:
+        H.main(["--port", "x:Y", "--no-such-flag"])
+    assert e.value.code == 4
+
+
+def test_a_family_with_a_harness_error_never_reads_as_passing():
+    class Half(_Governed):
+        def evaluate_degraded(self, state, measurement, *, principal, action_type):
+            if state == P.E_MISSING:
+                raise RuntimeError("port crashed on missing evidence")
+            return super().evaluate_degraded(state, measurement, principal=principal,
+                                             action_type=action_type)
+    _, _, checks, view = _view_with_checks(Half())
+    family = properties.load()["checks"]["REG-STATE-010"]
+    f = view["families"][family]
+    assert f["PASS"] >= 1 and f["HARNESS_ERROR"] >= 1
+    assert f["state"] == "harness_error"
+    assert view["summary"]["harness_error"] >= 1 and view["index"]["HARNESS_ERROR"] >= 1
+    assert any("did not run to a result" in line for line in properties.render(view))
+
+
+def test_the_runner_reports_a_crash_as_a_harness_error_in_every_vector():
+    class Crashing(R.NativeKernelAdapter):
+        def _v_c1(self): raise RuntimeError("kernel crashed")
+        def _v_c3(self): raise RuntimeError("kernel crashed")
+    a = Crashing(KERNEL)
+    for vid in ("C1", "C3"):
+        r = a.run_vector(vid)
+        assert r.status.value == HARNESS_ERROR, (vid, r.status)
+    report = R.generate_report(a, a.run_all(["C1", "C2"]))
+    assert report["conformance_status"] == "HARNESS_ERROR" and report["summary"]["HARNESS_ERROR"] == 1
+
+
+# CT-R4-004a, native and HTTP (Mergestorm finding 1, then PMO decision on #83).
+# Finding 1: the native probe gave PASS on any refusal. The decision: no mode of
+# the runner has an effect observer independent of the bundled kernel, so no
+# mode reports a result; the positive control lives in the harness scenario.
+
+def test_native_ct_r4_004a_reports_no_result_whatever_the_kernel_does():
+    class RefusesAll(R.NativeKernelAdapter):
+        def _commit(self, *a, **kw): raise ValueError("REFUSE_ALL")
+    class EffectThenRefusal(R.NativeKernelAdapter):
+        def _commit(self, eid, action_type=None, action_id=None, nonce=None):
+            self._grants[eid]["_committed"] = True
+            raise ValueError("EVALUATION_EXPIRED")
+    for adapter in (R.NativeKernelAdapter(KERNEL), RefusesAll(KERNEL), EffectThenRefusal(KERNEL)):
+        r = adapter.run_vector("CT-R4-004a")
+        assert r.status == R.ReportingState.ADAPTER_REQUIRED, type(adapter).__name__
+        assert "independent of the runtime" in r.gap_note and "effects" in r.gap_note
+
+
+def test_http_ct_r4_004a_reports_no_result_and_calls_nothing():
+    class Recording(R.HTTPAdapter):
+        calls = []
+        def _post(self, path, body): self.calls.append(path); return 0, {}
+        def _get(self, path): self.calls.append(path); return 0, {}
+    a = Recording("http://shim.test")
+    r = a.run_vector("CT-R4-004a")
+    assert r.status == R.ReportingState.ADAPTER_REQUIRED and a.calls == []
+
+
+def test_the_registry_marks_ct_r4_004a_specified_with_the_runner_result():
+    import yaml
+    entry = next(v for v in yaml.safe_load((Path(__file__).resolve().parents[1] / "vectors" / "commit.yaml")
+                                           .read_text(encoding="utf-8"))["vectors"] if v["id"] == "CT-R4-004a")
+    assert entry["status"] == "specified" and entry["native"] == "ADAPTER_REQUIRED"
+
+
+# CT-R4-004a, harness: the scenario evaluates, so it declares EVALUATE (finding 5).
+
+def test_ct_r4_004a_needs_evaluate_and_an_admissible_intent():
+    assert P.EVALUATE in SCENARIOS["CT-R4-004a"].requires
+    assert P.ADMISSIBLE in SCENARIOS["CT-R4-004a"].intents
+    class CommitOnly(TemplatePort):
+        capabilities = frozenset({P.COMMIT, P.STALE_GRANT})
+    r = PortAdapter(CommitOnly()).run_vector("CT-R4-004a")
+    assert r.status == R.ReportingState.ADAPTER_REQUIRED and P.EVALUATE in r.gap_note
+    class NoIntent(TemplatePort):
+        capabilities = frozenset({P.EVALUATE, P.COMMIT, P.STALE_GRANT})
+    r = PortAdapter(NoIntent()).run_vector("CT-R4-004a")
+    assert r.status == R.ReportingState.ADAPTER_REQUIRED and P.ADMISSIBLE in r.gap_note
+
+
+class _Observed(ReferencePort):
+    """Test double: the reference kernel with an effect journal kept apart from
+    it, filled only when a commit goes through. Not a port under qualification."""
+    capabilities = ReferencePort.capabilities | {P.EFFECTS}
+
+    def reset(self):
+        super().reset()
+        self.journal = []
+
+    def commit(self, decision, *, action_type=None):
+        done = super().commit(decision, action_type=action_type)
+        self.journal.append(decision.decision_id)
+        return done
+
+    def observed_effects(self, decision):
+        return self.journal.count(decision.decision_id)
+
+
+def _r4_004a(port):
+    return PortAdapter(port).run_vector("CT-R4-004a")
+
+
+def test_harness_ct_r4_004a_passes_with_an_observed_positive_control():
+    r = _r4_004a(_Observed())
+    assert r.status == R.ReportingState.PASS and "no effect observed" in r.details
+
+
+def test_harness_ct_r4_004a_without_an_effect_observer_is_adapter_required():
+    # The reference port reports refusals and declares no observer: a refusal
+    # alone does not establish that no effect took place.
+    r = _r4_004a(ReferencePort())
+    assert r.status == R.ReportingState.ADAPTER_REQUIRED and P.EFFECTS in r.gap_note
+    assert P.EFFECTS in SCENARIOS["CT-R4-004a"].requires
+
+
+def test_harness_ct_r4_004a_refusing_every_commit_proves_nothing():
+    class RefusesAll(_Observed):
+        def commit(self, decision, *, action_type=None):
+            raise P.Refused(P.R_EXPIRED, "HARD_VETO")
+    assert _r4_004a(RefusesAll()).status == R.ReportingState.INCONCLUSIVE
+
+
+def test_harness_ct_r4_004a_an_observer_that_never_sees_an_effect_proves_nothing():
+    class Blind(_Observed):
+        def observed_effects(self, decision):
+            return 0
+    r = _r4_004a(Blind())
+    assert r.status == R.ReportingState.INCONCLUSIVE and "no effect was observed" in r.details
+
+
+def test_harness_ct_r4_004a_an_observer_with_no_count_is_inconclusive():
+    class NoCount(_Observed):
+        def observed_effects(self, decision):
+            return None
+    assert _r4_004a(NoCount()).status == R.ReportingState.INCONCLUSIVE
+
+
+def test_harness_ct_r4_004a_an_effect_behind_a_refusal_is_a_fail():
+    class EffectThenRefusal(_Observed):
+        def commit(self, decision, *, action_type=None):
+            if decision.raw.get("valid_until", 1e18) < time.time():
+                self.journal.append(decision.decision_id)        # the effect happens...
+                raise P.Refused(P.R_EXPIRED, "HARD_VETO")          # ...and a refusal is reported
+            return super().commit(decision, action_type=action_type)
+    r = _r4_004a(EffectThenRefusal())
+    assert r.status == R.ReportingState.FAIL and "1 effect(s) observed" in r.details
+
+
+def test_harness_ct_r4_004a_an_accepted_expired_commit_fails_even_with_no_count():
+    class AcceptsAndCannotCount(_Observed):
+        def commit(self, decision, *, action_type=None):
+            if decision.raw.get("valid_until", 1e18) < time.time():
+                return P.Committed(decision.decision_id, {})       # accepted, no refusal
+            return super().commit(decision, action_type=action_type)
+        def observed_effects(self, decision):
+            if decision.raw.get("valid_until", 1e18) < time.time():
+                return None                                         # observer gives no count
+            return super().observed_effects(decision)
+    r = _r4_004a(AcceptsAndCannotCount())
+    assert r.status == R.ReportingState.FAIL and "commit accepted" in r.details
+
+
+def test_harness_ct_r4_004a_an_observer_that_crashes_is_a_harness_error():
+    class Crashes(_Observed):
+        def observed_effects(self, decision):
+            raise RuntimeError("journal unreadable")
+    assert _r4_004a(Crashes()).status.value == HARNESS_ERROR
+
+
+# Families (finding 4): the two bounds sit with the other bound checks.
+
+def test_bounds_on_an_authorization_and_on_a_held_attempt_share_one_family():
+    checks = properties.load()["checks"]
+    assert checks["CT-R4-004b"] == checks["REG-STATE-024"] == checks["CT-R4-016"] \
+        == checks["CT-R4-004a"] == "EGP-03"
+
+
+# The workflow (finding 2): `target` is resolved, and an unknown one stops the job.
+
+WORKFLOW = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "conformance-run.yml"
+
+
+def _workflow():
+    import yaml
+    return yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+
+
+def _resolve(target, tmp_path):
+    step = next(s for s in _workflow()["jobs"]["run"]["steps"] if s.get("id") == "target")
+    out = tmp_path / "out"
+    out.write_text("")
+    p = subprocess.run(["bash", "-c", step["run"]], capture_output=True, text=True,
+                       env={"TARGET": target, "GITHUB_OUTPUT": str(out), "PATH": "/usr/bin:/bin"})
+    return p.returncode, dict(l.split("=", 1) for l in out.read_text().splitlines() if "=" in l)
+
+
+def test_the_workflow_target_resolves_to_a_port_and_an_unknown_one_fails(tmp_path):
+    wf = _workflow()
+    on = wf.get("on", wf.get(True))
+    assert "target" in on["workflow_call"]["inputs"]
+    for name in on["workflow_dispatch"]["inputs"]["target"]["options"]:
+        code, out = _resolve(name, tmp_path)
+        assert code == 0 and out["name"] == name
+        PortAdapter(load_port(out["port"]))               # the port exists and loads
+    for bad in ("tenir-gov", "", "reference; touch /tmp/x", "Reference"):
+        assert _resolve(bad, tmp_path)[0] != 0, bad
+
+
+def test_the_workflow_runs_the_resolved_port_and_fails_on_a_harness_error():
+    steps = _workflow()["jobs"]["run"]["steps"]
+    names = [s.get("id") or s.get("name") for s in steps]
+    assert names.index("target") < names.index("run")
+    target = next(s for s in steps if s.get("id") == "target")
+    assert "inputs.target" in target["env"]["TARGET"]
+    run = next(s for s in steps if s.get("id") == "run")
+    assert run["env"]["PORT"] == "${{ steps.target.outputs.port }}"
+    assert '--port "$PORT"' in run["run"] and "ReferencePort" not in run["run"]
+    gate = steps[-1]["run"]
+    branch = lambda pat: re.search(r"^\s*" + pat + r"\)[^\n]*$", gate, re.M).group(0)
+    for code in ("1", "3", "4", r"\*"):
+        assert branch(code).rstrip().endswith("exit 1;;"), code
+    assert "exit" not in branch(r"0\|2")
+    assert "matrix" not in WORKFLOW.read_text(encoding="utf-8")
+
+
+# Second round of review on #83 (Codex, cubic).
+
+def test_a_port_that_calls_sys_exit_does_not_end_the_run_or_choose_its_code(monkeypatch, tmp_path):
+    import harness.__main__ as H
+    class Exits(ReferencePort):
+        def commit(self, decision, *, action_type=None):
+            sys.exit(0)                          # 0 would read as a clean run
+    r = PortAdapter(Exits()).run_vector("CT-R4-001")
+    assert r.status.value == HARNESS_ERROR and "SystemExit" in r.details
+    monkeypatch.setattr(H, "load_port", lambda spec: Exits())
+    assert H.main(["--port", "x:Y", "--output", str(tmp_path / "r.json")]) == 4
+    def exits_on_load(spec):
+        sys.exit(1)                              # 1 would read as FAIL
+    monkeypatch.setattr(H, "load_port", exits_on_load)
+    assert H.main(["--port", "x:Y", "--output", str(tmp_path / "r2.json")]) == 4
+
+
+def test_help_still_exits_0():
+    import harness.__main__ as H
+    with pytest.raises(SystemExit) as e:
+        H.main(["--help"])
+    assert e.value.code == 0
+
+
+def test_a_row_with_a_pass_and_a_harness_error_is_not_counted_as_a_pass():
+    class Row:
+        def __init__(self, vid, status):
+            self.vector_id, self.status = vid, status
+    exercises = {"PX-REG-STATE-010": "REG-STATE-010"}
+    data = properties.load()
+    base = properties.view([Row("C1", "PASS")], registered={"C1"}, executable={"C1"}, data=data)
+    view = properties.view([Row("C1", "PASS"), Row("REG-STATE-010", "PASS")],
+                           check_results=[Row("PX-REG-STATE-010", "HARNESS_ERROR")],
+                           registered={"C1", "REG-STATE-010"}, exercises=exercises, data=data,
+                           executable={"C1", "REG-STATE-010", "PX-REG-STATE-010"})
+    assert view["index"]["PASS"] == base["index"]["PASS"]
+    assert view["index"]["observed"] == base["index"]["observed"]
+    assert view["index"]["HARNESS_ERROR"] == 1
+
+
+def test_the_bundle_lists_harness_errors_from_a_runner_report():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+    import make_evidence_bundle as B
+    class Crashing(R.NativeKernelAdapter):
+        def _v_c1(self): raise RuntimeError("kernel crashed")
+    a = Crashing(KERNEL)
+    report = json.loads(json.dumps(R.generate_report(a, a.run_all(["C1", "C2"])), default=str))
+    assert "harness_errors" not in report                 # runner.py does not write it
+    verdict = B.build_verdict(report)
+    assert verdict["harness_errors"] == ["C1"]
+    assert verdict["reg_vectors"]["status"] == "HARNESS_ERROR"
+
+
+def test_ct_r4_004a_states_what_its_observer_does_not_establish():
+    assert any("the observer is the port's own claim" in line
+               for line in SCENARIOS["CT-R4-004a"].not_observed)
+
+
+# NotImplementedError: INCONCLUSIVE only from a declared primitive (PMO decision on #83).
+
+def test_not_implemented_from_a_declared_primitive_is_inconclusive():
+    class Hollow(TemplatePort):
+        capabilities = frozenset({P.EVALUATE})
+        intents = frozenset({P.NO_STANDING})
+    r = PortAdapter(Hollow()).run_vector("C1")
+    assert r.status == R.ReportingState.INCONCLUSIVE and "evaluate" in r.details
+
+
+def test_not_implemented_from_a_decorated_or_aliased_primitive_is_inconclusive():
+    import functools
+    def bound_wrapper(fn):
+        def wrapper(self, *a, **kw):             # binds self, named "wrapper"
+            return fn(self, *a, **kw)
+        return wrapper
+    def free_wrapper(fn):
+        @functools.wraps(fn)
+        def wrapper(*a, **kw):
+            return fn(*a, **kw)
+        return wrapper
+    def _not_there(self, intent, **kw):
+        raise NotImplementedError("not wired")
+    class Decorated(TemplatePort):
+        capabilities = frozenset({P.EVALUATE})
+        intents = frozenset({P.NO_STANDING})
+        evaluate = bound_wrapper(_not_there)
+    class Wrapped(Decorated):
+        evaluate = free_wrapper(_not_there)
+    class Aliased(Decorated):
+        evaluate = _not_there
+    for port in (Decorated(), Wrapped(), Aliased()):
+        r = PortAdapter(port).run_vector("C1")
+        assert r.status == R.ReportingState.INCONCLUSIVE, (type(port).__name__, r.status, r.details)
+
+
+def test_not_implemented_below_a_declared_primitive_is_inconclusive():
+    class Delegates(TemplatePort):
+        capabilities = frozenset({P.EVALUATE})
+        intents = frozenset({P.NO_STANDING})
+        def evaluate(self, intent, **kw):
+            return self._backend(intent)
+        def _backend(self, intent):
+            raise NotImplementedError("the runtime has no such call")
+    assert PortAdapter(Delegates()).run_vector("C1").status == R.ReportingState.INCONCLUSIVE
+
+
+def test_not_implemented_from_reset_is_a_harness_error():
+    class ResetMissing(ReferencePort):
+        armed = False
+        def reset(self):
+            if self.armed:
+                raise NotImplementedError("reset")
+            super().reset()
+    port = ResetMissing()
+    port.armed = True
+    r = PortAdapter(port).run_vector("C1")
+    assert r.status.value == HARNESS_ERROR and "NotImplementedError" in r.details
+
+
+def test_not_implemented_from_scenario_code_is_a_harness_error():
+    import dataclasses
+    def scenario_raises(rt):
+        raise NotImplementedError("helper missing in the scenario")
+    broken = dataclasses.replace(SCENARIOS["C1"], run=scenario_raises)
+    r = PortAdapter(ReferencePort())._run_scenario("C1", broken)
+    assert r.status.value == HARNESS_ERROR and "NotImplementedError" in r.details
+
+
+def test_not_implemented_from_a_primitive_the_port_does_not_declare_is_a_harness_error():
+    # The scenario called a primitive whose capability it did not require: a
+    # harness defect, not a wrong claim by the port.
+    import dataclasses
+    def calls_undeclared(rt):
+        rt.tenir_score(0.2, 0.2, 0.9)
+    broken = dataclasses.replace(SCENARIOS["C1"], run=calls_undeclared)
+    class Hollow(TemplatePort):
+        capabilities = frozenset({P.EVALUATE})
+        intents = frozenset({P.NO_STANDING})
+    r = PortAdapter(Hollow())._run_scenario("C1", broken)
+    assert r.status.value == HARNESS_ERROR
+
+
+def test_not_implemented_from_a_port_method_that_is_no_primitive_is_a_harness_error():
+    import dataclasses
+    def calls_helper(rt):
+        rt.helper()
+    broken = dataclasses.replace(SCENARIOS["C1"], run=calls_helper)
+    class WithHelper(ReferencePort):
+        def helper(self):
+            raise NotImplementedError("helper")
+    assert PortAdapter(WithHelper())._run_scenario("C1", broken).status.value == HARNESS_ERROR
+
+
+def test_a_decorator_shared_by_two_primitives_names_the_one_called():
+    # Codex, review of 6552179: one wrapper code object for evaluate and
+    # tenir_score bound both to the first name. The scenario's call names it now.
+    def shared(fn):
+        def wrapper(self, *a, **kw):
+            return fn(self, *a, **kw)
+        return wrapper
+    def _missing(self, *a, **kw):
+        raise NotImplementedError("not wired")
+    class Port(TemplatePort):
+        capabilities = frozenset({P.TENIR_SCORE})
+        evaluate = shared(_missing)
+        tenir_score = shared(_missing)
+    import dataclasses
+    calls_score = dataclasses.replace(SCENARIOS["C1"], run=lambda rt: rt.tenir_score(0.4, 0.3, 0.75),
+                                      requires=frozenset({P.TENIR_SCORE}), intents=frozenset())
+    r = PortAdapter(Port())._run_scenario("CT-R2-002", calls_score)
+    assert r.status == R.ReportingState.INCONCLUSIVE and "tenir_score" in r.details
+    calls_evaluate = dataclasses.replace(calls_score, run=lambda rt: rt.evaluate(P.ADMISSIBLE))
+    assert PortAdapter(Port())._run_scenario("C1", calls_evaluate).status.value == HARNESS_ERROR
+
+
+def test_a_scenarios_own_except_does_not_turn_a_wrong_claim_into_a_fail():
+    # CT-R2-003 catches the port's crash as the failure it tests. A tenir_score
+    # that is declared and not implemented is the port's claim, not that crash.
+    class Claims(TemplatePort):
+        capabilities = frozenset({P.TENIR_SCORE})
+    r = PortAdapter(Claims()).run_vector("CT-R2-003")
+    assert r.status == R.ReportingState.INCONCLUSIVE, (r.status, r.details)
+    class Crashes(Claims):
+        def tenir_score(self, P_v, V, K):
+            raise ZeroDivisionError("division by zero")
+    assert PortAdapter(Crashes()).run_vector("CT-R2-003").status == R.ReportingState.FAIL
+
+
+def test_the_scenario_sees_the_port_unchanged_apart_from_that_tag():
+    from harness.adapter import _Watched
+    port = ReferencePort()
+    w = _Watched(port)
+    assert w.capabilities == port.capabilities and w.intents == port.intents
+    assert w.evaluate(P.ADMISSIBLE, principal="a", action_type="wire_transfer").disposition in ("PASS", "FLAG")
+    with pytest.raises(P.Refused):
+        w.commit(w.stale_grant(action_type="wire_transfer"))
+
+
+def test_every_capability_has_a_primitive_and_every_primitive_a_capability():
+    assert set(P.PRIMITIVES.values()) == P.ALL_CAPABILITIES - {P.NONCE}
+    assert all(callable(getattr(P.RuntimePort, name)) for name in P.PRIMITIVES)

@@ -59,6 +59,11 @@ def build_verdict(report: dict) -> dict:
         "evidence_label": LEVELS[level],
         "binding_status": binding.get("certification_status"),
         "missing_bindings": binding.get("missing_bindings", []),
+        # Tests that did not run to a result (vectors, probes and property checks).
+        # Non-empty: this run is not a conformance result, whatever else it holds.
+        "harness_errors": sorted(set(report.get("harness_errors") or []) | {
+            r["vector_id"] for r in report["results"] + probes + checks.get("results", [])
+            if r["status"] == "HARNESS_ERROR"}),
         "reg_vectors": {
             "total": report["vector_sets"]["total"],
             "status": report["conformance_status"],
@@ -83,7 +88,7 @@ def build_verdict(report: dict) -> dict:
             "status": view.get("status"),
             "summary": view.get("summary"),
             "index": view.get("index"),
-            "families": {k: {f: fam.get(f) for f in ("PASS", "FAIL", "INCONCLUSIVE", "not_run",
+            "families": {k: {f: fam.get(f) for f in ("PASS", "FAIL", "INCONCLUSIVE", "HARNESS_ERROR", "not_run",
                                                      "unregistered", "no_check", "state")}
                          for k, fam in (view.get("families") or {}).items()},
         } if view else None,
@@ -152,6 +157,9 @@ def main(argv=None):
     by_check = (f"property checks {ran.count('PASS')} PASS, {ran.count('FAIL')} FAIL, "
                 f"{ran.count('INCONCLUSIVE')} inconclusive, {len(c) - len(ran)} not run"
                 if c else "property checks not run")
+    errors = verdict["harness_errors"]
+    if errors:
+        print(f"HARNESS_ERROR on {len(errors)} test(s), not a conformance result: " + ", ".join(errors))
     print(f"bundle: {out} | level {verdict['evidence_level']} {verdict['evidence_label']} | "
           f"REG {v['status']} {v['summary']['PASS']}/{v['total']} PASS | "
           f"probes {verdict['effect_probes']['results'] or 'not run'} | {by_check} | "
