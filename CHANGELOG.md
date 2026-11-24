@@ -1,9 +1,20 @@
 # Changelog
 
-## Non publié
+## v0.7.1 — 2026-11-24
+
+Version de correctif, décidée par l'auteur le 24 novembre 2026 (19:01 UTC) : les errata ratifiés du manuscrit v7.2, le glossaire partagé en vigueur et les textes de la suite alignés sur eux. Aucun vecteur, statut, attendu ni résultat ne change : la suite reste v0.4.0 (61 vecteurs), et les RFC gelées et la révision RFC-4 v0.3 sont inchangées. Ce que cette version ne contient pas : aucune version de REG-ARCH n'est ratifiée (la v0.4.1 est une candidate, que son registre dit non citable comme norme) ; ni le port TenirGov du candidat TENIR-Gov 5.7.7, non publié, ni le renommage I8 → BUD dans `tenir_governance`, prévu en 5.8.0 ; ni les 17 contrôles de propriété, qui demandent un run séparé. La seule version de TENIR-Gov épinglée en CI reste 5.7.0 (`47ef67e`). Aucune capacité n'est démontrée ; aucun résultat publié ne porte sur un produit.
+
+### Added
+
+- **Errata de la v7.2** (`manuscript/ERRATA-v7.2.md`, déposés en brouillon par #79, ratifiés par l'auteur le 23 novembre 2026 et fusionnés par #86) : notes de lecture ERR-7.2-01 à ERR-7.2-06. Le manuscrit, sa fiche Zenodo et le tag `7.2` ne changent pas.
+- **Glossaire partagé v1.0.0** (`glossary/`, #79), avec ses gardes (`tests/test_glossary.py`), en vigueur depuis sa ratification (entrée ci-dessous).
+- **Source de REG-ARCH** (`specs/reg-arch/`, `audits/reg-arch-v0.4/`, `audits/reg-arch-v0.4.1/`, #73) : registre d'approbation et de source (GOV-01, GOV-02), candidate v0.4.1 non ratifiée et sa transcription dérivée, vérifiée par le contrôle COH-X06.
+- `RESULTS.md` (#82) : le run de référence 44797748660 sur `v0.7.0` (`20016d2`), sans les contrôles de propriété.
 
 ### Changed
 
+- Contrôle de cohérence fail-closed (#73, `tools/check_coherence.py`, `coherence-applicability.json`) : `CANNOT_EVALUATE` bloque toujours, et une non-applicabilité doit être déclarée.
+- `conformance-target.json` : `standard_version` v0.7.1.
 - **Glossaire partagé v1.0.0 ratifié par l'auteur le 24 novembre 2026** (15:40 UTC, sur `711ee31`) : `glossary/glossary-v1.yaml` passe de `draft` à `in force`. Deux éléments restent en attente, déclarés dans le fichier : le libellé I8 du port TenirGov (`GL-INV-I8`) et le renommage I8 → BUD dans `tenir_governance`, prévu en 5.8.0 (`GL-INV-BUD`). `CONFIRMED_EXECUTION` y reste un nom à confirmer, comme l'écrit son entrée.
 - **Vocabulaire aligné sur les errata ratifiés de la v7.2** (`manuscript/ERRATA-v7.2.md`, ratifiés par l'auteur le 23 novembre 2026). Textes seulement : aucun identifiant, statut, attendu ni résultat de vecteur ne change.
   - τ_R remplace τ_K là où la fenêtre de qualification du reçu est visée : en-tête et descriptions T6/T7 de `runner.py`, entrée de `CT-R4-011` (`vectors/core.yaml`), `lifecycle/register_core_lifecycle.py`. τ_K garde son sens REG (fenêtre de résolution d'un HOLD, RFC-0 §6) partout ailleurs.
