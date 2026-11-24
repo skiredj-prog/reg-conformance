@@ -3,7 +3,10 @@
 `glossary-v1.yaml` names each term shared by manuscript v7.2, the frozen RFCs
 and this suite once, with its source and its known clashes. It is a versioned
 contract: RFC revisions, vectors, CLAIMS and the projection layer cite a term by
-its `GL-` id. Status: draft (v1.0.0), not in force until ratified.
+its `GL-` id. Status: in force (v1.0.0), ratified by the author on 24 November
+2026. Two items stay pending, declared in the file: `GL-INV-I8` (the TenirGov
+port label) and `GL-INV-BUD` (the I8 → BUD rename in `tenir_governance`,
+planned for 5.8.0).
 
 Rules, in short: the published manuscript is never edited (its reading notes
 are in [`../manuscript/ERRATA-v7.2.md`](../manuscript/ERRATA-v7.2.md)); frozen

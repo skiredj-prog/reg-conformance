@@ -25,9 +25,10 @@
 # alias is MINOR; a typo or a pending item closed is PATCH.
 
 version: "1.0.0"
-status: draft            # becomes "in force" when the author ratifies it
+status: in force         # ratified by the author on 2026-11-24 (15:40 UTC) on 711ee31, reg-conformance#88
+ratified: "2026-11-24"   # two items stay pending, declared below: GL-INV-I8 (port label) and GL-INV-BUD (rename in tenir_governance, 5.8.0)
 date: "2026-11-19"
-amended: "2026-11-24"   # suite revision after the ratified ERRATA-v7.2.md (τ_R, T6/T8 citations, reg-conformance#87); pending items restated; still draft
+amended: "2026-11-24"   # suite revision after the ratified ERRATA-v7.2.md (τ_R, T6/T8 citations, reg-conformance#87); pending items restated before ratification
 
 sources:
   manuscript: {file: manuscript/v7.2.md, release: "7.2", commit: 98bf685, doi: "10.5281/zenodo.24249646 (checked on Zenodo on 2026-11-23: the record's Markdown file has the same MD5 as v7.2.md at tag 7.2)"}

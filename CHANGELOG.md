@@ -4,6 +4,7 @@
 
 ### Changed
 
+- **Glossaire partagé v1.0.0 ratifié par l'auteur le 24 novembre 2026** (15:40 UTC, sur `711ee31`) : `glossary/glossary-v1.yaml` passe de `draft` à `in force`. Deux éléments restent en attente, déclarés dans le fichier : le libellé I8 du port TenirGov (`GL-INV-I8`) et le renommage I8 → BUD dans `tenir_governance`, prévu en 5.8.0 (`GL-INV-BUD`). `CONFIRMED_EXECUTION` y reste un nom à confirmer, comme l'écrit son entrée.
 - **Vocabulaire aligné sur les errata ratifiés de la v7.2** (`manuscript/ERRATA-v7.2.md`, ratifiés par l'auteur le 23 novembre 2026). Textes seulement : aucun identifiant, statut, attendu ni résultat de vecteur ne change.
   - τ_R remplace τ_K là où la fenêtre de qualification du reçu est visée : en-tête et descriptions T6/T7 de `runner.py`, entrée de `CT-R4-011` (`vectors/core.yaml`), `lifecycle/register_core_lifecycle.py`. τ_K garde son sens REG (fenêtre de résolution d'un HOLD, RFC-0 §6) partout ailleurs.
   - `CT-R4-011` cite T6 au vocabulaire de cycle de vie de cette suite (`LIFECYCLE_INTEGRATION.md`, `lifecycle/attempt_state.py`), et `CT-R4-013` cite T8 à `tenir-conformance-s1-g1` en `8bc0e5e` (note T6/T8 des errata : le manuscrit ne nomme que T7, en §4.4).
