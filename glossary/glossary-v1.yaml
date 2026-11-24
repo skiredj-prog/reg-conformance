@@ -25,12 +25,13 @@
 # alias is MINOR; a typo or a pending item closed is PATCH.
 
 version: "1.0.0"
-status: draft            # becomes "in force" when the author ratifies it
+status: in force         # ratified by the author on 2026-11-24 (15:40 UTC) on 711ee31, reg-conformance#88
+ratified: "2026-11-24"   # two items stay pending, declared below: GL-INV-I8 (port label) and GL-INV-BUD (rename in tenir_governance, 5.8.0)
 date: "2026-11-19"
-amended: "2026-11-24"   # suite revision after the ratified ERRATA-v7.2.md (τ_R, T6/T8 citations); still draft
+amended: "2026-11-24"   # suite revision after the ratified ERRATA-v7.2.md (τ_R, T6/T8 citations, reg-conformance#87); pending items restated before ratification
 
 sources:
-  manuscript: {file: manuscript/v7.2.md, release: "7.2", commit: 98bf685, doi: "10.5281/zenodo.24249646 (as stated in the repository; not checked on Zenodo)"}
+  manuscript: {file: manuscript/v7.2.md, release: "7.2", commit: 98bf685, doi: "10.5281/zenodo.24249646 (checked on Zenodo on 2026-11-23: the record's Markdown file has the same MD5 as v7.2.md at tag 7.2)"}
   suite_main: {commit: b943f06, tag_of_code: "v0.6.2 = a2ec724", note: "findings first read on this commit (2026-11-19)"}
   suite_release: {tag: v0.7.0, commit: 20016d2, note: "references re-checked against this release on 2026-11-20"}
   pr_77_rn001_registry: {head: f4a4fb9, status: "merged into main (028d25d), released in v0.7.0"}
@@ -90,7 +91,7 @@ terms:
         - README.md
         - CHANGELOG.md
     pending:
-      - {where: [harness/ports/tenir_gov.py], change: "write 'BUD (named I8 in tenir_governance)' for the budget invariant", after: "next suite revision (file on main since v0.7.0; not renamed there)"}
+      - {where: [harness/ports/tenir_gov.py], change: "write 'BUD (named I8 in tenir_governance)' for the budget invariant", after: "the TenirGov port of the 5.7.7 candidate lands (it rewrites these lines; left out of the suite revision of 2026-11-24, reg-conformance#87, to avoid a conflict)"}
 
   - id: GL-INV-BUD
     canonical: BUD
@@ -102,7 +103,7 @@ terms:
       - {alias: I8_maintained, where: "field name in specs/evidence-type-specs-v1.md (kept as is) and in historical fault-injection logs such as evidence/test-fault-tolerance.log", refers_to: BUD, note: "The field keeps its name. This glossary does not introduce BUD_maintained; a new field name needs a versioned revision of the evidence contract with an explicit compatibility rule (author's decision, 2026-11-20)."}
     finding: verified
     pending:
-      - {where: "tenir_governance (other repository)", change: "rename I8 to BUD in code and docs, keeping I8 as a deprecated alias", owner: "TENIR-Gov 5.7.1 workstream"}
+      - {where: "tenir_governance (other repository)", change: "rename I8 to BUD in code and docs, keeping I8 as a deprecated alias", owner: "TENIR-Gov 5.8.0 (author's decision of 2026-11-24)"}
 
   # ------------------------------------------------------------------ time bounds
   - id: GL-TAU-K

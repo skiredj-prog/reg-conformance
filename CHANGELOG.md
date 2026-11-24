@@ -4,12 +4,14 @@
 
 ### Changed
 
+- **Glossaire partagé v1.0.0 ratifié par l'auteur le 24 novembre 2026** (15:40 UTC, sur `711ee31`) : `glossary/glossary-v1.yaml` passe de `draft` à `in force`. Deux éléments restent en attente, déclarés dans le fichier : le libellé I8 du port TenirGov (`GL-INV-I8`) et le renommage I8 → BUD dans `tenir_governance`, prévu en 5.8.0 (`GL-INV-BUD`). `CONFIRMED_EXECUTION` y reste un nom à confirmer, comme l'écrit son entrée.
 - **Vocabulaire aligné sur les errata ratifiés de la v7.2** (`manuscript/ERRATA-v7.2.md`, ratifiés par l'auteur le 23 novembre 2026). Textes seulement : aucun identifiant, statut, attendu ni résultat de vecteur ne change.
   - τ_R remplace τ_K là où la fenêtre de qualification du reçu est visée : en-tête et descriptions T6/T7 de `runner.py`, entrée de `CT-R4-011` (`vectors/core.yaml`), `lifecycle/register_core_lifecycle.py`. τ_K garde son sens REG (fenêtre de résolution d'un HOLD, RFC-0 §6) partout ailleurs.
   - `CT-R4-011` cite T6 au vocabulaire de cycle de vie de cette suite (`LIFECYCLE_INTEGRATION.md`, `lifecycle/attempt_state.py`), et `CT-R4-013` cite T8 à `tenir-conformance-s1-g1` en `8bc0e5e` (note T6/T8 des errata : le manuscrit ne nomme que T7, en §4.4).
   - `vectors/dist/vectors.json` régénéré par `vectors/compile.py` ; `VECTORS.md` aligné.
   - `docs/exteriority-registry-v0.2.md` : entrées préfixées `EXT-` (`EXT-E1` … `EXT-E7`), pour ne plus les confondre avec les expériences E1 et E2 du manuscrit. La v0.1 n'est pas modifiée.
   - Glossaire (brouillon) : éléments en attente de `GL-TAU-R`, `GL-LIFECYCLE-T` et `GL-E-IDS` clos. Restent en attente le libellé I8 du port TenirGov (`harness/ports/tenir_gov.py`, modifié par le port 5.7.7 local) et le renommage I8 → BUD dans `tenir_governance`, prévu en 5.8.0.
+- Glossaire (brouillon), avant sa ratification : les deux éléments encore en attente sont redits à jour (le libellé I8 du port attend le port TenirGov du candidat 5.7.7 ; le renommage I8 → BUD dans `tenir_governance` relève de la 5.8.0, décision de l'auteur du 24 novembre 2026, et non plus de la 5.7.1), et le DOI du manuscrit est noté vérifié sur Zenodo le 23 novembre 2026.
 
 ## v0.7.0 — 2026-11-20
 
