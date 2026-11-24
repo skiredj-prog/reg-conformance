@@ -35,6 +35,28 @@ Candidat hors de toute révision publiée : rien n'est poussé, fusionné ni ét
 - **Règle amendée après la revue interne du 23 novembre 2026, 17:37 UTC (option A, 18:33)** : (1) la règle passe dans `runner.py` (`reserved_rows`, `superseded_rows`, `not_specified_reason`, `apply_row_rule`, `exit_code_rule_block`) et s'applique à **tous** les adaptateurs et rapports, `python -m harness` comme `runner.py --mode http|native` ; `generate_report` applique la règle, porte `exit_code_rule` et un bloc **`scope`** obligatoire ; la phrase « chaque rapport porte la règle » devient exacte. (2) **Liste blanche** des lignes qu'un implémenteur peut déclarer hors périmètre (`PERIMETER_DECLARABLE` : CT-R3-001, 002, 006, 007, 008) ; toute autre ligne est refusée (`ValueError`) : sans elle, deux chaînes suffisaient à sortir n'importe quelle ligne du code, et une sonde de cette revue a sorti CT-R0-005 sans que son contrôle tourne. Le mot « signé » est retiré : une déclaration est du texte en clair. (3) **Lignes remplacées lues, pas écrites en dur** : `superseded_by` de `vectors/*.yaml` (CT-R4-004 par 004a et 004b, RFC-4 v0.3 §5 ; CT-R4-014 à 016 par 004a/004b, §4). Une ligne remplacée garde une observation (PASS, FAIL, INCONCLUSIVE) ; une non-observation sur elle est `NOT_SPECIFIED`, la ligne qui la remplace porte le compte : la borne d'autorisation n'est plus comptée deux fois (CT-R4-004 et 004a). (4) **`CONFORMANT_ON_SPECIFIED_ROWS`** (décision du 23 novembre sur L4-6) quand rien n'est compté contre l'exécution mais que des lignes restent hors du compte ; jamais un `CONFORMANT` nu dans ce cas ; le bloc `scope` dit ce que le statut couvre. (5) `vectors/*.yaml` : `native: NOT_SPECIFIED` sur les 28 lignes RESERVED ou remplacées (était `IMPLEMENTATION_GAP`), énumération du schéma étendue, `vectors/dist/vectors.json` recompilé ; les textes `observed` sont inchangés. (6) Texte du workflow `tenir-gov-576-conformance.yml` corrigé (« code 0 : … sur les lignes spécifiées »).
 - Mesuré après l'amendement, 5.7.6 publiée et candidat 5.7.7 (`c810ce3` ; sur l'état précédent `ec81756` le même port lisait **2 FAIL**, CT-R4-008 et CT-R5-004, « cannot pickle RLock » : le verrou ajouté au ledger en empêchait la copie, corrigé dans `c810ce3`) : **21 PASS, 0 FAIL, 0 INCONCLUSIVE, 3 N/A, 3 IMPLEMENTATION_GAP (CT-R4-004a, CT-R4-007, CT-R3-002), 0 ADAPTER_REQUIRED, 4 NOT_IN_PERIMETER, 29 NOT_SPECIFIED, 1 EXERCISED_BY_CHECK, code 2, `conformance_status` INCOMPLETE** (voir les rapports du dossier). Mode natif historique sur le noyau embarqué : les 28 lignes RESERVED ou remplacées passent d'IMPLEMENTATION_GAP à NOT_SPECIFIED ; les autres résultats ne changent pas.
 
+### Note du 24 novembre 2026, 18:40 UTC — où sont passés les SHA du candidat cités ci-dessus
+
+Les mesures ci-dessus nomment les états du candidat 5.7.7 de `tenir_governance` sur lesquels elles ont été
+prises. Ces objets de commit ont été **remplacés** le 24 novembre 2026 à 18:40 UTC : les quinze commits du
+candidat ont été rejoués sur `940864d` (main de `tenir_governance` après la fusion de la PR #144), et deux
+messages de commit y ont été corrigés, qui attribuaient à un rôle une revue faite par un assistant. **Les
+arbres sont inchangés** : chaque état rejoué a exactement le même contenu que l'état mesuré du même rang.
+
+Les SHA cités ci-dessus ne sont pas réécrits : une mesure datée nomme l'objet sur lequel elle a été prise.
+Voici la correspondance, pour qu'un lecteur retrouve l'état dans le dépôt rejoué :
+
+| État mesuré, cité ci-dessus | Objet du même contenu après le rejeu |
+|---|---|
+| `1397154` | `335c4b3` |
+| `1063807` | `7e0fc88` |
+| `ec81756` | `babacb3` |
+| `c810ce3` | `49fa20a` |
+
+Les objets remplacés restent restaurables depuis le dossier de levée du HOLD, dossier
+`e-decisions-23-11/historique/`. Aucun résultat de ce dépôt ne change, et le port n'est pas modifié par
+cette note : seul ce fichier l'est.
+
 ## v0.7.0 — 2026-11-20
 
 Cohérence REG / REG+ / suite, RN-001 inscrit dans le registre des vecteurs, harness neutre et `CLAIMS.md` en vigueur. Une seule version de chaque chose. Détail et état : `python tools/check_coherence.py`.
