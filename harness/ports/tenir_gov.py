@@ -98,6 +98,18 @@ _QUALITY = (1.0, 0.75, 0.5, 0.25, 0.0)
 _NOT_ADMITTED = ("failed", "hold", "escalated", "created")
 
 
+
+def _flag_conditions(result) -> tuple:
+    """The conditions a FLAG states, as the runtime reports them.
+
+    tenir-governance 5.7.5 copies the conditions its policy declares into
+    ``flag_conditions`` (empty by default); 5.7.0 has no such field. The port
+    reports what it observes and adds nothing.
+    """
+    if result.get("composed_decision") != "FLAG":
+        return ()
+    return tuple(str(c) for c in (result.get("flag_conditions") or ()))
+
 class _JournalProvider:
     """The only executor. One journal line per call the runtime makes."""
 
@@ -194,7 +206,8 @@ class TenirGovPort(P.RuntimePort):
             raise P.Refused(P.R_REPLAY, result.get("composed_decision"),
                             result["composed_rationale"])
         return P.Decision(key, result["composed_decision"], action_type, principal,
-                          {"result": result, "amount": amount})
+                          {"result": result, "amount": amount},
+                          conditions=_flag_conditions(result))
 
     def commit(self, decision, *, action_type=None):
         amount = decision.raw.get("amount")
@@ -206,6 +219,10 @@ class TenirGovPort(P.RuntimePort):
             return P.Committed(decision.decision_id, result)
         reason = str(result.get("reason", ""))
         state = str(result.get("operation_state", ""))
+        if result.get("tau_k_expired"):
+            raise P.Refused(P.R_EXPIRED, result.get("composed_decision"), reason)
+        if reason.startswith("QUARANTINE_LOCK is active"):
+            raise P.Refused(P.R_STATE_DRIFT, None, reason)
         if "does not match the payload authorized" in reason:
             raise P.Refused(P.R_BINDING, None, reason)
         if reason.startswith("Cannot dispatch") and state in _NOT_ADMITTED:
@@ -227,3 +244,130 @@ class TenirGovPort(P.RuntimePort):
 
     def observed_effects(self, decision):
         return self._provider.journal.count(decision.decision_id)
+
+
+# The bound this deployment declares for a HOLD's human resolution, and its
+# source. It is the deployment's declaration, written here because the port
+# builds the deployment; TENIR-Gov invents none.
+_TAU_K = 1.0
+_TAU_K_SOURCE = "REG harness deployment: declared for the run, not derived from an SLA"
+
+
+class TenirGovTauKPort(TenirGovPort):
+    """TENIR-Gov with a policy that declares τ_K (needs the 5.7.5 line, tenir_governance#142).
+
+    What is under test: the same governor as TenirGovPort, built with
+    `CompositionPolicy(hold_tau_k_seconds=1.0, hold_tau_k_source=...)`. That
+    policy field is the only difference. On a subject that has no such field
+    (5.7.0 and earlier) the port refuses to start: there is then no public
+    path by which a policy declares τ_K (issue #140, case C2a).
+
+    Additional mapping (PROVISIONAL, same caveat as TenirGovPort):
+        NEEDS_APPROVAL  best-case inputs with `evidence_quality` unknown (NaN):
+                        the scoring kernel returns no decision and the
+                        governor holds, fail-closed, pending evidence. The
+                        budget-driven HOLD of TenirGovPort is not used: on
+                        5.7.x no answer can lead it to admission (its
+                        re-adjudication holds again, or is vetoed by its own
+                        reservation, issue #141), so it cannot serve as the
+                        control a late answer is compared with.
+        approve         `resolve_hold` with the original passage and the
+                        evidence supplied (`evidence_quality` = 1.0): the
+                        runtime's own "fresh evidence" answer to a HOLD.
+        STATE_DRIFT     `lock_quarantine` between verdict and commit. It is
+                        the governing-state change this runtime re-checks at
+                        dispatch. It is not a policy epoch, which the runtime
+                        does not have; a refusal under it is mapped to
+                        STATE_DRIFT with no disposition, since the operation
+                        stays RESERVED until the quarantine is released.
+    Clock: real. `elapse_past` waits the bound and 50 ms more. Nothing runs
+    on a schedule: the bound applies when the operation tries to advance.
+    Exhaustion policy: TENIR-Gov fails closed on an exhausted τ_K; the
+    deployment declares nothing else.
+    """
+    name = "tenir-governance (policy declares tau_k)"
+    interface_mode = "port:tenir-governance+tau_k"
+    capabilities = TenirGovPort.capabilities | {P.CLOCK, P.APPROVE, P.STATE_DRIFT}
+    bounds = {P.B_TAU_K: _TAU_K}
+    clock_mode = "real"
+    exhaustion_policy = "fail-closed"
+
+    def reset(self):
+        from tenir_governance.composition import (
+            CompositionPolicy, DualKernelGovernor, ScoringKernelAdapter)
+        from tenir_governance.membrane import MembraneState, TransitionMembrane
+        from tenir_governance.objects import Resource
+        from tenir_kernel.kernel import TenirKernel
+
+        try:
+            policy = CompositionPolicy(hold_tau_k_seconds=_TAU_K, hold_tau_k_source=_TAU_K_SOURCE)
+        except TypeError as e:
+            raise RuntimeError(
+                f"tenir-governance {self.subject_version}: the composition policy has no "
+                f"hold_tau_k_seconds field, so no deployment can declare tau_k ({e})") from e
+        state = self._state = MembraneState()
+        state.register_resource(Resource(resource_id=_BUDGET, capacity=_CAPACITY))
+        self._provider = _JournalProvider()
+        self._scoring = ScoringKernelAdapter(TenirKernel())
+        self._gov = DualKernelGovernor(self._scoring, TransitionMembrane(state),
+                                       policy=policy, provider=self._provider)
+        self._passages = {}
+
+    def evaluate_combined(self, intents, *, principal, action_type, nonce=None):
+        if P.NEEDS_APPROVAL not in intents:
+            return super().evaluate_combined(intents, principal=principal,
+                                             action_type=action_type, nonce=nonce)
+        # On this port NEEDS_APPROVAL is the evidence input alone (evidence_quality
+        # unknown). The other intents of `combinations` act on other inputs
+        # (authority, or pressure/velocity/capacity), so they combine without
+        # undoing it. They carry no amount.
+        overrides = {}
+        for intent in intents:
+            if intent == P.NEEDS_APPROVAL:
+                continue
+            changed, amount = _INPUTS[intent]
+            if amount or "evidence_quality" in changed:
+                raise ValueError(f"{intent} cannot be combined with NEEDS_APPROVAL on this port")
+            overrides.update(changed)
+        measured = {**_BEST, **overrides, "evidence_quality": float("nan")}
+        return self._adjudicate(measured, None, principal=principal,
+                                action_type=action_type, nonce=nonce)
+
+    def _adjudicate(self, measured, amount, *, principal, action_type, nonce=None):
+        d = super()._adjudicate(measured, amount, principal=principal,
+                                action_type=action_type, nonce=nonce)
+        self._passages[d.decision_id] = d
+        return d
+
+    def approve(self, decision):
+        from tenir_governance.objects import Passage
+
+        record = self._gov.registry.get(decision.decision_id)
+        if record is None:
+            raise P.Refused("NATIVE:not_found", None, decision.decision_id)
+        passage = Passage(agent_id=record.agent_id, action_type=record.action_type,
+                          amount=record.amount, idempotency_key=decision.decision_id,
+                          passage_id=record.passage_id)
+        result = self._gov.resolve_hold(decision.decision_id, passage=passage,
+                                        payload={"action_type": decision.action_type},
+                                        **_BEST)
+        if result.get("tau_k_expired"):
+            raise P.Refused(P.R_EXPIRED, result.get("composed_decision"), str(result.get("reason")))
+        disposition = result.get("composed_decision")
+        if disposition is None:
+            raise P.Refused(f"NATIVE:{result.get('operation_state') or 'unknown'}", None,
+                            str(result.get("reason")))
+        return P.Decision(decision.decision_id, disposition, decision.action_type,
+                          decision.principal, {"result": result, "amount": decision.raw.get("amount")},
+                          conditions=_flag_conditions(result))
+
+    def drift_state(self):
+        self._gov.lock_quarantine("reg-harness", incident_id=f"drift-{uuid.uuid4().hex[:8]}")
+        return "quarantine lock set"
+
+    def elapse_past(self, bound):
+        import time
+
+        seconds = self.bounds[bound] if bound in self.bounds else self.effect_window
+        time.sleep(seconds + 0.05)
+        return seconds + 0.05

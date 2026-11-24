@@ -119,6 +119,15 @@ Five checks depend on time. The harness sets no duration for any of them.
 - `PX-REG-STATE-024` passes only on a rejection. A `HOLD` that is merely still
   suspended after its window is not executable either, and is not rejected:
   the check then reports `INCONCLUSIVE`.
+- `CT-R4-004b` (RFC-4 v0.3 revision §2.2) has two cases on the same bound.
+  The held attempt left unanswered past `tau_k` must be refused with
+  `HARD_VETO` and give no effect. When the port also declares `approve` (give
+  a `HOLD` the favourable answer it waits for, through the runtime's own
+  path), a second case runs: a control answered inside the window must give
+  one admission and exactly one effect, then an attempt answered after the
+  window must give no effect and a `HARD_VETO`, and a second answer on the
+  same identity must admit and commit nothing. A pass needs both cases; a
+  fail in either is the result.
 
 The effect probes follow the same rule. A port whose runtime executes after it
 replies declares `effect_window`, and "no effect" is read once that window has
@@ -185,6 +194,7 @@ written in the port by whoever can answer for them.
 |---|---|---|
 | `ports/reference.py` | bundled reference kernel, not the TENIR-Gov runtime | 1 |
 | `ports/tenir_gov.py` | installed `tenir-governance`, default governor path, in process | 2 |
+| `ports/tenir_gov.py:TenirGovTauKPort` | same, with a policy that declares `tau_k` (needs the `tenir-governance` 5.7.5 line (#142) or later; refuses to start otherwise) | 2 |
 
 `tests/test_harness.py` checks the instrument itself: each effect probe and
 each property check is run against a deliberately faulty test double and must
