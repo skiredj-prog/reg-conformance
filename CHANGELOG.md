@@ -10,6 +10,7 @@
   - `vectors/dist/vectors.json` régénéré par `vectors/compile.py` ; `VECTORS.md` aligné.
   - `docs/exteriority-registry-v0.2.md` : entrées préfixées `EXT-` (`EXT-E1` … `EXT-E7`), pour ne plus les confondre avec les expériences E1 et E2 du manuscrit. La v0.1 n'est pas modifiée.
   - Glossaire (brouillon) : éléments en attente de `GL-TAU-R`, `GL-LIFECYCLE-T` et `GL-E-IDS` clos. Restent en attente le libellé I8 du port TenirGov (`harness/ports/tenir_gov.py`, modifié par le port 5.7.7 local) et le renommage I8 → BUD dans `tenir_governance`, prévu en 5.8.0.
+- Glossaire (brouillon), avant sa ratification : les deux éléments encore en attente sont redits à jour (le libellé I8 du port attend le port TenirGov du candidat 5.7.7 ; le renommage I8 → BUD dans `tenir_governance` relève de la 5.8.0, décision de l'auteur du 24 novembre 2026, et non plus de la 5.7.1), et le DOI du manuscrit est noté vérifié sur Zenodo le 23 novembre 2026.
 
 ## v0.7.0 — 2026-11-20
 
