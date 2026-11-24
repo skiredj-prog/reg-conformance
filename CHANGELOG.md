@@ -8,7 +8,8 @@
   - τ_R remplace τ_K là où la fenêtre de qualification du reçu est visée : en-tête et descriptions T6/T7 de `runner.py`, entrée de `CT-R4-011` (`vectors/core.yaml`), `lifecycle/register_core_lifecycle.py`. τ_K garde son sens REG (fenêtre de résolution d'un HOLD, RFC-0 §6) partout ailleurs.
   - `CT-R4-011` cite T6 au vocabulaire de cycle de vie de cette suite (`LIFECYCLE_INTEGRATION.md`, `lifecycle/attempt_state.py`), et `CT-R4-013` cite T8 à `tenir-conformance-s1-g1` en `8bc0e5e` (note T6/T8 des errata : le manuscrit ne nomme que T7, en §4.4).
   - `vectors/dist/vectors.json` régénéré par `vectors/compile.py` ; `VECTORS.md` aligné.
-  - Glossaire (brouillon) : éléments en attente de `GL-TAU-R` et `GL-LIFECYCLE-T` clos. Restent en attente le libellé I8 du port TenirGov (`harness/ports/tenir_gov.py`, modifié par le port 5.7.7 local) et le renommage I8 → BUD dans `tenir_governance`, prévu en 5.8.0.
+  - `docs/exteriority-registry-v0.2.md` : entrées préfixées `EXT-` (`EXT-E1` … `EXT-E7`), pour ne plus les confondre avec les expériences E1 et E2 du manuscrit. La v0.1 n'est pas modifiée.
+  - Glossaire (brouillon) : éléments en attente de `GL-TAU-R`, `GL-LIFECYCLE-T` et `GL-E-IDS` clos. Restent en attente le libellé I8 du port TenirGov (`harness/ports/tenir_gov.py`, modifié par le port 5.7.7 local) et le renommage I8 → BUD dans `tenir_governance`, prévu en 5.8.0.
 
 ## v0.7.0 — 2026-11-20
 

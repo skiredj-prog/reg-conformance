@@ -433,8 +433,7 @@ terms:
       EXT: "Entries of the exteriority registry (docs/exteriority-registry-v0.2.md)."
     clash: "Both write E1, E2. CHANGELOG audit items E2–E7 (v0.4) are a third use; historical, left as is."
     finding: verified
-    pending:
-      - {where: [docs/exteriority-registry-v0.2.md], change: "prefix entries EXT-", after: "next revision of the registry draft"}
+    note: "docs/exteriority-registry-v0.2.md writes EXT-E1 … EXT-E7 since 2026-11-24; the superseded v0.1 keeps E1 … E7 (history)."
 
   - id: GL-C-IDS
     canonical: "C1 … C5"
