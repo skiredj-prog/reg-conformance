@@ -10,6 +10,7 @@ Version de correctif, décidée par l'auteur le 24 novembre 2026 (19:01 UTC) : l
 - **Glossaire partagé v1.0.0** (`glossary/`, #79), avec ses gardes (`tests/test_glossary.py`), en vigueur depuis sa ratification (entrée ci-dessous).
 - **Source de REG-ARCH** (`specs/reg-arch/`, `audits/reg-arch-v0.4/`, `audits/reg-arch-v0.4.1/`, #73) : registre d'approbation et de source (GOV-01, GOV-02), candidate v0.4.1 non ratifiée et sa transcription dérivée, vérifiée par le contrôle COH-X06.
 - `RESULTS.md` (#82) : le run de référence 44797748660 sur `v0.7.0` (`20016d2`), sans les contrôles de propriété.
+- `results/README.md` : les quatre fichiers JSON de `results/` sont des sorties historiques des suites v0.2.4 et v0.3.1, laissées telles quelles. L'étiquette `NATIVE_CONFORMANT` que portent deux d'entre eux est celle que ces suites donnaient au noyau de référence embarqué ; le runner déclare ce noyau au niveau 1 depuis le 30 octobre 2026. Ils ne sont pas à citer comme résultats.
 
 ### Changed
 
@@ -23,6 +24,8 @@ Version de correctif, décidée par l'auteur le 24 novembre 2026 (19:01 UTC) : l
   - `docs/exteriority-registry-v0.2.md` : entrées préfixées `EXT-` (`EXT-E1` … `EXT-E7`), pour ne plus les confondre avec les expériences E1 et E2 du manuscrit. La v0.1 n'est pas modifiée.
   - Glossaire (brouillon) : éléments en attente de `GL-TAU-R`, `GL-LIFECYCLE-T` et `GL-E-IDS` clos. Restent en attente le libellé I8 du port TenirGov (`harness/ports/tenir_gov.py`, modifié par le port 5.7.7 local) et le renommage I8 → BUD dans `tenir_governance`, prévu en 5.8.0.
 - Glossaire (brouillon), avant sa ratification : les deux éléments encore en attente sont redits à jour (le libellé I8 du port attend le port TenirGov du candidat 5.7.7 ; le renommage I8 → BUD dans `tenir_governance` relève de la 5.8.0, décision de l'auteur du 24 novembre 2026, et non plus de la 5.7.1), et le DOI du manuscrit est noté vérifié sur Zenodo le 23 novembre 2026.
+- Exécution depuis un clone propre, textes et dépendances seulement. `requirements.txt` ajoute `jsonschema` et `pytest`, qu'importent `tools/check_coherence.py`, `tools/verify_capabilities.py` et les tests, et que la CI installait à part : sans eux, COH-V04 et COH-X05 sortaient `CANNOT_EVALUATE` et `verify_capabilities.py` ne démarrait pas. `README.md` dit ce que certaines commandes demandent en plus : `REG_TARGET_SOURCE` pour COH-P12 et `tests/test_coherence.py`, sur un checkout hors de l'arbre, comme le fait le workflow `coherence` ; les deux jetons du shim pour `--mode http` ; le checkout de `tenir_governance` au commit cible, dans `tenir-governance/`, pour l'étape Raft, à retirer avant `tests/test_glossary.py`, dont les gardes lisent tous les fichiers sous la racine, suivis ou non ; le laboratoire et TENIR-Gov pour `tests/test_lifecycle_probes.py`. Aucun vecteur, statut, attendu ni résultat ne change.
+- `spec.md`, sous la table des modes : le niveau indiqué est le plus haut qu'un mode peut atteindre. En `--mode native`, le noyau embarqué est déclaré au niveau 1, parce que `NativeKernelAdapter` tient lui-même le contrôle de standing, les grants, les nonces, l'expiration, la liaison d'action, les reçus et le manifeste.
 
 ## v0.7.0 — 2026-11-20
 

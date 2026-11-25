@@ -36,6 +36,13 @@ Four things live here. They answer different questions and are versioned separat
 python -m harness --port harness.ports.reference:ReferencePort --probes
 ```
 
+**From a clean clone.** `pip install -r requirements.txt` installs what the runner, the shim, the harness and the tools of this repository import, and pytest. Some commands need more than that:
+
+- `python tools/check_coherence.py` and `pytest tests/test_coherence.py`: check COH-P12 reads the source of the target. Set `REG_TARGET_SOURCE` to a checkout of the commit that [`conformance-target.json`](conformance-target.json) names, outside this repository's tree, as the `coherence` workflow does. Without it, COH-P12 is `CANNOT_EVALUATE`, so `check_coherence.py` exits 1 and three of those tests fail.
+- `python runner.py --mode http` against the reference shim: unless `REG_CREDENTIAL_TOKEN` is set, the shim answers every evaluation with `HARD_VETO` (`STANDING_FAILURE`), and unless `REG_ADMIN_TOKEN` is set, it refuses its test helpers (revocation, policy reload, expiry). Start it with both (`uvicorn shim:app --host 127.0.0.1 --port 8099`) and give the runner the same values with `--principal-credential` and `--admin-token`. Without them, the vectors that need a granted evaluation report `FAIL`.
+- The Raft step of [Reproduction](#reproduction) runs tests from a checkout of `tenir_governance` at that same commit, in `tenir-governance/`, as the `pinned-tenir-gov-conformance` workflow does. Run `pytest tests/test_glossary.py`, or a bare `pytest`, without that checkout in the tree: the glossary guards read every Markdown, YAML, Python and JSON file under the repository root, tracked or not, and the guard `GL-INV-I8` then fails on files of `tenir_governance`.
+- `pytest tests/test_lifecycle_probes.py` imports the laboratory `tenir-conformance-s1-g1` and TENIR-Gov. The `lifecycle` workflow installs both from git, at the commits it pins.
+
 **What a result means.** A run observes behaviour on chosen cases, for one revision of one subject. It is not a proof and not a certification. [`CLAIMS.md`](CLAIMS.md) states what may be said from a result; [`RESULTS.md`](RESULTS.md) lists the runs published so far.
 
 **Explore.** [Vector lab](https://skiredj-prog.github.io/reg-conformance/lab/) · [Crosswalk](https://skiredj-prog.github.io/reg-conformance/crosswalk/)
@@ -144,6 +151,10 @@ The `conformance-target.json` manifest pins the TENIR-Gov source commit and pack
 python tools/validate_profiles.py
 python tests/test_profile_admissibility.py
 pytest -q tests/test_conformance_target.py
+# The Raft suite runs from TENIR-Gov at the commit pinned in conformance-target.json:
+git clone https://github.com/skiredj-prog/tenir_governance.git tenir-governance
+git -C tenir-governance checkout "$(python -c 'import json; print(json.load(open("conformance-target.json"))["implementation"]["source_commit"])')"
+pip install -e "./tenir-governance[raft]"
 pytest -q tenir-governance/tests/test_raft_backend.py
 ```
 
